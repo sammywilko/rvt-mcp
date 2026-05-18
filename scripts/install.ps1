@@ -1,48 +1,93 @@
+#Requires -Version 5.1
 <#
 .SYNOPSIS
-  Install or uninstall Bimwright Revit plugin(s) for every installed Revit year.
+  Install or uninstall Bimwright Revit client components.
 
 .DESCRIPTION
-  Detects installed Revit years via HKLM:\SOFTWARE\Autodesk\Revit\<year>\ and, for
-  each year that has a matching build/plugin-zip/Bimwright.Rvt.Plugin.R<nn>.zip, extracts
-  the zip to %APPDATA%\Autodesk\Revit\Addins\<year>\Bimwright\ and copies the .addin
-  manifest up to %APPDATA%\Autodesk\Revit\Addins\<year>\.
+  In a client setup ZIP, this script installs:
+    - the self-contained MCP server from server/
+    - matching per-Revit plugin ZIPs from plugins/
+    - optional MCP client config entries using an absolute server path
 
-  With -Uninstall, removes both the Bimwright\ folder and the Bimwright.R<nn>.addin
-  file for every detected year.
-
-  The script can ship inside the release ZIP alongside the per-version plugin zips.
-  In that layout, pass -SourceDir <extracted release directory>.
+  It also remains compatible with the older plugin-only release layout where
+  per-Revit plugin ZIPs sit beside this script and the server is installed as a
+  .NET global tool by the user.
 
 .PARAMETER SourceDir
-  Directory containing Bimwright.Rvt.Plugin.R<nn>.zip files. Default: build/plugin-zip/
-  relative to the repo root (parent of scripts/). Release bundles override this.
+  Setup root or plugin ZIP source directory. Defaults to the current setup root
+  when server/ or plugins/ exists beside this script; otherwise defaults to
+  build/plugin-zip/ relative to the repo root.
 
-.PARAMETER Uninstall
-  Remove the plugin from every detected Revit year.
+.PARAMETER Client
+  MCP client wiring mode. Auto wires every known installed config it can find.
+  Explicit values wire only that client. none installs files without config edits.
 
-.PARAMETER Years
-  Optional explicit list of years (e.g. 2023,2025). Default: auto-detect via registry.
+.PARAMETER WireClient
+  Backward-compatible alias for older scripts. Overrides -Client when set.
 
 .EXAMPLE
-  pwsh scripts/install.ps1
-  pwsh scripts/install.ps1 -Uninstall
-  pwsh scripts/install.ps1 -Years 2023,2025 -WhatIf
+  pwsh .\install.ps1 -WhatIf
+  pwsh .\install.ps1
+  pwsh .\install.ps1 -Client codex
+  pwsh .\install.ps1 -Years 2024 -Client none
 #>
 [CmdletBinding(SupportsShouldProcess = $true)]
 param(
     [string]$SourceDir,
     [switch]$Uninstall,
     [int[]]$Years,
+    [ValidateSet('Auto', 'codex', 'opencode', 'claude', 'none')]
+    [string]$Client = 'Auto',
     [ValidateSet('opencode', 'codex')]
-    [string]$WireClient
+    [string]$WireClient,
+    [string]$ServerInstallRoot
 )
 
 $ErrorActionPreference = 'Stop'
 
+if ($WireClient) {
+    $Client = $WireClient
+}
+
 if (-not $SourceDir) {
-    $repoRoot = Split-Path -Parent $PSScriptRoot
-    $SourceDir = Join-Path $repoRoot 'build\plugin-zip'
+    $hasSetupLayout = (Test-Path (Join-Path $PSScriptRoot 'server')) -or (Test-Path (Join-Path $PSScriptRoot 'plugins'))
+    if ($hasSetupLayout) {
+        $SourceDir = $PSScriptRoot
+    } else {
+        $repoRoot = Split-Path -Parent $PSScriptRoot
+        $SourceDir = Join-Path $repoRoot 'build\plugin-zip'
+    }
+}
+
+if (Test-Path $SourceDir) {
+    $SourceDir = (Resolve-Path $SourceDir).Path
+}
+
+$pluginSourceDir = if (Test-Path (Join-Path $SourceDir 'plugins')) {
+    Join-Path $SourceDir 'plugins'
+} else {
+    $SourceDir
+}
+
+$serverSourceDir = if (Test-Path (Join-Path $SourceDir 'server')) {
+    Join-Path $SourceDir 'server'
+} else {
+    $null
+}
+
+$manifestPath = Join-Path $SourceDir 'manifest.json'
+$setupVersion = 'dev'
+if (Test-Path $manifestPath) {
+    try {
+        $manifest = Get-Content -Raw -Path $manifestPath | ConvertFrom-Json
+        if ($manifest.version) { $setupVersion = [string]$manifest.version }
+    } catch {
+        Write-Warning ("[setup] could not parse manifest.json: {0}" -f $_.Exception.Message)
+    }
+}
+
+if (-not $ServerInstallRoot) {
+    $ServerInstallRoot = Join-Path $env:LOCALAPPDATA ("Bimwright\rvt\server\{0}" -f $setupVersion)
 }
 
 function Get-InstalledRevitYears {
@@ -60,10 +105,21 @@ function Get-AddinsRoot([int]$year) {
     return Join-Path $env:APPDATA ("Autodesk\Revit\Addins\{0}" -f $year)
 }
 
-function Get-BimwrightYearTargets([int[]]$years) {
-    # Returns array of PSCustomObjects for plugin-supported years only (2022-2027).
-    # Years outside this range are silently skipped — callers may pass raw $Years
-    # which can include unsupported values (e.g. synthetic 2099 in edge tests).
+function Find-ServerSourceExe {
+    param([string]$ServerDir)
+    if (-not $ServerDir) { return $null }
+    $preferred = Join-Path $ServerDir 'bimwright-rvt.exe'
+    if (Test-Path $preferred) { return $preferred }
+    $fallback = Join-Path $ServerDir 'Bimwright.Rvt.Server.exe'
+    if (Test-Path $fallback) { return $fallback }
+    return $null
+}
+
+function Get-BimwrightYearTargets {
+    param(
+        [int[]]$years,
+        [string]$serverCommand
+    )
     $targets = @()
     foreach ($y in $years) {
         if ($y -lt 2022 -or $y -gt 2027) { continue }
@@ -72,19 +128,13 @@ function Get-BimwrightYearTargets([int[]]$years) {
             Year      = $y
             YearTwo   = $yt
             Target    = "R$yt"
-            ServerCmd = 'bimwright-rvt'
+            ServerCmd = $serverCommand
         }
     }
     return $targets
 }
 
 function Write-ConfigAtomic {
-    # Atomic config-file writer used by both wire and unwire helpers.
-    # Creates <path>.bimwright.bak, writes <path>.bimwright.tmp, then
-    # [System.IO.File]::Replace swaps in one NTFS transaction. On any failure
-    # during the temp-write/replace sequence, the stale .tmp is cleaned up
-    # so a failed run never leaves an orphaned .bimwright.tmp beside the config.
-    # Returns the backup path.
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)][string]$Path,
@@ -103,23 +153,92 @@ function Write-ConfigAtomic {
     return $bak
 }
 
+function ConvertTo-Hashtable {
+    param([Parameter(ValueFromPipeline = $true)][object]$InputObject)
+
+    process {
+        if ($null -eq $InputObject) { return $null }
+
+        if ($InputObject -is [System.Collections.IDictionary]) {
+            $hash = @{}
+            foreach ($key in $InputObject.Keys) {
+                $hash[$key] = ConvertTo-Hashtable $InputObject[$key]
+            }
+            return $hash
+        }
+
+        if ($InputObject -is [pscustomobject]) {
+            $hash = @{}
+            foreach ($property in $InputObject.PSObject.Properties) {
+                $hash[$property.Name] = ConvertTo-Hashtable $property.Value
+            }
+            return $hash
+        }
+
+        if (($InputObject -is [System.Collections.IEnumerable]) -and -not ($InputObject -is [string])) {
+            $items = @()
+            foreach ($item in $InputObject) {
+                $items += ConvertTo-Hashtable $item
+            }
+            return ,$items
+        }
+
+        return $InputObject
+    }
+}
+
+function Read-JsonHashtable {
+    param([string]$Path)
+    $raw = Get-Content -Raw -Path $Path
+    if ([string]::IsNullOrWhiteSpace($raw)) { return @{} }
+    return ConvertTo-Hashtable ($raw | ConvertFrom-Json)
+}
+
+function ConvertTo-TomlString {
+    param([string]$Value)
+    return '"' + $Value.Replace('\', '\\').Replace('"', '\"') + '"'
+}
+
+function Install-BimwrightServer {
+    param(
+        [string]$ServerDir,
+        [string]$InstallRoot
+    )
+    $sourceExe = Find-ServerSourceExe -ServerDir $ServerDir
+    if (-not $sourceExe) { return $null }
+
+    $plannedExe = Join-Path $InstallRoot (Split-Path -Leaf $sourceExe)
+    if ($PSCmdlet.ShouldProcess($InstallRoot, 'Install self-contained Bimwright RVT server')) {
+        if (Test-Path $InstallRoot) {
+            Remove-Item -Path $InstallRoot -Recurse -Force
+        }
+        New-Item -ItemType Directory -Path $InstallRoot -Force | Out-Null
+        Copy-Item -Path (Join-Path $ServerDir '*') -Destination $InstallRoot -Recurse -Force
+        Write-Host ("[server] installed -> {0}" -f $plannedExe)
+    } else {
+        Write-Host ("[server] preview install -> {0}" -f $plannedExe)
+    }
+    return $plannedExe
+}
+
 function Add-OpencodeEntry {
     [CmdletBinding(SupportsShouldProcess = $true)]
     param(
         [Parameter(Mandatory = $true)][string]$ConfigPath,
-        [Parameter(Mandatory = $true)][object[]]$Targets
+        [Parameter(Mandatory = $true)][object[]]$Targets,
+        [switch]$RequireExisting
     )
 
     if (-not (Test-Path $ConfigPath)) {
-        Write-Warning ("[opencode] config not found at {0} — skipping wire" -f $ConfigPath)
+        $msg = "[opencode] config not found at $ConfigPath"
+        if ($RequireExisting) { Write-Warning "$msg - skipping wire" } else { Write-Host "$msg - skipping" }
         return $false
     }
 
     try {
-        $raw = Get-Content -Raw -Path $ConfigPath
-        $cfg = $raw | ConvertFrom-Json -AsHashtable -Depth 50
+        $cfg = Read-JsonHashtable -Path $ConfigPath
     } catch {
-        Write-Warning ("[opencode] parse failed at {0}: {1} — skipping" -f $ConfigPath, $_.Exception.Message)
+        Write-Warning ("[opencode] parse failed at {0}: {1} - skipping" -f $ConfigPath, $_.Exception.Message)
         return $false
     }
 
@@ -162,11 +281,13 @@ function Add-CodexEntry {
     [CmdletBinding(SupportsShouldProcess = $true)]
     param(
         [Parameter(Mandatory = $true)][string]$ConfigPath,
-        [Parameter(Mandatory = $true)][object[]]$Targets
+        [Parameter(Mandatory = $true)][object[]]$Targets,
+        [switch]$RequireExisting
     )
 
     if (-not (Test-Path $ConfigPath)) {
-        Write-Warning ("[codex] config not found at {0} — skipping wire" -f $ConfigPath)
+        $msg = "[codex] config not found at $ConfigPath"
+        if ($RequireExisting) { Write-Warning "$msg - skipping wire" } else { Write-Host "$msg - skipping" }
         return $false
     }
 
@@ -178,10 +299,12 @@ function Add-CodexEntry {
     foreach ($t in $Targets) {
         $name = "bimwright-rvt-r$($t.YearTwo)"
         $headerLiteral = "[mcp_servers.$name]"
+        $commandValue = ConvertTo-TomlString -Value $t.ServerCmd
+        $targetValue = ConvertTo-TomlString -Value $t.Target
         $desiredBlock = @"
 $headerLiteral
-command = "$($t.ServerCmd)"
-args = ["--target", "$($t.Target)"]
+command = $commandValue
+args = ["--target", $targetValue]
 enabled = true
 "@
 
@@ -213,6 +336,80 @@ enabled = true
     return $true
 }
 
+function Add-ClaudeEntry {
+    [CmdletBinding(SupportsShouldProcess = $true)]
+    param(
+        [Parameter(Mandatory = $true)][string]$ConfigPath,
+        [Parameter(Mandatory = $true)][object[]]$Targets,
+        [switch]$RequireExisting
+    )
+
+    if (-not (Test-Path $ConfigPath)) {
+        $msg = "[claude] config not found at $ConfigPath"
+        if ($RequireExisting) { Write-Warning "$msg - skipping wire" } else { Write-Host "$msg - skipping" }
+        return $false
+    }
+
+    try {
+        $cfg = Read-JsonHashtable -Path $ConfigPath
+    } catch {
+        Write-Warning ("[claude] parse failed at {0}: {1} - skipping" -f $ConfigPath, $_.Exception.Message)
+        return $false
+    }
+
+    if (-not $cfg.ContainsKey('mcpServers')) { $cfg['mcpServers'] = @{} }
+
+    $desired = @{}
+    foreach ($t in $Targets) {
+        $name = "bimwright-rvt-r$($t.YearTwo)"
+        $desired[$name] = [ordered]@{
+            command = $t.ServerCmd
+            args = @('--target', $t.Target)
+        }
+    }
+
+    $changed = $false
+    foreach ($k in $desired.Keys) {
+        $existingJson = if ($cfg['mcpServers'].ContainsKey($k)) { ($cfg['mcpServers'][$k] | ConvertTo-Json -Depth 20 -Compress) } else { $null }
+        $newJson = $desired[$k] | ConvertTo-Json -Depth 20 -Compress
+        if ($existingJson -ne $newJson) {
+            $cfg['mcpServers'][$k] = $desired[$k]
+            $changed = $true
+        }
+    }
+
+    if (-not $changed) {
+        Write-Host ("[claude] no changes needed at {0}" -f $ConfigPath)
+        return $true
+    }
+
+    if ($PSCmdlet.ShouldProcess($ConfigPath, 'Upsert mcpServers.bimwright-rvt-* entries')) {
+        $content = $cfg | ConvertTo-Json -Depth 50
+        $bak = Write-ConfigAtomic -Path $ConfigPath -Content $content
+        Write-Host ("[claude] wired {0} entries -> {1} (backup: {2})" -f $desired.Count, $ConfigPath, $bak)
+    }
+    return $true
+}
+
+function Add-ClaudeEntries {
+    param(
+        [Parameter(Mandatory = $true)][object[]]$Targets,
+        [switch]$RequireExisting
+    )
+    $paths = @(
+        (Join-Path $env:USERPROFILE '.claude.json'),
+        (Join-Path $env:USERPROFILE '.claude\mcp.json'),
+        (Join-Path $env:APPDATA 'Claude\claude_desktop_config.json')
+    )
+    $handled = $false
+    foreach ($path in $paths) {
+        if (Add-ClaudeEntry -ConfigPath $path -Targets $Targets -RequireExisting:$RequireExisting) {
+            $handled = $true
+        }
+    }
+    return $handled
+}
+
 if (-not $Years -or $Years.Count -eq 0) {
     $Years = Get-InstalledRevitYears
     if ($Years.Count -eq 0) {
@@ -227,7 +424,7 @@ $skipped = @()
 $previewed = @()
 
 foreach ($year in $Years) {
-    $yearTwo = "{0:D2}" -f ($year - 2000)   # 2023 -> 23
+    $yearTwo = "{0:D2}" -f ($year - 2000)
     $addinFile = "Bimwright.R$yearTwo.addin"
     $addinsRoot = Get-AddinsRoot $year
     $pluginDir = Join-Path $addinsRoot 'Bimwright'
@@ -262,10 +459,9 @@ foreach ($year in $Years) {
         continue
     }
 
-    # Install path
-    $zip = Join-Path $SourceDir ("Bimwright.Rvt.Plugin.R{0}.zip" -f $yearTwo)
+    $zip = Join-Path $pluginSourceDir ("Bimwright.Rvt.Plugin.R{0}.zip" -f $yearTwo)
     if (-not (Test-Path $zip)) {
-        Write-Warning ("[R{0}] skipped — missing zip {1}" -f $yearTwo, $zip)
+        Write-Warning ("[R{0}] skipped - missing zip {1}" -f $yearTwo, $zip)
         $skipped += "R$yearTwo"
         continue
     }
@@ -285,8 +481,6 @@ foreach ($year in $Years) {
         New-Item -ItemType Directory -Path $pluginDir -Force | Out-Null
     }
 
-    # Peek into zip (works under -WhatIf too) to verify the addin manifest is present
-    # before we commit to the Expand/Move sequence.
     Add-Type -AssemblyName System.IO.Compression.FileSystem -ErrorAction SilentlyContinue
     $zipHasAddin = $false
     $archive = [System.IO.Compression.ZipFile]::OpenRead($zip)
@@ -296,7 +490,7 @@ foreach ($year in $Years) {
         $archive.Dispose()
     }
     if (-not $zipHasAddin) {
-        Write-Warning ("[R{0}] zip {1} does not contain {2} — skipping" -f $yearTwo, $zip, $addinFile)
+        Write-Warning ("[R{0}] zip {1} does not contain {2} - skipping" -f $yearTwo, $zip, $addinFile)
         $skipped += "R$yearTwo"
         continue
     }
@@ -305,7 +499,6 @@ foreach ($year in $Years) {
         Expand-Archive -Path $zip -DestinationPath $pluginDir -Force
     }
 
-    # .addin manifest must sit at addins root, not inside Bimwright\
     $extractedAddin = Join-Path $pluginDir $addinFile
     if ($PSCmdlet.ShouldProcess($addinPath, 'Move addin manifest to addins root')) {
         Move-Item -Path $extractedAddin -Destination $addinPath -Force
@@ -320,25 +513,43 @@ foreach ($year in $Years) {
     }
 }
 
-# --- Optional host wiring (v0.1.1) ---
-$wireStatus = $null
-if ($WireClient -and -not $Uninstall) {
-    $targets = Get-BimwrightYearTargets -years $Years
-    if ($targets.Count -eq 0) {
-        Write-Warning "[wire] no plugin-supported Revit years (2022-2027) detected — skipping $WireClient wire"
-    } else {
-        switch ($WireClient) {
-            'opencode' {
-                $cfgPath = Join-Path $env:USERPROFILE '.config\opencode\opencode.json'
-                $wireStatus = Add-OpencodeEntry -ConfigPath $cfgPath -Targets $targets
-            }
-            'codex' {
-                $cfgPath = Join-Path $env:USERPROFILE '.codex\config.toml'
-                $wireStatus = Add-CodexEntry -ConfigPath $cfgPath -Targets $targets
-            }
+$serverCommand = $null
+if (-not $Uninstall) {
+    $serverCommand = Install-BimwrightServer -ServerDir $serverSourceDir -InstallRoot $ServerInstallRoot
+    if (-not $serverCommand) {
+        if (Get-Command bimwright-rvt -ErrorAction SilentlyContinue) {
+            $serverCommand = 'bimwright-rvt'
         }
-        if (-not (Get-Command bimwright-rvt -ErrorAction SilentlyContinue)) {
-            Write-Warning "[wire] 'bimwright-rvt' not on PATH — run 'dotnet tool install -g Bimwright.Rvt.Server' before starting the host"
+    }
+}
+
+$wireStatus = @()
+if (-not $Uninstall -and $Client -ne 'none') {
+    $clientWasDefaultAuto = ($Client -eq 'Auto' -and -not $WireClient)
+    if (-not $serverCommand) {
+        if ($clientWasDefaultAuto) {
+            Write-Host "[wire] no setup server found and bimwright-rvt is not on PATH - skipping Auto wire"
+        } else {
+            Write-Warning "[wire] no server command available - install from setup ZIP or install Bimwright.Rvt.Server first"
+        }
+    } else {
+        $targets = Get-BimwrightYearTargets -years $Years -serverCommand $serverCommand
+        if ($targets.Count -eq 0) {
+            Write-Warning "[wire] no plugin-supported Revit years (2022-2027) detected - skipping wire"
+        } else {
+            $requireExisting = -not ($Client -eq 'Auto')
+            if ($Client -eq 'Auto' -or $Client -eq 'opencode') {
+                $ok = Add-OpencodeEntry -ConfigPath (Join-Path $env:USERPROFILE '.config\opencode\opencode.json') -Targets $targets -RequireExisting:$requireExisting
+                if ($ok) { $wireStatus += 'opencode' }
+            }
+            if ($Client -eq 'Auto' -or $Client -eq 'codex') {
+                $ok = Add-CodexEntry -ConfigPath (Join-Path $env:USERPROFILE '.codex\config.toml') -Targets $targets -RequireExisting:$requireExisting
+                if ($ok) { $wireStatus += 'codex' }
+            }
+            if ($Client -eq 'Auto' -or $Client -eq 'claude') {
+                $ok = Add-ClaudeEntries -Targets $targets -RequireExisting:$requireExisting
+                if ($ok) { $wireStatus += 'claude' }
+            }
         }
     }
 }
@@ -346,6 +557,7 @@ if ($WireClient -and -not $Uninstall) {
 Write-Host ""
 Write-Host "=== install.ps1 summary ==="
 Write-Host ("Mode   : {0}" -f ($(if ($Uninstall) { 'Uninstall' } else { 'Install' })))
+Write-Host ("Source : {0}" -f $SourceDir)
 Write-Host ("Years  : {0}" -f ($Years -join ', '))
 Write-Host ("Handled: {0}" -f ($(if ($handled.Count -gt 0) { $handled -join ', ' } else { 'none' })))
 if ($previewed.Count -gt 0) {
@@ -354,6 +566,10 @@ if ($previewed.Count -gt 0) {
 if ($skipped.Count -gt 0) {
     Write-Host ("Skipped: {0}" -f ($skipped -join ', '))
 }
-if ($null -ne $wireStatus) {
-    Write-Host ("WireClient: {0} ({1})" -f $WireClient, ($(if ($wireStatus) { 'ok' } else { 'skipped' })))
+if ($serverCommand) {
+    Write-Host ("Server : {0}" -f $serverCommand)
+}
+if ($Client -ne 'none') {
+    Write-Host ("Client : {0}" -f $Client)
+    Write-Host ("Wired  : {0}" -f ($(if ($wireStatus.Count -gt 0) { $wireStatus -join ', ' } else { 'none' })))
 }

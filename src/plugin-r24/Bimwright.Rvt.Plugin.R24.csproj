@@ -34,7 +34,7 @@
     <Compile Include="..\shared\**\*.cs" LinkBase="Shared" />
   </ItemGroup>
 
-  <Target Name="Deploy" AfterTargets="Build" Condition="'$(Configuration)' != ''">
+  <Target Name="Deploy" AfterTargets="Build" Condition="'$(Configuration)' != '' and '$(BimwrightSkipDeploy)' != 'true'">
     <PropertyGroup>
       <DeployDir>$(APPDATA)\Autodesk\Revit\Addins\2024\Bimwright\</DeployDir>
     </PropertyGroup>

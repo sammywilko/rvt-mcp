@@ -54,7 +54,7 @@ jobs:
         run: dotnet restore ${{ matrix.project }}
 
       - name: Build
-        run: dotnet build ${{ matrix.project }} -c Release --no-restore
+        run: dotnet build ${{ matrix.project }} -c Release --no-restore /p:BimwrightSkipDeploy=true
 
       - name: Upload plugin artifact
         uses: actions/upload-artifact@v4
@@ -88,6 +88,31 @@ jobs:
         with:
           name: bimwright-server-nupkg
           path: artifacts/*.nupkg
+          retention-days: 14
+
+  client-setup:
+    name: client-setup-zip
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET (8 + 10 preview)
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            10.0.x
+          dotnet-quality: preview
+
+      - name: Build client setup ZIP
+        shell: pwsh
+        run: pwsh scripts/package-client-setup.ps1 -Config Release
+
+      - name: Upload client setup ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: bimwright-rvt-client-setup
+          path: build/client-setup/Bimwright.Rvt.Setup-*-win-x64.zip
           retention-days: 14
 
   tests:

@@ -19,6 +19,22 @@
 
 ---
 
+## Client Quick Install (Recommended)
+
+For a Revit user machine, use the setup ZIP from GitHub Releases. It includes the self-contained MCP server and Revit plugins, so the client machine does **not** need the .NET SDK, NuGet global tools, this source repo, or a local build.
+
+```powershell
+# Download and extract Bimwright.Rvt.Setup-v<version>-win-x64.zip from Releases.
+powershell -ExecutionPolicy Bypass -File .\install.ps1 -WhatIf
+powershell -ExecutionPolicy Bypass -File .\install.ps1
+```
+
+The installer detects Revit 2022-2027, installs only the matching plugin(s), copies the server under `%LOCALAPPDATA%\Bimwright\rvt\server\<version>\`, and wires installed MCP clients with absolute paths. Use `-Client codex`, `-Client opencode`, `-Client claude`, or `-Client none` to override auto-detection.
+
+`dwg-mcp` is not part of this RVT setup package; install it separately when it has its own client-ready release.
+
+---
+
 ## Revit Automation Should Not Stop At "I Don't Code"
 
 Before AI agents, many BIM users already wanted the same thing: make Revit faster, remove repetitive clicks, and shape the software around the way they actually work.
@@ -169,7 +185,7 @@ Treat it like serious open-source infrastructure: test it on your own environmen
 rvt-mcp/
 ├── src/
 │   ├── Bimwright.Rvt.sln         # Solution (server + 6 plugin shells)
-│   ├── server/                   # Bimwright.Rvt.Server - .NET 8 global tool, stdio MCP
+│   ├── server/                   # Bimwright.Rvt.Server - stdio MCP server
 │   ├── shared/                   # Source glob shared by every plugin shell
 │   │   ├── Handlers/             # One file per Revit command handler
 │   │   ├── Commands/             # Revit ribbon commands
@@ -199,66 +215,28 @@ Six plugin shells compile from the same `src/shared/` glob. Year-specific `#if` 
 
 ## Install
 
-### 1. Server - .NET tool
+### Client setup ZIP
 
-```bash
-dotnet tool install -g Bimwright.Rvt.Server
-bimwright-rvt --help
-```
-
-Requires .NET 8 SDK on the machine that runs the MCP client. If the tool is already installed, run `dotnet tool update -g Bimwright.Rvt.Server` instead.
-
-### 2. Plugin - Revit add-in
-
-Download the plugin installer bundle from [GitHub Releases](https://github.com/bimwright/rvt-mcp/releases/latest). The bundle is named `bimwright-rvt-plugin-<tag>.zip` and contains `install.ps1`, `uninstall-all.ps1`, and the six per-Revit plugin ZIPs.
+Download `Bimwright.Rvt.Setup-v<version>-win-x64.zip` from [GitHub Releases](https://github.com/bimwright/rvt-mcp/releases/latest), extract it, then run:
 
 ```powershell
-$tag = (Invoke-RestMethod https://api.github.com/repos/bimwright/rvt-mcp/releases/latest).tag_name
-$zip = "$env:TEMP\bimwright-rvt-plugin-$tag.zip"
-$dir = "$env:TEMP\bimwright-rvt-plugin-$tag"
-Invoke-WebRequest "https://github.com/bimwright/rvt-mcp/releases/download/$tag/bimwright-rvt-plugin-$tag.zip" -OutFile $zip
-Expand-Archive $zip -DestinationPath $dir -Force
-Set-Location $dir
-
-pwsh .\install.ps1 -SourceDir . -WhatIf    # preview without changes
-pwsh .\install.ps1 -SourceDir .            # detects every installed Revit year
-pwsh .\install.ps1 -Uninstall              # plugin-only removal
+powershell -ExecutionPolicy Bypass -File .\install.ps1 -WhatIf   # preview files and config edits
+powershell -ExecutionPolicy Bypass -File .\install.ps1           # install server, plugins, and detected client config entries
 ```
 
-The script detects installed Revit versions via `HKLM:\SOFTWARE\Autodesk\Revit\` and copies the matching plugin into `%APPDATA%\Autodesk\Revit\Addins\<year>\Bimwright\`.
-
-### 3. Wire up your MCP client
-
-Add one entry per Revit year to your client's MCP config:
-
-```json
-{
-  "mcpServers": {
-    "bimwright-rvt-r23": {
-      "command": "bimwright-rvt",
-      "args": ["--target", "R23"]
-    }
-  }
-}
-```
-
-Drop the `--target` flag and use one `bimwright-rvt` entry if you want auto-detect through discovery files in `%LOCALAPPDATA%\Bimwright\`.
-
-### Scripted wire for OpenCode / Codex
+Useful installer options:
 
 ```powershell
-pwsh .\install.ps1 -SourceDir . -WireClient opencode -WhatIf
-pwsh .\install.ps1 -SourceDir . -WireClient opencode
-
-pwsh .\install.ps1 -SourceDir . -WireClient codex -WhatIf
-pwsh .\install.ps1 -SourceDir . -WireClient codex
+powershell -ExecutionPolicy Bypass -File .\install.ps1 -Client codex      # wire only Codex
+powershell -ExecutionPolicy Bypass -File .\install.ps1 -Client opencode   # wire only OpenCode
+powershell -ExecutionPolicy Bypass -File .\install.ps1 -Client claude     # wire Claude Code/Desktop configs if present
+powershell -ExecutionPolicy Bypass -File .\install.ps1 -Client none       # install files without MCP client config edits
+powershell -ExecutionPolicy Bypass -File .\install.ps1 -Years 2024        # force a Revit year if registry detection is unavailable
 ```
 
-The script preserves non-bimwright entries and backs up the original config as `<file>.bimwright.bak` before writing.
+The setup ZIP contains a self-contained `bimwright-rvt.exe`, so the client machine does not need `.NET 8 SDK`, `dotnet tool install`, or this repository. Config entries use the absolute installed path, so `%USERPROFILE%\.dotnet\tools` and PATH are not involved.
 
-Claude Code users can also paste the JSON snippet into a project `.mcp.json`. See [AGENTS.md](AGENTS.md) for exact paths and schemas for Claude Code, Claude Desktop, Cursor, Cline, VS Code Copilot, OpenCode, Codex, Gemini CLI, and Antigravity.
-
-### 4. Verify
+### Verify
 
 1. Open Revit 2022-2027 and a model.
 2. Use the BIMwright ribbon panel to start/toggle the MCP plugin.
@@ -273,18 +251,27 @@ Expected response shape:
 
 Do not claim an install is complete until the MCP client can list tools and call Revit successfully.
 
-### Uninstall everything
+### Uninstall
 
-To remove plugin, .NET global tool, host-config entries, discovery files, logs, and ToolBaker cache in one pass:
+To remove plugin, self-contained server, legacy .NET global tool if present, host-config entries, discovery files, logs, and ToolBaker cache in one pass:
 
 ```powershell
-pwsh .\uninstall-all.ps1 -WhatIf
-pwsh .\uninstall-all.ps1
-pwsh .\uninstall-all.ps1 -Yes
-pwsh .\uninstall-all.ps1 -KeepLogs
+powershell -ExecutionPolicy Bypass -File .\uninstall.ps1 -WhatIf
+powershell -ExecutionPolicy Bypass -File .\uninstall.ps1 -Yes
 ```
 
-`install.ps1 -Uninstall` remains the narrow plugin-only uninstall.
+The setup ZIP also includes `uninstall-all.ps1` as an alias for the same full sweep.
+
+### Developer / legacy install
+
+Developers can still install the server as a NuGet .NET tool and use the plugin-only bundle:
+
+```powershell
+dotnet tool install -g Bimwright.Rvt.Server
+powershell -ExecutionPolicy Bypass -File .\install.ps1 -SourceDir . -Client none
+```
+
+This path is for development and backward compatibility. Client machines should use the setup ZIP instead.
 
 ---
 
@@ -294,8 +281,8 @@ pwsh .\uninstall-all.ps1 -KeepLogs
 |--------|--------|-------|
 | Claude Code CLI | documented | project `.mcp.json` or global `~/.claude.json` |
 | Claude Desktop | documented | `%APPDATA%\Claude\claude_desktop_config.json` |
-| OpenCode | scripted | `install.ps1 -WireClient opencode` |
-| Codex | scripted | `install.ps1 -WireClient codex` |
+| OpenCode | scripted | `install.ps1 -Client opencode` |
+| Codex | scripted | `install.ps1 -Client codex` |
 | Cursor | documented | project or user `mcp.json` |
 | Cline (VS Code) | documented | Cline MCP settings JSON |
 | VS Code Copilot | documented | native `servers` schema with `type: stdio` |

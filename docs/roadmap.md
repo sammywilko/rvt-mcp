@@ -9,7 +9,7 @@ Rough direction, not a commitment. Dates are intent; scope is firmer.
 - `batch_execute` with Revit `TransactionGroup` semantics.
 - ToolBaker accepted-tool indirection via `list_baked_tools` / `run_baked_tool`, with adaptive suggestions default off.
 - Security: loopback default, token auth, strict schema validation, path-leak mask.
-- Packaging: `dotnet tool` + per-year plugin ZIPs + `install.ps1`.
+- Packaging: client setup ZIP with self-contained server + per-year plugin ZIPs; NuGet `dotnet tool` remains for developer/legacy install.
 - CI: matrix R22–R27 + server pack + xUnit.
 
 Compile gate is 6/6; unit coverage is pure .NET; runtime smoke still needs per-Revit verification before a broad release.

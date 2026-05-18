@@ -44,10 +44,10 @@ Goal: lock test parameters, create the finding-log file, confirm the fresh machi
 
 Goal: follow the public README instructions exactly — no prior knowledge, no shortcuts, no "I know this part" skips. Log every friction point verbatim.
 
-- [ ] F2-001: Install .NET SDK per README (version required for running the MCP server). Log: was the required SDK version clearly specified? Did the link work? Install time. Any PATH/env issues.
-- [ ] F2-002: Install the Bimwright plugin for the primary Revit version — following README install method (expected: download plugin bundle from the Release page, run `install.ps1 -SourceDir . -WhatIf`, then run without `-WhatIf` after reviewing the preview). Log: was the path clear? Did the ZIP contain everything needed? Any DLL loading errors on next Revit launch.
-- [ ] F2-003: Install the Bimwright MCP server — following README (expected: NuGet global tool install `dotnet tool install -g Bimwright.Rvt.Server`, or direct from Release assets). Log: did the command work first-try? Any NuGet source issues. Install time.
-- [ ] F2-004: Install / configure the MCP client (Claude Code CLI) to register the Bimwright server. Log: where does the client config file live? Was the `.mcp.json.example` snippet in the README copy-pasteable? Any token/auth setup needed on first run.
+- [ ] F2-001: Confirm the machine does **not** need developer tooling. Log whether `.NET SDK`, repo clone, NuGet global tool, and source build are absent; absence should not block client install.
+- [ ] F2-002: Download and extract `Bimwright.Rvt.Setup-v<version>-win-x64.zip` from the Release page. Log: was the asset obvious, did the ZIP contain `install.ps1`, `uninstall.ps1`, `server/`, `plugins/`, and `manifest.json`, and how long did download/extract take.
+- [ ] F2-003: Run `install.ps1 -WhatIf`, then `install.ps1` from the setup ZIP. Log: detected Revit years, server install path under `%LOCALAPPDATA%\Bimwright\rvt\server\`, plugin install path, config backup path(s), and any warning.
+- [ ] F2-004: Confirm the MCP client was wired without hand editing. Log the exact config entry and verify the command uses an absolute `bimwright-rvt.exe` path, not `dotnet`, `bimwright-rvt` on PATH, or a repo build path.
 - [ ] F2-005: Open Revit, verify the Bimwright ribbon panel appears without error dialog, verify the "Start MCP" button is clickable and the server starts. Log: any startup error dialogs (screenshots). Discovery file presence at `%LOCALAPPDATA%\Bimwright\` — name + content.
 - [ ] F2-006: Total time from first-click on README to "server running + ribbon visible". Friction-point summary (ranked by severity) appended to the finding-log §F2.
 
@@ -61,7 +61,7 @@ Goal: prove the end-to-end path works, not just that the components installed.
 
 ## Phase F4 — Sample other target-framework families (3 tasks)
 
-Goal: verify .NET Framework 4.8 / net8.0 / net10.0 all work on the fresh machine. Only run if F2 + F3 pass for the primary version.
+Goal: verify the setup ZIP installs the .NET Framework 4.8 / net8.0 / net10.0 Revit plugin families without developer tooling. Only run if F2 + F3 pass for the primary version.
 
 Each task repeats F2-002 + F2-005 + F3-001 + F3-002 for the named version. Document only *differences* from the primary-version log to keep the finding file lean.
 

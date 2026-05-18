@@ -27,7 +27,7 @@
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.8.0" />
   </ItemGroup>
 
-  <Target Name="Deploy" AfterTargets="Build" Condition="'$(Configuration)' != ''">
+  <Target Name="Deploy" AfterTargets="Build" Condition="'$(Configuration)' != '' and '$(BimwrightSkipDeploy)' != 'true'">
     <PropertyGroup>
       <DeployDir>$(APPDATA)\Autodesk\Revit\Addins\2027\Bimwright\</DeployDir>
     </PropertyGroup>

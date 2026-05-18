@@ -28,7 +28,7 @@
     <PackageReference Include="System.Drawing.Common" Version="8.0.0" />
   </ItemGroup>
 
-  <Target Name="Deploy" AfterTargets="Build" Condition="'$(Configuration)' != ''">
+  <Target Name="Deploy" AfterTargets="Build" Condition="'$(Configuration)' != '' and '$(BimwrightSkipDeploy)' != 'true'">
     <PropertyGroup>
       <DeployDir>$(APPDATA)\Autodesk\Revit\Addins\2026\Bimwright\</DeployDir>
     </PropertyGroup>

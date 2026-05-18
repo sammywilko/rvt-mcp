@@ -7,15 +7,15 @@ This file is machine-readable install instructions for AI coding agents (Claude 
 
 **What you can do:**
 
-- Install the server (.NET global tool).
-- Deploy the plugin into `%APPDATA%\Autodesk\Revit\Addins\<year>\` for every installed Revit year.
-- Wire any of the 9 supported MCP hosts listed below.
+- Install the client setup ZIP from GitHub Releases.
+- Deploy the bundled plugin into `%APPDATA%\Autodesk\Revit\Addins\<year>\` for every installed Revit year.
+- Wire supported MCP hosts with the bundled self-contained server executable.
 - Verify the handshake and roll back on failure.
 
 **What you cannot do:**
 
 - Install Revit, manage Revit licensing, or launch Revit for the first time. If Revit 2022–2027 is not installed, stop and tell the user.
-- Install .NET 8 SDK or PowerShell — prompt the user to install these from the official sources.
+- Install .NET 8 SDK, clone the repo, restore NuGet packages, or build source for a normal client install. If the client setup ZIP is unavailable, stop and report that the client installer is not available.
 
 ---
 
@@ -24,13 +24,13 @@ This file is machine-readable install instructions for AI coding agents (Claude 
 **Read these before touching anything. They exist so Bimwright stays predictable, auditable, and reversible.**
 
 1. **Preview every change.** Use `-WhatIf`, `--dry-run`, or a printed diff before any write. Tell the user the exact file path and the exact change.
-2. **Three explicit approval gates — do not collapse without the user saying so:**
-   - Before `dotnet tool install -g Bimwright.Rvt.Server`.
+2. **Use the client setup ZIP for client machines.** Do not fall back to `dotnet tool install`, source build, or repo clone unless the user explicitly asks for developer installation.
+3. **Two explicit approval gates — do not collapse without the user saying so:**
    - Before running `install.ps1` without `-WhatIf`.
-   - Before editing any MCP host config file.
-3. **Never bypass the Revit undo stack at runtime.** Bimwright's design guarantee is that every edit is reviewable and reversible. Don't advise users to work around transaction wrapping or disable `batch_execute` safety.
-4. **On any failure, offer rollback.** Config edits are auto-backed up to `<file>.bimwright.bak`. The full stack comes off with the bundled `uninstall-all.ps1 -Yes`.
-5. **Verify before claiming done.** After wiring, run `tools/list` in the host and confirm at least one `bimwright-rvt-*` entry responds, then call `get_current_view_info` with no args.
+   - Before editing any MCP host config file outside the setup installer's own preview/apply flow.
+4. **Never bypass the Revit undo stack at runtime.** Bimwright's design guarantee is that every edit is reviewable and reversible. Don't advise users to work around transaction wrapping or disable `batch_execute` safety.
+5. **On any failure, offer rollback.** Config edits are auto-backed up to `<file>.bimwright.bak`. The full stack comes off with the bundled `uninstall.ps1 -Yes`.
+6. **Verify before claiming done.** After wiring, run `tools/list` in the host and confirm at least one `bimwright-rvt-*` entry responds, then call `get_current_view_info` with no args.
 
 If the user explicitly says "skip the prompts, just install" — still do gate 1 (preview) and gate 5 (verify), but collapse gates 2 and 3 into a single upfront approval. **Never silently skip preview or verify.**
 
@@ -46,49 +46,38 @@ Run accepted tools through run_baked_tool name=<tool_name>.
 
 | Requirement | How to check (PowerShell) | If missing |
 |---|---|---|
-| Windows | `$IsWindows` (pwsh 7+) or `[System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform('Windows')` | Stop — Revit is Windows-only. |
+| Windows | `[System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform('Windows')` | Stop — Revit is Windows-only. |
 | Revit 2022–2027 | `Get-ChildItem 'HKLM:\SOFTWARE\Autodesk\Revit\' -ErrorAction SilentlyContinue` | Tell the user to install Revit. You cannot. |
-| .NET 8 SDK | `dotnet --list-sdks \| Select-String '^8\.'` | Prompt: <https://dotnet.microsoft.com/download/dotnet/8.0>. |
 | PowerShell ≥5.1 | `$PSVersionTable.PSVersion` | Prompt: <https://aka.ms/powershell>. |
 
 If Revit is not running when the user first tries a tool call, that's fine — the server only needs Revit alive at tool-call time, not at install time.
 
 ---
 
-## Step 1 — Install the server (.NET global tool)
-
-```powershell
-dotnet tool install -g Bimwright.Rvt.Server
-bimwright-rvt --help
-```
-
-**Gate A.** This writes to `%USERPROFILE%\.dotnet\tools`. Preview the command to the user and get approval before running.
-
-If the tool is already installed, use `dotnet tool update -g Bimwright.Rvt.Server` instead.
-
----
-
-## Step 2 — Install the plugin (per-Revit-year add-in)
-
-Download and extract the latest release:
+## Step 1 — Download the client setup ZIP
 
 ```powershell
 $tag = (Invoke-RestMethod https://api.github.com/repos/bimwright/rvt-mcp/releases/latest).tag_name
-$zip = "$env:TEMP\bimwright-$tag.zip"
-Invoke-WebRequest "https://github.com/bimwright/rvt-mcp/releases/download/$tag/bimwright-rvt-plugin-$tag.zip" -OutFile $zip
-Expand-Archive $zip -DestinationPath "$env:TEMP\bimwright-$tag" -Force
+$zip = "$env:TEMP\Bimwright.Rvt.Setup-$tag-win-x64.zip"
+$dir = "$env:TEMP\Bimwright.Rvt.Setup-$tag-win-x64"
+Invoke-WebRequest "https://github.com/bimwright/rvt-mcp/releases/download/$tag/Bimwright.Rvt.Setup-$tag-win-x64.zip" -OutFile $zip
+Expand-Archive $zip -DestinationPath $dir -Force
 ```
 
-Preview, then install:
+If the setup asset is not present on the release, stop. Do not clone, build, or install the .NET SDK for a client machine.
+
+---
+
+## Step 2 — Preview, then install
 
 ```powershell
-pwsh "$env:TEMP\bimwright-$tag\install.ps1" -SourceDir "$env:TEMP\bimwright-$tag" -WhatIf   # show diff — required
-pwsh "$env:TEMP\bimwright-$tag\install.ps1" -SourceDir "$env:TEMP\bimwright-$tag"           # apply after approval
+powershell -ExecutionPolicy Bypass -File "$dir\install.ps1" -WhatIf
+powershell -ExecutionPolicy Bypass -File "$dir\install.ps1"
 ```
 
-**Gate B.** `install.ps1` detects installed Revit years via `HKLM:\SOFTWARE\Autodesk\Revit\` and copies matching plugin DLLs into `%APPDATA%\Autodesk\Revit\Addins\<year>\Bimwright\`. Show the `-WhatIf` output and get approval before running without the flag.
+The installer detects Revit years, installs only matching plugin ZIPs, copies the bundled server to `%LOCALAPPDATA%\Bimwright\rvt\server\<version>\`, and wires detected Codex/OpenCode/Claude configs with an absolute server path.
 
-The release asset file name may change. If the download 404s, fetch the release page and look for the plugin ZIP asset.
+Use `-Client codex`, `-Client opencode`, `-Client claude`, or `-Client none` when the user wants a specific config behavior.
 
 ---
 
@@ -109,16 +98,18 @@ Most hosts use `{ "mcpServers": { ... } }` with this per-server shape:
 {
   "mcpServers": {
     "bimwright-rvt-r24": {
-      "command": "bimwright-rvt",
+      "command": "%LOCALAPPDATA%\\Bimwright\\rvt\\server\\<version>\\bimwright-rvt.exe",
       "args": ["--target", "R24"]
     }
   }
 }
 ```
 
+When hand-editing, expand `%LOCALAPPDATA%` to the real absolute path. Do not leave environment-variable placeholders in the config unless the host explicitly supports expansion.
+
 Emit one entry per installed Revit year (`r22`, `r23`, `r24`, `r25`, `r26`, `r27`). Preserve every non-bimwright entry already in the config — merge, don't replace.
 
-Drop the `--target` flag for a single auto-detecting entry (`bimwright-rvt`) if the user runs only one Revit version.
+Prefer the installer-generated absolute-path entries. Drop the `--target` flag only for deliberate advanced auto-detect setups.
 
 ---
 
@@ -134,7 +125,7 @@ Drop the `--target` flag for a single auto-detecting entry (`bimwright-rvt`) if 
 **Scripted alternative:**
 
 ```powershell
-claude mcp add bimwright-rvt-r24 bimwright-rvt -- --target R24
+claude mcp add bimwright-rvt-r24 "%LOCALAPPDATA%\Bimwright\rvt\server\<version>\bimwright-rvt.exe" -- --target R24
 ```
 
 Notes:
@@ -188,7 +179,7 @@ Notes:
   "servers": {
     "bimwright-rvt-r24": {
       "type": "stdio",
-      "command": "bimwright-rvt",
+      "command": "%LOCALAPPDATA%\\Bimwright\\rvt\\server\\<version>\\bimwright-rvt.exe",
       "args": ["--target", "R24"]
     }
   }
@@ -207,8 +198,8 @@ Notes:
 ### 3.f — OpenCode (scripted)
 
 ```powershell
-pwsh "$env:TEMP\bimwright-$tag\install.ps1" -SourceDir "$env:TEMP\bimwright-$tag" -WireClient opencode -WhatIf   # preview
-pwsh "$env:TEMP\bimwright-$tag\install.ps1" -SourceDir "$env:TEMP\bimwright-$tag" -WireClient opencode           # apply
+powershell -ExecutionPolicy Bypass -File "$dir\install.ps1" -Client opencode -WhatIf   # preview
+powershell -ExecutionPolicy Bypass -File "$dir\install.ps1" -Client opencode           # apply
 ```
 
 Writes to `%USERPROFILE%\.config\opencode\opencode.json`. Preserves existing entries and backs up to `opencode.json.bimwright.bak`.
@@ -220,8 +211,8 @@ Prefer the scripted path over hand-editing. If the config file doesn't exist (ho
 ### 3.g — Codex (scripted)
 
 ```powershell
-pwsh "$env:TEMP\bimwright-$tag\install.ps1" -SourceDir "$env:TEMP\bimwright-$tag" -WireClient codex -WhatIf
-pwsh "$env:TEMP\bimwright-$tag\install.ps1" -SourceDir "$env:TEMP\bimwright-$tag" -WireClient codex
+powershell -ExecutionPolicy Bypass -File "$dir\install.ps1" -Client codex -WhatIf
+powershell -ExecutionPolicy Bypass -File "$dir\install.ps1" -Client codex
 ```
 
 Writes to `%USERPROFILE%\.codex\config.toml`. Preserves existing entries and backs up to `config.toml.bimwright.bak`.
@@ -235,7 +226,7 @@ Codex uses TOML, not JSON — do not hand-edit unless you know TOML-array-of-tab
 **Scripted (preferred):**
 
 ```powershell
-gemini mcp add bimwright-rvt-r24 bimwright-rvt -- --target R24
+gemini mcp add bimwright-rvt-r24 "%LOCALAPPDATA%\Bimwright\rvt\server\<version>\bimwright-rvt.exe" -- --target R24
 ```
 
 **Hand-edit fallback — config path:** `%USERPROFILE%\.gemini\settings.json`.
@@ -279,19 +270,19 @@ If any of these fail, **do not claim the install succeeded.** Go to rollback.
 ### Full uninstall (everything Bimwright touched)
 
 ```powershell
-pwsh "$env:TEMP\bimwright-$tag\uninstall-all.ps1" -WhatIf    # preview what comes off
-pwsh "$env:TEMP\bimwright-$tag\uninstall-all.ps1" -Yes       # apply without prompt
-pwsh "$env:TEMP\bimwright-$tag\uninstall-all.ps1" -KeepLogs  # preserve logs
+powershell -ExecutionPolicy Bypass -File "$dir\uninstall.ps1" -WhatIf    # preview what comes off
+powershell -ExecutionPolicy Bypass -File "$dir\uninstall.ps1" -Yes       # apply without prompt
+powershell -ExecutionPolicy Bypass -File "$dir\uninstall.ps1" -KeepLogs  # preserve logs
 ```
 
-Removes: .NET global tool, plugin DLLs for every Revit year, discovery files at `%LOCALAPPDATA%\Bimwright\`, ToolBaker cache, and bimwright entries in scanned host configs.
+Removes: the self-contained server, legacy .NET global tool if present, plugin DLLs for every Revit year, discovery files at `%LOCALAPPDATA%\Bimwright\`, ToolBaker cache, and bimwright entries in scanned host configs.
 
-**Scope caveat.** `uninstall-all.ps1` scans known host configs (OpenCode, Codex, Claude Desktop, Claude Code user-level) but does not scan project-level `.mcp.json` files. If you edited a project `.mcp.json`, restore it from `.bimwright.bak` manually or remove the entries by hand.
+**Scope caveat.** `uninstall.ps1` scans known host configs (OpenCode, Codex, Claude Desktop, Claude Code user-level) but does not scan project-level `.mcp.json` files. If you edited a project `.mcp.json`, restore it from `.bimwright.bak` manually or remove the entries by hand.
 
 ### Partial rollback
 
 ```powershell
-pwsh "$env:TEMP\bimwright-$tag\install.ps1" -Uninstall   # plugin only (keeps server + host configs)
+powershell -ExecutionPolicy Bypass -File "$dir\install.ps1" -Uninstall   # plugin only (keeps server + host configs)
 ```
 
 ### Restore a single host config from backup
@@ -306,7 +297,7 @@ Copy-Item 'path\to\config.ext.bimwright.bak' 'path\to\config.ext' -Force
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| `bimwright-rvt: command not found` | `dotnet tool install` didn't put tools on PATH. | Add `%USERPROFILE%\.dotnet\tools` to PATH, restart shell. |
+| `bimwright-rvt.exe` path not found | Setup ZIP was moved or install did not complete. | Re-run `install.ps1 -WhatIf`, then `install.ps1`; restore config from `.bimwright.bak` if needed. |
 | `tools/list` returns 0 entries from bimwright | Host not reloaded, or Revit not running. | Restart host. Launch Revit. Retry. |
 | `install.ps1` fails with "Revit running" | Revit has plugin DLLs locked. | Close every Revit window, retry. |
 | Host config parse error after edit | Agent wrote invalid JSON/TOML. | Restore from `.bimwright.bak`, retry with a diff preview. |

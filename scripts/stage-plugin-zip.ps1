@@ -23,10 +23,14 @@
 param(
     [ValidateSet('Debug', 'Release')]
     [string]$Config = 'Release',
-    [string]$RepoRoot = (Split-Path -Parent $PSScriptRoot)
+    [string]$RepoRoot
 )
 
 $ErrorActionPreference = 'Stop'
+
+if (-not $RepoRoot) {
+    $RepoRoot = Split-Path -Parent $PSScriptRoot
+}
 
 # year-number → TFM mapping (must match plugin-rNN/*.csproj TargetFramework)
 $shells = @(

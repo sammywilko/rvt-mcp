@@ -1,18 +1,19 @@
 <#
 .SYNOPSIS
-  Remove every Bimwright artifact from this machine (plugin + server tool + host configs + discovery + logs).
+  Remove every Bimwright artifact from this machine (plugin + server + host configs + discovery + logs).
 
 .DESCRIPTION
-  Runs a 5-step sweep:
+  Runs a 4-step sweep:
     1. Plugin + .addin for every detected Revit year (delegates to install.ps1 -Uninstall).
-    2. .NET global tool Bimwright.Rvt.Server.
+    2. Legacy .NET global tool Bimwright.Rvt.Server, if present.
     3. MCP host config entries matching bimwright-rvt-* in:
        - $env:USERPROFILE\.config\opencode\opencode.json
        - $env:USERPROFILE\.codex\config.toml
        - $env:USERPROFILE\.claude.json (global, if present)
+       - $env:APPDATA\Claude\claude_desktop_config.json (if present)
        Project-level .mcp.json files are NOT scanned — emits a reminder notice.
-    4. Discovery files in %LOCALAPPDATA%\Bimwright\ (except logs\ when -KeepLogs).
-    5. ToolBaker cache (contained inside step 4 path; reported separately).
+    4. Self-contained server, discovery files, and ToolBaker cache in
+       %LOCALAPPDATA%\Bimwright\ (except logs\ when -KeepLogs).
 
   Each step is independently skippable if the target does not exist. Failure mid-step
   does not abort the chain; exit code 1 is returned at the end if any step failed.
@@ -64,6 +65,47 @@ function Write-ConfigAtomic {
         throw
     }
     return $bak
+}
+
+function ConvertTo-Hashtable {
+    param([Parameter(ValueFromPipeline = $true)][object]$InputObject)
+
+    process {
+        if ($null -eq $InputObject) { return $null }
+
+        if ($InputObject -is [System.Collections.IDictionary]) {
+            $hash = @{}
+            foreach ($key in $InputObject.Keys) {
+                $hash[$key] = ConvertTo-Hashtable $InputObject[$key]
+            }
+            return $hash
+        }
+
+        if ($InputObject -is [pscustomobject]) {
+            $hash = @{}
+            foreach ($property in $InputObject.PSObject.Properties) {
+                $hash[$property.Name] = ConvertTo-Hashtable $property.Value
+            }
+            return $hash
+        }
+
+        if (($InputObject -is [System.Collections.IEnumerable]) -and -not ($InputObject -is [string])) {
+            $items = @()
+            foreach ($item in $InputObject) {
+                $items += ConvertTo-Hashtable $item
+            }
+            return ,$items
+        }
+
+        return $InputObject
+    }
+}
+
+function Read-JsonHashtable {
+    param([string]$Path)
+    $raw = Get-Content -Raw -Path $Path
+    if ([string]::IsNullOrWhiteSpace($raw)) { return @{} }
+    return ConvertTo-Hashtable ($raw | ConvertFrom-Json)
 }
 
 function Confirm-Sweep {
@@ -163,7 +205,8 @@ function Invoke-Step4-Discovery {
             }
         }
         $keptMsg = if ($preserved.Count -gt 0) { ($preserved -join ', ') } else { '(nothing to keep)' }
-        Write-Host ("[step4] cleaned {0} (kept: {1})" -f $root, $keptMsg)
+        $verb = if ($WhatIfPreference) { 'preview clean' } else { 'cleaned' }
+        Write-Host ("[step4] {0} {1} (kept: {2})" -f $verb, $root, $keptMsg)
     } else {
         if ($PSCmdlet.ShouldProcess($root, 'Remove-Item -Recurse')) {
             try {
@@ -174,7 +217,8 @@ function Invoke-Step4-Discovery {
                 return
             }
         }
-        Write-Host ("[step4] removed {0}" -f $root)
+        $verb = if ($WhatIfPreference) { 'preview remove' } else { 'removed' }
+        Write-Host ("[step4] {0} {1}" -f $verb, $root)
     }
 
     $script:handled += 'step4-discovery'
@@ -186,7 +230,8 @@ function Invoke-Step4-Discovery {
 function Remove-ClaudeCodeGlobalEntries {
     $candidates = @(
         (Join-Path $env:USERPROFILE '.claude.json'),
-        (Join-Path $env:USERPROFILE '.claude\mcp.json')
+        (Join-Path $env:USERPROFILE '.claude\mcp.json'),
+        (Join-Path $env:APPDATA 'Claude\claude_desktop_config.json')
     )
 
     $touched = $false
@@ -194,7 +239,7 @@ function Remove-ClaudeCodeGlobalEntries {
         if (-not (Test-Path $cfgPath)) { continue }
 
         try {
-            $cfg = (Get-Content -Raw -Path $cfgPath) | ConvertFrom-Json -AsHashtable -Depth 50
+            $cfg = Read-JsonHashtable -Path $cfgPath
         } catch {
             Write-Warning ("[step3.claude] parse failed at {0} — skipping this file" -f $cfgPath)
             continue
@@ -265,7 +310,7 @@ function Remove-OpencodeEntries {
     }
 
     try {
-        $cfg = (Get-Content -Raw -Path $cfgPath) | ConvertFrom-Json -AsHashtable -Depth 50
+        $cfg = Read-JsonHashtable -Path $cfgPath
     } catch {
         Write-Warning ("[step3.opencode] parse failed at {0}: {1} — skipping" -f $cfgPath, $_.Exception.Message)
         $script:failed += 'step3-opencode'
@@ -299,11 +344,11 @@ function Remove-OpencodeEntries {
 # --- Main ---
 $planned = @(
     'Step1: plugin + .addin (all detected Revit years via install.ps1 -Uninstall)'
-    'Step2: .NET global tool Bimwright.Rvt.Server'
+    'Step2: legacy .NET global tool Bimwright.Rvt.Server, if present'
     'Step3.opencode: bimwright-rvt-* keys in .config\opencode\opencode.json'
     'Step3.codex: [mcp_servers.bimwright-rvt-*] blocks in .codex\config.toml'
-    'Step3.claude: bimwright-rvt-* in ~/.claude.json and ~/.claude/mcp.json (global only)'
-    'Step4: %LOCALAPPDATA%\Bimwright\ (discovery + ToolBaker)'
+    'Step3.claude: bimwright-rvt-* in Claude global/Desktop configs'
+    'Step4: %LOCALAPPDATA%\Bimwright\ (self-contained server + discovery + ToolBaker)'
 )
 
 if (-not (Confirm-Sweep $planned)) {
