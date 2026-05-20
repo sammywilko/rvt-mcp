@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+- Made `send_code_to_revit` part of the default ToolBaker surface, without adaptive-bake gating or per-call Revit confirmation.
+- Changed installer client wiring to a single auto-detect `bimwright-rvt` MCP entry while still deploying plugins for every detected Revit year.
+
 ## v0.3.0 - ToolBaker redesign
 
 ### Breaking

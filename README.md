@@ -111,7 +111,7 @@ Most Revit automation dies between "good idea" and "usable add-in".
 ToolBaker is the path from agent-assisted workflow to personal tool:
 
 1. Use the existing MCP tools to query, create, lint, inspect, or batch operations in Revit.
-2. When advanced automation is needed, opt into the `toolbaker` surface and enable adaptive bake before using `send_code_to_revit` with explicit Revit confirmation.
+2. When advanced automation is needed, call `send_code_to_revit` directly from the default tool surface.
 3. If adaptive bake is enabled, repeated local usage is recorded locally under `%LOCALAPPDATA%\Bimwright\`.
 4. Repeated patterns become suggestions, visible through `list_bake_suggestions`.
 5. You explicitly accept a suggestion with `accept_bake_suggestion`, including the tool name, schema, and output choice.
@@ -241,7 +241,7 @@ powershell -ExecutionPolicy Bypass -File .\install.ps1 -Client none       # inst
 powershell -ExecutionPolicy Bypass -File .\install.ps1 -Years 2024        # force a Revit year if registry detection is unavailable
 ```
 
-The setup ZIP contains a self-contained `bimwright-rvt.exe`, so the client machine does not need `.NET 8 SDK`, `dotnet tool install`, or this repository. Config entries use the absolute installed path, so `%USERPROFILE%\.dotnet\tools` and PATH are not involved.
+The setup ZIP contains a self-contained `bimwright-rvt.exe`, so the client machine does not need `.NET 8 SDK`, `dotnet tool install`, or this repository. Config entries use the absolute installed path, so `%USERPROFILE%\.dotnet\tools` and PATH are not involved. The installer deploys plugins for every detected Revit year, then writes one auto-detect MCP entry named `bimwright-rvt`.
 
 ### Verify
 
@@ -302,11 +302,11 @@ This path is for development and backward compatibility. Client machines should 
 
 The non-adaptive surface contains 32 tools across 11 toolsets. When adaptive bake is enabled, the surface expands to 35 tools.
 
-Default-on toolsets: `query`, `create`, `view`, `meta`, `lint`.
+Default-on toolsets: `query`, `create`, `view`, `toolbaker`, `meta`, `lint`.
 
-Optional toolsets: `modify`, `delete`, `annotation`, `export`, `mep`, `toolbaker`.
+Optional toolsets: `modify`, `delete`, `annotation`, `export`, `mep`.
 
-Enable with `--toolsets query,create,modify,meta` or `--toolsets all`. Add `--read-only` to strip `create`, `modify`, and `delete` regardless of what was requested.
+Enable with `--toolsets query,create,modify,meta` or `--toolsets all`. Add `--read-only` to strip `create`, `modify`, `delete`, and `toolbaker` regardless of what was requested.
 
 | Toolset | Tools | Default |
 |---------|-------|---------|
@@ -320,7 +320,7 @@ Enable with `--toolsets query,create,modify,meta` or `--toolsets all`. Add `--re
 | `annotation` | `tag_all_rooms`, `tag_all_walls` | off |
 | `export` | `export_room_data` | off |
 | `mep` | `detect_system_elements` | off |
-| `toolbaker` | accepted-tool list/run, send-code, adaptive suggestion lifecycle | off |
+| `toolbaker` | accepted-tool list/run, send-code, adaptive suggestion lifecycle | on |
 
 ### All Tools
 
@@ -348,7 +348,7 @@ Enable with `--toolsets query,create,modify,meta` or `--toolsets all`. Add `--re
 | `annotation` | `tag_all_walls` | Wall-type tags at midpoint; skips already tagged. |
 | `annotation` | `tag_all_rooms` | Room tags at location point; skips already tagged. |
 | `mep` | `detect_system_elements` | Traverse connectors from a seed and return system members. |
-| `toolbaker` | `send_code_to_revit` | Run ad-hoc C# inside Revit after explicit opt-in and confirmation. |
+| `toolbaker` | `send_code_to_revit` | Compile and run ad-hoc C# inside Revit from the default tool surface. |
 | `toolbaker` | `list_baked_tools` | List accepted personal baked tools. |
 | `toolbaker` | `run_baked_tool` | Invoke an accepted baked tool by name. |
 | `toolbaker` | `list_bake_suggestions` | Adaptive bake only: list local suggestions. |
@@ -387,7 +387,7 @@ Short version: your model stays on your machine.
 - **Per-session token handshake.** Discovery files under `%LOCALAPPDATA%\Bimwright\` carry connection information and auth token.
 - **Schema validation.** Malformed tool calls are rejected before command handlers run.
 - **Path masking.** Errors returned to the model are sanitized to avoid leaking absolute paths.
-- **ToolBaker opt-in.** Adaptive bake and send-code paths require explicit enablement; `send_code_to_revit` still requires Revit-side confirmation.
+- **ToolBaker controls.** `send_code_to_revit` is available by default. Adaptive bake remains opt-in and only controls suggestion/logging features; `--read-only` or `--disable-toolbaker` removes the ToolBaker surface.
 - **Local storage.** Usage events, bake database, logs, and accepted-tool metadata stay under local Bimwright storage.
 
 See [SECURITY.md](SECURITY.md) for disclosure and threat-model details.
@@ -404,7 +404,7 @@ Three layers, later wins: JSON file, then env vars, then CLI args.
 | Toolsets | `--toolsets query,create` | `BIMWRIGHT_TOOLSETS` | `toolsets` |
 | Read-only | `--read-only` | `BIMWRIGHT_READ_ONLY=1` | `readOnly` |
 | Allow LAN bind | plugin-side only | `BIMWRIGHT_ALLOW_LAN_BIND=1` | `allowLanBind` |
-| Allow ToolBaker when selected | `--enable-toolbaker` / `--disable-toolbaker` | `BIMWRIGHT_ENABLE_TOOLBAKER` | `enableToolbaker` |
+| Allow ToolBaker tools | `--enable-toolbaker` / `--disable-toolbaker` | `BIMWRIGHT_ENABLE_TOOLBAKER` | `enableToolbaker` |
 | Enable adaptive bake suggestions | `--enable-adaptive-bake` / `--disable-adaptive-bake` | `BIMWRIGHT_ENABLE_ADAPTIVE_BAKE=1` | `enableAdaptiveBake` |
 | Cache send-code bodies | `--cache-send-code-bodies` / `--no-cache-send-code-bodies` | `BIMWRIGHT_CACHE_SEND_CODE_BODIES=1` | `cacheSendCodeBodies` |
 

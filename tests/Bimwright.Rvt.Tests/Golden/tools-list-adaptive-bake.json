@@ -601,7 +601,7 @@
     },
     {
       "name": "send_code_to_revit",
-      "description_hash": "sha256:686f5620c017d5502cf8a9aa7c928530c7a315fdf3674c9aa5770c3ea1bf2b3c",
+      "description_hash": "sha256:22a874684f1938bb44a4b53020a4ec4e5d683e1326d76f2c42f4d28a85d06f73",
       "inputSchema": {
         "properties": {
           "code": {

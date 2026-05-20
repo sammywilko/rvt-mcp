@@ -88,7 +88,7 @@ AI agent 让 BIM 用户可以描述意图，而不是手写代码。但只有意
 ToolBaker 是从 agent-assisted workflow 走向个人工具的路径：
 
 1. 使用现有 MCP tools 在 Revit 里 query、create、lint、inspect 或 batch operations。
-2. 当需要更高级的 automation 时，opt in `toolbaker`，启用 adaptive bake，然后在明确 Revit confirmation 后使用 `send_code_to_revit`。
+2. 当需要更高级的 automation 时，直接从默认 tool surface 调用 `send_code_to_revit`。
 3. 如果 adaptive bake 已启用，重复的本地 usage 会记录在 `%LOCALAPPDATA%\Bimwright\` 下。
 4. 重复 pattern 会变成 suggestion，可通过 `list_bake_suggestions` 查看。
 5. 你显式通过 `accept_bake_suggestion` 接受 suggestion，包括 tool name、schema 和 output choice。
@@ -229,20 +229,20 @@ pwsh .\install.ps1 -Uninstall              # 仅卸载 plugin
 
 ### 3. Wire MCP client
 
-在 MCP client config 中为每个 Revit 年份添加一个 entry：
+在 MCP client config 中只添加一个 auto-detect entry：
 
 ```json
 {
   "mcpServers": {
-    "bimwright-rvt-r23": {
+    "bimwright-rvt": {
       "command": "bimwright-rvt",
-      "args": ["--target", "R23"]
+      "args": []
     }
   }
 }
 ```
 
-如果希望通过 `%LOCALAPPDATA%\Bimwright\` 里的 discovery files auto-detect，可以去掉 `--target`，只保留一个 `bimwright-rvt` entry。
+Installer 仍会为所有 detect 到的 Revit 年份部署 plugin；如果多个 Revit 版本同时运行，用 `switch_target` tool 切换连接。
 
 ### OpenCode / Codex scripted wire
 
@@ -308,11 +308,11 @@ pwsh .\uninstall-all.ps1 -KeepLogs
 
 非 adaptive surface 包含 32 个 tools，分布在 11 个 toolsets。启用 adaptive bake 后，surface 扩展到 35 个 tools。
 
-默认启用 toolsets：`query`、`create`、`view`、`meta`、`lint`。
+默认启用 toolsets：`query`、`create`、`view`、`toolbaker`、`meta`、`lint`。
 
-可选 toolsets：`modify`、`delete`、`annotation`、`export`、`mep`、`toolbaker`。
+可选 toolsets：`modify`、`delete`、`annotation`、`export`、`mep`。
 
-使用 `--toolsets query,create,modify,meta` 或 `--toolsets all` 启用。加上 `--read-only` 会移除 `create`、`modify`、`delete`，无论它们是如何被请求的。
+使用 `--toolsets query,create,modify,meta` 或 `--toolsets all` 启用。加上 `--read-only` 会移除 `create`、`modify`、`delete` 和 `toolbaker`，无论它们是如何被请求的。
 
 | Toolset | Tools | Default |
 |---------|-------|---------|
@@ -326,7 +326,7 @@ pwsh .\uninstall-all.ps1 -KeepLogs
 | `annotation` | `tag_all_rooms`, `tag_all_walls` | off |
 | `export` | `export_room_data` | off |
 | `mep` | `detect_system_elements` | off |
-| `toolbaker` | accepted-tool list/run, send-code, adaptive suggestion lifecycle | off |
+| `toolbaker` | accepted-tool list/run, send-code, adaptive suggestion lifecycle | on |
 
 ### 全部 tools
 
@@ -354,7 +354,7 @@ pwsh .\uninstall-all.ps1 -KeepLogs
 | `annotation` | `tag_all_walls` | 在 midpoint 打 wall-type tag，跳过已 tag 的 wall. |
 | `annotation` | `tag_all_rooms` | 在 location point 打 room tag，跳过已 tag 的 room. |
 | `mep` | `detect_system_elements` | 从 seed 沿 connectors traverse，返回 system members. |
-| `toolbaker` | `send_code_to_revit` | 明确 opt-in 和 confirmation 后，在 Revit 中运行 ad-hoc C#. |
+| `toolbaker` | `send_code_to_revit` | 从默认 tool surface 在 Revit 中 compile 并运行 ad-hoc C#. |
 | `toolbaker` | `list_baked_tools` | 列出已 accept 的 personal baked tools. |
 | `toolbaker` | `run_baked_tool` | 按名称调用 accepted baked tool. |
 | `toolbaker` | `list_bake_suggestions` | Adaptive bake only: 列出 local suggestions. |
@@ -393,7 +393,7 @@ pwsh .\uninstall-all.ps1 -KeepLogs
 - **Per-session token handshake。** `%LOCALAPPDATA%\Bimwright\` 下的 discovery files 包含 connection info 和 auth token。
 - **Schema validation。** 错误 shape 的 tool call 会在 command handler 运行前被 reject。
 - **Path masking。** 返回给 model 的 error 会 sanitize，避免泄露 absolute path。
-- **ToolBaker opt-in。** Adaptive bake 和 send-code paths 需要明确启用；`send_code_to_revit` 仍需要 Revit-side confirmation。
+- **ToolBaker controls。** `send_code_to_revit` 默认可用。Adaptive bake 仍是 opt-in，只控制 suggestion/logging；`--read-only` 或 `--disable-toolbaker` 会移除 ToolBaker surface。
 - **Local storage。** Usage events、bake database、logs 和 accepted-tool metadata 都在本地 Bimwright storage。
 
 详见 [SECURITY.md](SECURITY.md) 的 threat model 和 vulnerability disclosure 流程。
@@ -410,7 +410,7 @@ pwsh .\uninstall-all.ps1 -KeepLogs
 | Toolsets | `--toolsets query,create` | `BIMWRIGHT_TOOLSETS` | `toolsets` |
 | Read-only | `--read-only` | `BIMWRIGHT_READ_ONLY=1` | `readOnly` |
 | Allow LAN bind | plugin-side only | `BIMWRIGHT_ALLOW_LAN_BIND=1` | `allowLanBind` |
-| Allow ToolBaker when selected | `--enable-toolbaker` / `--disable-toolbaker` | `BIMWRIGHT_ENABLE_TOOLBAKER` | `enableToolbaker` |
+| Allow ToolBaker tools | `--enable-toolbaker` / `--disable-toolbaker` | `BIMWRIGHT_ENABLE_TOOLBAKER` | `enableToolbaker` |
 | Enable adaptive bake suggestions | `--enable-adaptive-bake` / `--disable-adaptive-bake` | `BIMWRIGHT_ENABLE_ADAPTIVE_BAKE=1` | `enableAdaptiveBake` |
 | Cache send-code bodies | `--cache-send-code-bodies` / `--no-cache-send-code-bodies` | `BIMWRIGHT_CACHE_SEND_CODE_BODIES=1` | `cacheSendCodeBodies` |
 

@@ -15,7 +15,7 @@ namespace Bimwright.Rvt.Tests
         {
             var set = ToolsetFilter.Resolve(null);
             Assert.Equal(
-                new[] { "create", "lint", "meta", "query", "view" },
+                new[] { "create", "lint", "meta", "query", "toolbaker", "view" },
                 set.OrderBy(s => s).ToArray());
         }
 
@@ -24,7 +24,7 @@ namespace Bimwright.Rvt.Tests
         {
             var set = ToolsetFilter.Resolve(new BimwrightConfig { Toolsets = new List<string>() });
             Assert.Equal(
-                new[] { "create", "lint", "meta", "query", "view" },
+                new[] { "create", "lint", "meta", "query", "toolbaker", "view" },
                 set.OrderBy(s => s).ToArray());
         }
 
@@ -45,7 +45,7 @@ namespace Bimwright.Rvt.Tests
             });
 
             Assert.Equal(ToolsetFilter.DefaultOn.OrderBy(s => s), set.OrderBy(s => s));
-            Assert.DoesNotContain("toolbaker", set);
+            Assert.Contains("toolbaker", set);
         }
 
         // --- Explicit toolsets --------------------------------------------
@@ -118,6 +118,7 @@ namespace Bimwright.Rvt.Tests
             Assert.DoesNotContain("create", set);
             Assert.DoesNotContain("modify", set);
             Assert.DoesNotContain("delete", set);
+            Assert.DoesNotContain("toolbaker", set);
             // Non-write toolsets survive
             Assert.Contains("query", set);
             Assert.Contains("view", set);
@@ -128,7 +129,7 @@ namespace Bimwright.Rvt.Tests
         public void Resolve_ReadOnlyWithDefaults_LeavesOnlyReadSafeDefaults()
         {
             var set = ToolsetFilter.Resolve(new BimwrightConfig { ReadOnly = true });
-            // Default = query+create+view+meta+lint. ReadOnly strips create.
+            // Default = query+create+view+toolbaker+meta+lint. ReadOnly strips write-capable sets.
             Assert.Equal(
                 new[] { "lint", "meta", "query", "view" },
                 set.OrderBy(s => s).ToArray());
@@ -159,11 +160,22 @@ namespace Bimwright.Rvt.Tests
         }
 
         [Fact]
-        public void Resolve_EnableToolbaker_DoesNotAddToolbakerToDefaults()
+        public void Resolve_EnableToolbaker_KeepsToolbakerInDefaults()
         {
             var set = ToolsetFilter.Resolve(new BimwrightConfig
             {
                 EnableToolbaker = true,
+            });
+
+            Assert.Contains("toolbaker", set);
+        }
+
+        [Fact]
+        public void Resolve_DisableToolbaker_RemovesToolbakerFromDefaults()
+        {
+            var set = ToolsetFilter.Resolve(new BimwrightConfig
+            {
+                EnableToolbaker = false,
             });
 
             Assert.DoesNotContain("toolbaker", set);

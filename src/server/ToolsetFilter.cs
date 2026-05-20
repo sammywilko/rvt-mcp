@@ -20,12 +20,12 @@ namespace Bimwright.Rvt.Server
 
         public static readonly string[] DefaultOn =
         {
-            "query", "create", "view", "meta", "lint"
+            "query", "create", "view", "toolbaker", "meta", "lint"
         };
 
         public static readonly string[] WriteCapable =
         {
-            "create", "modify", "delete"
+            "create", "modify", "delete", "toolbaker"
         };
 
         public static HashSet<string> Resolve(BimwrightConfig config)

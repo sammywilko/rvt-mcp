@@ -85,6 +85,19 @@ namespace Bimwright.Rvt.Tests
         }
 
         [Fact]
+        public void Default_toolsets_expose_send_code_without_adaptive_bake()
+        {
+            var captured = CaptureToolsList(new BimwrightConfig());
+
+            Assert.Contains("\"name\": \"send_code_to_revit\"", captured);
+            Assert.Contains("\"name\": \"list_baked_tools\"", captured);
+            Assert.Contains("\"name\": \"run_baked_tool\"", captured);
+            Assert.DoesNotContain("\"name\": \"list_bake_suggestions\"", captured);
+            Assert.DoesNotContain("\"name\": \"accept_bake_suggestion\"", captured);
+            Assert.DoesNotContain("\"name\": \"dismiss_bake_suggestion\"", captured);
+        }
+
+        [Fact]
         public void Adaptive_bake_snapshot_exposes_exactly_three_suggestion_handlers()
         {
             var captured = CaptureToolsList(new BimwrightConfig

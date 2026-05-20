@@ -186,8 +186,8 @@ namespace Bimwright.Rvt.Server
                 "  --read-only             Shortcut that excludes create, modify, and delete toolsets.",
                 "",
                 "ToolBaker:",
-                "  --enable-toolbaker      Allow ToolBaker when selected via --toolsets (default ON).",
-                "  --disable-toolbaker     Disable ToolBaker even if selected via --toolsets.",
+                "  --enable-toolbaker      Allow ToolBaker tools (default ON).",
+                "  --disable-toolbaker     Disable ToolBaker tools.",
                 "  --enable-adaptive-bake  Enable adaptive ToolBaker suggestions (default OFF).",
                 "  --disable-adaptive-bake Disable adaptive ToolBaker suggestions.",
                 "  --cache-send-code-bodies",
@@ -738,7 +738,7 @@ namespace Bimwright.Rvt.Server
     [McpServerToolType, Toolset("toolbaker")]
     public class ToolbakerTools
     {
-        [McpServerTool(Name = "send_code_to_revit"), System.ComponentModel.Description("Compile + run C# inside Revit. LAST RESORT — prefer typed tools (ai_element_filter, detect_system_elements, etc.) first. Can crash Revit or corrupt data. Variables: doc (Document), uidoc (UIDocument), app (UIApplication). Write body only, auto-wrapped in static Run(UIApplication). Must end with 'return ...;'. Namespaces: System, System.Linq, System.Collections.Generic, Autodesk.Revit.DB, Autodesk.Revit.UI. Common patterns: FilteredElementCollector for queries, Transaction for mutations, UnitUtils.ConvertFromInternalUnits(value, UnitTypeId.Millimeters), uidoc.Selection.SetElementIds(), OverrideGraphicSettings.")]
+        [McpServerTool(Name = "send_code_to_revit"), System.ComponentModel.Description("Compile + run C# inside Revit for workflows not covered by typed tools. Variables: doc (Document), uidoc (UIDocument), app (UIApplication). Write body only, auto-wrapped in static Run(UIApplication). Must end with 'return ...;'. Namespaces: System, System.Linq, System.Collections.Generic, Autodesk.Revit.DB, Autodesk.Revit.UI. Common patterns: FilteredElementCollector for queries, Transaction for mutations, UnitUtils.ConvertFromInternalUnits(value, UnitTypeId.Millimeters), uidoc.Selection.SetElementIds(), OverrideGraphicSettings.")]
         public static async Task<string> SendCodeToRevit(string code)
         {
             try
