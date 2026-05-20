@@ -1,6 +1,6 @@
 {
   "generated_by": "ToolsListSnapshotTests",
-  "tool_count": 35,
+  "tool_count": 60,
   "tools": [
     {
       "name": "accept_bake_suggestion",
@@ -27,6 +27,46 @@
         "required": [
           "id",
           "name"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "add_schedule_field",
+      "description_hash": "sha256:0ec4aa1838c057fb968dc1f25c5c81c400ec06fe66127264a511569851fe6106",
+      "inputSchema": {
+        "properties": {
+          "columnHeading": {
+            "description": "",
+            "type": "String"
+          },
+          "columnWidth": {
+            "description": "",
+            "type": "Nullable`1"
+          },
+          "field": {
+            "description": "",
+            "type": "String"
+          },
+          "hidden": {
+            "description": "",
+            "type": "Boolean"
+          },
+          "insertIndex": {
+            "description": "",
+            "type": "Nullable`1"
+          },
+          "scheduleId": {
+            "description": "",
+            "type": "Nullable`1"
+          },
+          "scheduleName": {
+            "description": "",
+            "type": "String"
+          }
+        },
+        "required": [
+          "field"
         ],
         "type": "object"
       }
@@ -118,6 +158,60 @@
       }
     },
     {
+      "name": "apply_schedule_filter_sort",
+      "description_hash": "sha256:c58e830d75e2b1a15d4a1e84a4c066e37254e0088641ac779b818a0be9b2d9ac",
+      "inputSchema": {
+        "properties": {
+          "filters": {
+            "description": "",
+            "type": "String"
+          },
+          "scheduleId": {
+            "description": "",
+            "type": "Nullable`1"
+          },
+          "scheduleName": {
+            "description": "",
+            "type": "String"
+          },
+          "settings": {
+            "description": "",
+            "type": "String"
+          },
+          "sortGroup": {
+            "description": "",
+            "type": "String"
+          }
+        },
+        "required": [],
+        "type": "object"
+      }
+    },
+    {
+      "name": "assign_elements_to_workset",
+      "description_hash": "sha256:3204ed7250333bf6201e49925a96b6c40edeb780f31d651c21b533e178a5bc1f",
+      "inputSchema": {
+        "properties": {
+          "elementIds": {
+            "description": "",
+            "type": "Int64[]"
+          },
+          "worksetId": {
+            "description": "",
+            "type": "Nullable`1"
+          },
+          "worksetName": {
+            "description": "",
+            "type": "String"
+          }
+        },
+        "required": [
+          "elementIds"
+        ],
+        "type": "object"
+      }
+    },
+    {
       "name": "batch_execute",
       "description_hash": "sha256:138fdd070a88768b8d0c7c97a187f6644388e0188bf9136084babf9c59420d84",
       "inputSchema": {
@@ -133,6 +227,27 @@
         },
         "required": [
           "commands"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "change_element_type",
+      "description_hash": "sha256:a68ae3ce9778e460cc3ba61c60e719359f6f2c00cefb9c69c68892a0d25cf797",
+      "inputSchema": {
+        "properties": {
+          "elementIds": {
+            "description": "",
+            "type": "Int64[]"
+          },
+          "typeId": {
+            "description": "",
+            "type": "Int64"
+          }
+        },
+        "required": [
+          "elementIds",
+          "typeId"
         ],
         "type": "object"
       }
@@ -189,6 +304,26 @@
           "startY",
           "endX",
           "endY"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "create_group_from_elements",
+      "description_hash": "sha256:d6f74d8f06fe7534f2841d10c150745981810b9bb8df8e8cf2848583ab442afa",
+      "inputSchema": {
+        "properties": {
+          "elementIds": {
+            "description": "",
+            "type": "Int64[]"
+          },
+          "name": {
+            "description": "",
+            "type": "String"
+          }
+        },
+        "required": [
+          "elementIds"
         ],
         "type": "object"
       }
@@ -329,6 +464,44 @@
       }
     },
     {
+      "name": "create_schedule",
+      "description_hash": "sha256:f7f36435578d3883d758794f52b80c261930e34ea279258a8bb78a50117a7d83",
+      "inputSchema": {
+        "properties": {
+          "category": {
+            "description": "",
+            "type": "String"
+          },
+          "fields": {
+            "description": "",
+            "type": "String"
+          },
+          "filters": {
+            "description": "",
+            "type": "String"
+          },
+          "isItemized": {
+            "description": "",
+            "type": "Boolean"
+          },
+          "name": {
+            "description": "",
+            "type": "String"
+          },
+          "sortGroup": {
+            "description": "",
+            "type": "String"
+          }
+        },
+        "required": [
+          "category",
+          "name",
+          "fields"
+        ],
+        "type": "object"
+      }
+    },
+    {
       "name": "create_surface_based_element",
       "description_hash": "sha256:5dfc916eb449d5a66dea6534e426331dc38e03631d8ca09c1ca1b5894d28c7f4",
       "inputSchema": {
@@ -453,6 +626,52 @@
       }
     },
     {
+      "name": "find_schedule_elements",
+      "description_hash": "sha256:03bc013bd7989a890cead0b276f39524437efcfbd0e431cc33df07366746e49c",
+      "inputSchema": {
+        "properties": {
+          "groupByCategory": {
+            "description": "",
+            "type": "Boolean"
+          },
+          "includeParameters": {
+            "description": "",
+            "type": "Boolean"
+          },
+          "limit": {
+            "description": "",
+            "type": "Int32"
+          },
+          "scheduleId": {
+            "description": "",
+            "type": "Nullable`1"
+          },
+          "scheduleName": {
+            "description": "",
+            "type": "String"
+          }
+        },
+        "required": [],
+        "type": "object"
+      }
+    },
+    {
+      "name": "get_assembly_members",
+      "description_hash": "sha256:63df0f03f5781171618501421f300c7217b5cbca9cd89bd1edc658921ec22bda",
+      "inputSchema": {
+        "properties": {
+          "assemblyId": {
+            "description": "",
+            "type": "Int64"
+          }
+        },
+        "required": [
+          "assemblyId"
+        ],
+        "type": "object"
+      }
+    },
+    {
       "name": "get_available_family_types",
       "description_hash": "sha256:7d0ab84af905a6af87653134cd861d5b23624b8ef266099231a13dc2ccdd2769",
       "inputSchema": {
@@ -476,6 +695,78 @@
       }
     },
     {
+      "name": "get_element_details",
+      "description_hash": "sha256:97689bdf27eab2986f99b3bcb8bcf069d24ffc4e4e96ded4fae1b233a483113f",
+      "inputSchema": {
+        "properties": {
+          "elementIds": {
+            "description": "",
+            "type": "Int64[]"
+          }
+        },
+        "required": [
+          "elementIds"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "get_element_parameters",
+      "description_hash": "sha256:96e898b948dfb9ec0c2471aabb08e15a95a30d7d7d25f917b881208154995b28",
+      "inputSchema": {
+        "properties": {
+          "elementIds": {
+            "description": "",
+            "type": "Int64[]"
+          },
+          "includeReadOnly": {
+            "description": "",
+            "type": "Boolean"
+          }
+        },
+        "required": [
+          "elementIds"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "get_element_relationships",
+      "description_hash": "sha256:5a9341adeb89fe5b500ed317ec3aadfef8641d60c51e019bbe9db42709607e0b",
+      "inputSchema": {
+        "properties": {
+          "elementIds": {
+            "description": "",
+            "type": "Int64[]"
+          },
+          "includeDependents": {
+            "description": "",
+            "type": "Boolean"
+          }
+        },
+        "required": [
+          "elementIds"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "get_group_members",
+      "description_hash": "sha256:0b4ace383366996a4ef2025dbd099373f702f0cf01f8261c3781291cdcd96995",
+      "inputSchema": {
+        "properties": {
+          "groupId": {
+            "description": "",
+            "type": "Int64"
+          }
+        },
+        "required": [
+          "groupId"
+        ],
+        "type": "object"
+      }
+    },
+    {
       "name": "get_material_quantities",
       "description_hash": "sha256:cf05166d500f139010805e1eed43198af5711ddc14d532dfa2f09ad950051dd0",
       "inputSchema": {
@@ -492,10 +783,130 @@
       }
     },
     {
+      "name": "get_schedulable_fields",
+      "description_hash": "sha256:c0f56764efc5034b192e75c0bf004bbdbef44edc65bbd46e37514ee946c471fe",
+      "inputSchema": {
+        "properties": {
+          "kindFilter": {
+            "description": "",
+            "type": "String[]"
+          },
+          "scheduleId": {
+            "description": "",
+            "type": "Nullable`1"
+          },
+          "scheduleName": {
+            "description": "",
+            "type": "String"
+          }
+        },
+        "required": [],
+        "type": "object"
+      }
+    },
+    {
+      "name": "get_schedule_data",
+      "description_hash": "sha256:3dc03ca74a1c893890af79ebd9e5adda162abc6157a469e444698481ca5ecc32",
+      "inputSchema": {
+        "properties": {
+          "includeCellMeta": {
+            "description": "",
+            "type": "Boolean"
+          },
+          "maxRows": {
+            "description": "",
+            "type": "Int32"
+          },
+          "scheduleId": {
+            "description": "",
+            "type": "Nullable`1"
+          },
+          "scheduleName": {
+            "description": "",
+            "type": "String"
+          },
+          "startRow": {
+            "description": "",
+            "type": "Int32"
+          }
+        },
+        "required": [],
+        "type": "object"
+      }
+    },
+    {
+      "name": "get_schedule_definition",
+      "description_hash": "sha256:67e18977e92948e118798947f3676ba8586d5094f4adf90621ca323a05b9f888",
+      "inputSchema": {
+        "properties": {
+          "scheduleId": {
+            "description": "",
+            "type": "Nullable`1"
+          },
+          "scheduleName": {
+            "description": "",
+            "type": "String"
+          }
+        },
+        "required": [],
+        "type": "object"
+      }
+    },
+    {
+      "name": "get_schedule_formulas",
+      "description_hash": "sha256:0085c137a5bfd72bc6079ca81413a5cc576bd9bcca36b72a2092ff3ce7c1cba4",
+      "inputSchema": {
+        "properties": {
+          "scheduleId": {
+            "description": "",
+            "type": "Nullable`1"
+          },
+          "scheduleName": {
+            "description": "",
+            "type": "String"
+          }
+        },
+        "required": [],
+        "type": "object"
+      }
+    },
+    {
       "name": "get_selected_elements",
       "description_hash": "sha256:832dd75866f1ef53dbe134d31e2b7eccda70e96db47c6a70c0812e184da972b2",
       "inputSchema": {
         "properties": {},
+        "required": [],
+        "type": "object"
+      }
+    },
+    {
+      "name": "get_type_parameters",
+      "description_hash": "sha256:93e9f704411dcd0be3cee9d9981f9324fefbc69e0ffd92543d8d4444e53961b0",
+      "inputSchema": {
+        "properties": {
+          "elementIds": {
+            "description": "",
+            "type": "Int64[]"
+          },
+          "typeIds": {
+            "description": "",
+            "type": "Int64[]"
+          }
+        },
+        "required": [],
+        "type": "object"
+      }
+    },
+    {
+      "name": "list_assemblies",
+      "description_hash": "sha256:4d069016c0088f35e3d0d87abc4c234d2b2a385ff9f8c73f8db457c2a14f411a",
+      "inputSchema": {
+        "properties": {
+          "includeMembers": {
+            "description": "",
+            "type": "Boolean"
+          }
+        },
         "required": [],
         "type": "object"
       }
@@ -514,6 +925,70 @@
       "description_hash": "sha256:c4f96bcfb51878b9e49b8cbf66ba7677a4609a194abc5c608f3f06ee77067f8c",
       "inputSchema": {
         "properties": {},
+        "required": [],
+        "type": "object"
+      }
+    },
+    {
+      "name": "list_groups",
+      "description_hash": "sha256:b3038b22bda6463192402c78de7c90747ebd8834f1b43d34d5358bfce2027232",
+      "inputSchema": {
+        "properties": {
+          "groupKind": {
+            "description": "",
+            "type": "String"
+          },
+          "includeMembers": {
+            "description": "",
+            "type": "Boolean"
+          }
+        },
+        "required": [],
+        "type": "object"
+      }
+    },
+    {
+      "name": "list_project_parameters",
+      "description_hash": "sha256:0c4ead8ca3fa79434ec49d4ca9aa889b93d766ca86280b2bcc3f7d6bccf03d7f",
+      "inputSchema": {
+        "properties": {
+          "includeCategories": {
+            "description": "",
+            "type": "Boolean"
+          }
+        },
+        "required": [],
+        "type": "object"
+      }
+    },
+    {
+      "name": "list_schedules",
+      "description_hash": "sha256:3808e64c03a19dbead0a1fd102ad390dbb890f9c81c5466e0342104db859b740",
+      "inputSchema": {
+        "properties": {
+          "categoryFilter": {
+            "description": "",
+            "type": "String"
+          },
+          "namePattern": {
+            "description": "",
+            "type": "String"
+          }
+        },
+        "required": [],
+        "type": "object"
+      }
+    },
+    {
+      "name": "list_worksets",
+      "description_hash": "sha256:b2e193098efad475fa4ab841a6caef62b64a4d402553e1f29992421ab212d0bf",
+      "inputSchema": {
+        "properties": {
+          "includeElementCounts": {
+            "description": "",
+            "type": "Boolean"
+          }
+        },
         "required": [],
         "type": "object"
       }
@@ -616,6 +1091,69 @@
       }
     },
     {
+      "name": "set_element_parameter_values",
+      "description_hash": "sha256:2d8e685c2e2bd6745ca22322d3f6b1bd84938b369379ddc1f1250122a2328703",
+      "inputSchema": {
+        "properties": {
+          "elementIds": {
+            "description": "",
+            "type": "Int64[]"
+          },
+          "parameterName": {
+            "description": "",
+            "type": "String"
+          },
+          "value": {
+            "description": "",
+            "type": "String"
+          },
+          "valueType": {
+            "description": "",
+            "type": "String"
+          }
+        },
+        "required": [
+          "elementIds",
+          "parameterName",
+          "value"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "set_type_parameter_values",
+      "description_hash": "sha256:74dd1a3d8b4bf1f1d3772ac59d7b48bf597424a8c451b0cc772b7b9f0362b94c",
+      "inputSchema": {
+        "properties": {
+          "elementIds": {
+            "description": "",
+            "type": "Int64[]"
+          },
+          "parameterName": {
+            "description": "",
+            "type": "String"
+          },
+          "typeIds": {
+            "description": "",
+            "type": "Int64[]"
+          },
+          "value": {
+            "description": "",
+            "type": "String"
+          },
+          "valueType": {
+            "description": "",
+            "type": "String"
+          }
+        },
+        "required": [
+          "parameterName",
+          "value"
+        ],
+        "type": "object"
+      }
+    },
+    {
       "name": "show_message",
       "description_hash": "sha256:b7c567c49e8146e3e731105502c0a8bded22d634a55ca061fc80a6bef63b8c2f",
       "inputSchema": {
@@ -682,6 +1220,35 @@
       "inputSchema": {
         "properties": {},
         "required": [],
+        "type": "object"
+      }
+    },
+    {
+      "name": "update_schedule_field",
+      "description_hash": "sha256:25d3abb93c0a556c430a8bf4650af582fec77518aefda03c1105882d58866406",
+      "inputSchema": {
+        "properties": {
+          "changes": {
+            "description": "",
+            "type": "String"
+          },
+          "fieldRef": {
+            "description": "",
+            "type": "String"
+          },
+          "scheduleId": {
+            "description": "",
+            "type": "Nullable`1"
+          },
+          "scheduleName": {
+            "description": "",
+            "type": "String"
+          }
+        },
+        "required": [
+          "fieldRef",
+          "changes"
+        ],
         "type": "object"
       }
     }

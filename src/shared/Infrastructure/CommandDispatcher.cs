@@ -19,6 +19,16 @@ namespace Bimwright.Rvt.Plugin
             Register(new Handlers.AiElementFilterHandler());
             Register(new Handlers.AnalyzeModelStatisticsHandler());
             Register(new Handlers.GetMaterialQuantitiesHandler());
+            Register(new Handlers.GetElementDetailsHandler());
+            Register(new Handlers.GetElementParametersHandler());
+            Register(new Handlers.GetTypeParametersHandler());
+            Register(new Handlers.ListProjectParametersHandler());
+            Register(new Handlers.GetElementRelationshipsHandler());
+            Register(new Handlers.ListGroupsHandler());
+            Register(new Handlers.GetGroupMembersHandler());
+            Register(new Handlers.ListAssembliesHandler());
+            Register(new Handlers.GetAssemblyMembersHandler());
+            Register(new Handlers.ListWorksetsHandler());
             // Phase 3: Create
             Register(new Handlers.CreateLineBasedElementHandler());
             Register(new Handlers.CreatePointBasedElementHandler());
@@ -26,9 +36,14 @@ namespace Bimwright.Rvt.Plugin
             Register(new Handlers.CreateLevelHandler());
             Register(new Handlers.CreateGridHandler());
             Register(new Handlers.CreateRoomHandler());
+            Register(new Handlers.CreateGroupFromElementsHandler());
             // Phase 4: Modify & Delete
             Register(new Handlers.OperateElementHandler());
             Register(new Handlers.ColorElementsHandler());
+            Register(new Handlers.SetElementParameterValuesHandler());
+            Register(new Handlers.SetTypeParameterValuesHandler());
+            Register(new Handlers.ChangeElementTypeHandler());
+            Register(new Handlers.AssignElementsToWorksetHandler());
             Register(new Handlers.DeleteElementHandler());
             // Phase 5: Export & Tags
             Register(new Handlers.ExportRoomDataHandler());
@@ -49,6 +64,17 @@ namespace Bimwright.Rvt.Plugin
             Register(new Handlers.AnalyzeViewNamingPatternsHandler());
             Register(new Handlers.SuggestViewNameCorrectionsHandler());
             Register(new Handlers.DetectFirmProfileHandler());
+            // Phase 12: Schedules
+            Register(new Handlers.ListSchedulesHandler());
+            Register(new Handlers.GetScheduleDefinitionHandler());
+            Register(new Handlers.GetScheduleDataHandler());
+            Register(new Handlers.GetScheduleFormulasHandler());
+            Register(new Handlers.GetSchedulableFieldsHandler());
+            Register(new Handlers.FindScheduleElementsHandler());
+            Register(new Handlers.CreateScheduleHandler());
+            Register(new Handlers.AddScheduleFieldHandler());
+            Register(new Handlers.UpdateScheduleFieldHandler());
+            Register(new Handlers.ApplyScheduleFilterSortHandler());
             // A6 batch execution — needs dispatcher ref to look up sub-commands
             Register(new Handlers.BatchExecuteHandler(this));
             // ToolBaker runtime access.

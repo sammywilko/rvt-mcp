@@ -4,7 +4,7 @@ Rough direction, not a commitment. Dates are intent; scope is firmer.
 
 ## v0.3.0 — current (ToolBaker redesign release)
 
-- 32 MCP tools across 11 toolsets; 35 tools when adaptive bake is enabled.
+- 47 MCP tools across 11 toolsets; 50 tools when adaptive bake is enabled.
 - Progressive disclosure (`--toolsets`, `--read-only`).
 - `batch_execute` with Revit `TransactionGroup` semantics.
 - ToolBaker accepted-tool indirection via `list_baked_tools` / `run_baked_tool`; `send_code_to_revit` is default-on and adaptive suggestions remain default off.

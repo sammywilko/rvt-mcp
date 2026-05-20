@@ -10,7 +10,7 @@
   <a href="https://github.com/bimwright/rvt-mcp/actions/workflows/build.yml"><img src="https://github.com/bimwright/rvt-mcp/actions/workflows/build.yml/badge.svg" alt="build" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="license" /></a>
   <a href="#supported-revit-versions"><img src="https://img.shields.io/badge/Revit-2022--2027-186BFF" alt="Revit 2022-2027" /></a>
-  <a href="#toolsets"><img src="https://img.shields.io/badge/MCP-32%20tools%20%7C%2035%20adaptive-6C47FF" alt="MCP tools" /></a>
+  <a href="#toolsets"><img src="https://img.shields.io/badge/MCP-57%20tools%20%7C%2060%20adaptive-6C47FF" alt="MCP tools" /></a>
 </p>
 
 <p align="center">
@@ -306,7 +306,7 @@ pwsh .\uninstall-all.ps1 -KeepLogs
 
 ## Toolsets
 
-非 adaptive surface 包含 32 个 tools，分布在 11 个 toolsets。启用 adaptive bake 后，surface 扩展到 35 个 tools。
+非 adaptive surface 包含 57 个 tools，分布在 12 个 toolsets。启用 adaptive bake 后，surface 扩展到 60 个 tools。
 
 默认启用 toolsets：`query`、`create`、`view`、`toolbaker`、`meta`、`lint`。
 
@@ -317,11 +317,12 @@ pwsh .\uninstall-all.ps1 -KeepLogs
 | Toolset | Tools | Default |
 |---------|-------|---------|
 | `query` | current view, selected elements, family types, material quantities, model stats, AI element filter | on |
-| `create` | grid, level, room, line-based, point-based, surface-based element | on |
+| `create` | grid, level, room, line-based, point-based, surface-based element, group from elements | on |
 | `view` | create view, sheet layout, place view on sheet | on |
 | `meta` | `show_message`, `switch_target`, `batch_execute`, usage stats | on |
 | `lint` | view-naming pattern analysis, correction suggestions, firm-profile detect | on |
-| `modify` | `operate_element`, `color_elements` | off |
+| `schedule` | list/inspect, fields/formulas/data/elements, create + add/update field, filter+sort | on |
+| `modify` | `operate_element`, `color_elements`, parameter/type/workset edits | off |
 | `delete` | `delete_element` | off |
 | `annotation` | `tag_all_rooms`, `tag_all_walls` | off |
 | `export` | `export_room_data` | off |
@@ -338,14 +339,29 @@ pwsh .\uninstall-all.ps1 -KeepLogs
 | `query` | `ai_element_filter` | 按 category 和 parameter/operator filter，数值单位为 mm. |
 | `query` | `analyze_model_statistics` | 按 category 统计 element 数量. |
 | `query` | `get_material_quantities` | 某 category 的 area 和 volume 汇总. |
+| `query` | `get_element_details` | Element metadata、location、bounding box、workset、phase、group 和 assembly ids. |
+| `query` | `get_element_parameters` | Instance parameters: storage type、display value、raw value 和 data/spec ids. |
+| `query` | `get_type_parameters` | 从 type ids 或 element ids 读取 type parameters. |
+| `query` | `list_project_parameters` | Project/shared parameter bindings、binding kind 和 categories. |
+| `query` | `get_element_relationships` | Host、group、assembly、owner view、design option、nesting 和 dependents. |
+| `query` | `list_groups` | Group instances with type、attached/detail metadata 和 optional member ids. |
+| `query` | `get_group_members` | Group instance members with category、type、owner view 和 pinned state. |
+| `query` | `list_assemblies` | Assembly instances with type、naming category、member count 和 optional member ids. |
+| `query` | `get_assembly_members` | Assembly instance members with category、type、group 和 workset ids. |
+| `query` | `list_worksets` | Worksets、active workset、edit/open state 和 optional element counts. |
 | `create` | `create_line_based_element` | Wall 或其他 line-based element. |
 | `create` | `create_point_based_element` | Door, window, furniture 或其他 point element. |
 | `create` | `create_surface_based_element` | 从 polyline 创建 floor 或 ceiling. |
 | `create` | `create_level` | 按 mm elevation 创建 level. |
 | `create` | `create_grid` | 按两个点创建 grid line，单位 mm. |
 | `create` | `create_room` | 在 point 创建 room，由 walls 围合. |
+| `create` | `create_group_from_elements` | 从两个或多个 elements 创建 group. |
 | `modify` | `operate_element` | Select, hide, unhide, isolate 或按 IDs set-color. |
 | `modify` | `color_elements` | 按 parameter value 给 category 上色. |
+| `modify` | `set_element_parameter_values` | 批量设置 elements 的 instance parameter. |
+| `modify` | `set_type_parameter_values` | 设置 type ids 或 element-resolved types 的 type parameter. |
+| `modify` | `change_element_type` | 将 elements 切换到兼容的 target type. |
+| `modify` | `assign_elements_to_workset` | 在 workshared model 中把 elements 分配到 user workset. |
 | `delete` | `delete_element` | 按 ID list 删除。除非明确需要，否则保持关闭. |
 | `view` | `create_view` | 创建 floor plan 或 3D view. |
 | `view` | `place_view_on_sheet` | 把 view 放到新 sheet 或现有 sheet 上. |

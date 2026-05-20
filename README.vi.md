@@ -10,7 +10,7 @@
   <a href="https://github.com/bimwright/rvt-mcp/actions/workflows/build.yml"><img src="https://github.com/bimwright/rvt-mcp/actions/workflows/build.yml/badge.svg" alt="build" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="license" /></a>
   <a href="#supported-revit-versions"><img src="https://img.shields.io/badge/Revit-2022--2027-186BFF" alt="Revit 2022-2027" /></a>
-  <a href="#toolsets"><img src="https://img.shields.io/badge/MCP-32%20tools%20%7C%2035%20adaptive-6C47FF" alt="MCP tools" /></a>
+  <a href="#toolsets"><img src="https://img.shields.io/badge/MCP-57%20tools%20%7C%2060%20adaptive-6C47FF" alt="MCP tools" /></a>
 </p>
 
 <p align="center">
@@ -300,7 +300,7 @@ powershell -ExecutionPolicy Bypass -File .\install.ps1 -SourceDir . -Client none
 
 ## Toolsets
 
-Surface không adaptive có 32 tools trên 11 toolsets. Khi bật adaptive bake, surface mở rộng thành 35 tools.
+Surface không adaptive có 57 tools trên 12 toolsets. Khi bật adaptive bake, surface mở rộng thành 60 tools.
 
 Toolsets bật mặc định: `query`, `create`, `view`, `toolbaker`, `meta`, `lint`.
 
@@ -311,11 +311,12 @@ Bật bằng `--toolsets query,create,modify,meta` hoặc `--toolsets all`. Thê
 | Toolset | Tools | Default |
 |---------|-------|---------|
 | `query` | current view, selected elements, family types, material quantities, model stats, AI element filter | on |
-| `create` | grid, level, room, line-based, point-based, surface-based element | on |
+| `create` | grid, level, room, line-based, point-based, surface-based element, group from elements | on |
 | `view` | create view, sheet layout, place view on sheet | on |
 | `meta` | `show_message`, `switch_target`, `batch_execute`, usage stats | on |
 | `lint` | view-naming pattern analysis, correction suggestions, firm-profile detect | on |
-| `modify` | `operate_element`, `color_elements` | off |
+| `schedule` | list/inspect, fields/formulas/data/elements, create + add/update field, filter+sort | on |
+| `modify` | `operate_element`, `color_elements`, parameter/type/workset edits | off |
 | `delete` | `delete_element` | off |
 | `annotation` | `tag_all_rooms`, `tag_all_walls` | off |
 | `export` | `export_room_data` | off |
@@ -332,14 +333,29 @@ Bật bằng `--toolsets query,create,modify,meta` hoặc `--toolsets all`. Thê
 | `query` | `ai_element_filter` | Filter theo category và parameter/operator, giá trị tính bằng mm. |
 | `query` | `analyze_model_statistics` | Đếm element theo category. |
 | `query` | `get_material_quantities` | Tổng area và volume cho một category. |
+| `query` | `get_element_details` | Metadata, location, bounding box, workset, phase, group và assembly ids. |
+| `query` | `get_element_parameters` | Instance parameters với storage type, display value, raw value và data/spec ids. |
+| `query` | `get_type_parameters` | Type parameters từ type ids hoặc từ element ids. |
+| `query` | `list_project_parameters` | Project/shared parameter bindings, binding kind và categories. |
+| `query` | `get_element_relationships` | Host, group, assembly, owner view, design option, nesting và dependents. |
+| `query` | `list_groups` | Group instances với type, attached/detail metadata và optional member ids. |
+| `query` | `get_group_members` | Members của group instance với category, type, owner view và pinned state. |
+| `query` | `list_assemblies` | Assembly instances với type, naming category, member count và optional member ids. |
+| `query` | `get_assembly_members` | Members của assembly instance với category, type, group và workset ids. |
+| `query` | `list_worksets` | Worksets, active workset, edit/open state và optional element counts. |
 | `create` | `create_line_based_element` | Wall hoặc element theo line. |
 | `create` | `create_point_based_element` | Door, window, furniture hoặc point element khác. |
 | `create` | `create_surface_based_element` | Floor hoặc ceiling từ polyline. |
 | `create` | `create_level` | Level tại elevation tính bằng mm. |
 | `create` | `create_grid` | Grid line giữa hai điểm tính bằng mm. |
 | `create` | `create_room` | Room tại một điểm, được bao bởi wall. |
+| `create` | `create_group_from_elements` | Tạo group từ hai hoặc nhiều elements. |
 | `modify` | `operate_element` | Select, hide, unhide, isolate hoặc set-color theo IDs. |
 | `modify` | `color_elements` | Tô màu category theo parameter value. |
+| `modify` | `set_element_parameter_values` | Set instance parameter cho nhiều elements. |
+| `modify` | `set_type_parameter_values` | Set type parameter cho type ids hoặc types suy ra từ elements. |
+| `modify` | `change_element_type` | Đổi elements sang một target type compatible. |
+| `modify` | `assign_elements_to_workset` | Gán elements vào user workset trong model workshared. |
 | `delete` | `delete_element` | Delete theo danh sách ID. Chỉ bật khi thật sự cần. |
 | `view` | `create_view` | Tạo floor plan hoặc 3D view. |
 | `view` | `place_view_on_sheet` | Đặt view lên sheet mới hoặc sheet có sẵn. |

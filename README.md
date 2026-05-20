@@ -10,7 +10,7 @@
   <a href="https://github.com/bimwright/rvt-mcp/actions/workflows/build.yml"><img src="https://github.com/bimwright/rvt-mcp/actions/workflows/build.yml/badge.svg" alt="build" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="license" /></a>
   <a href="#supported-revit-versions"><img src="https://img.shields.io/badge/Revit-2022--2027-186BFF" alt="Revit 2022-2027" /></a>
-  <a href="#toolsets"><img src="https://img.shields.io/badge/MCP-32%20tools%20%7C%2035%20adaptive-6C47FF" alt="MCP tools" /></a>
+  <a href="#toolsets"><img src="https://img.shields.io/badge/MCP-57%20tools%20%7C%2060%20adaptive-6C47FF" alt="MCP tools" /></a>
 </p>
 
 <p align="center">
@@ -300,7 +300,7 @@ This path is for development and backward compatibility. Client machines should 
 
 ## Toolsets
 
-The non-adaptive surface contains 32 tools across 11 toolsets. When adaptive bake is enabled, the surface expands to 35 tools.
+The non-adaptive surface contains 57 tools across 12 toolsets. When adaptive bake is enabled, the surface expands to 60 tools.
 
 Default-on toolsets: `query`, `create`, `view`, `toolbaker`, `meta`, `lint`.
 
@@ -311,11 +311,12 @@ Enable with `--toolsets query,create,modify,meta` or `--toolsets all`. Add `--re
 | Toolset | Tools | Default |
 |---------|-------|---------|
 | `query` | get current view, selected elements, available family types, material quantities, model stats, AI element filter | on |
-| `create` | grid, level, room, line-based, point-based, surface-based element | on |
+| `create` | grid, level, room, line-based, point-based, surface-based element, group from elements | on |
 | `view` | create view, sheet layout, place view on sheet | on |
 | `meta` | `show_message`, `switch_target`, `batch_execute`, usage stats | on |
 | `lint` | view-naming pattern analysis, correction suggestions, firm-profile detect | on |
-| `modify` | `operate_element`, `color_elements` | off |
+| `schedule` | list/inspect, fields/formulas/data/elements, create + add/update field, filter+sort | on |
+| `modify` | `operate_element`, `color_elements`, parameter/type/workset edits | off |
 | `delete` | `delete_element` | off |
 | `annotation` | `tag_all_rooms`, `tag_all_walls` | off |
 | `export` | `export_room_data` | off |
@@ -332,14 +333,29 @@ Enable with `--toolsets query,create,modify,meta` or `--toolsets all`. Add `--re
 | `query` | `ai_element_filter` | Filter by category and parameter/operator, values in mm. |
 | `query` | `analyze_model_statistics` | Element counts grouped by category. |
 | `query` | `get_material_quantities` | Area and volume totals for a category. |
+| `query` | `get_element_details` | Element metadata, location, bounding box, workset, phase, group, and assembly ids. |
+| `query` | `get_element_parameters` | Instance parameters with storage type, display value, raw value, and data/spec ids. |
+| `query` | `get_type_parameters` | Type parameters from type ids or from element ids. |
+| `query` | `list_project_parameters` | Project/shared parameter bindings, binding kind, and categories. |
+| `query` | `get_element_relationships` | Host, group, assembly, owner view, design option, nesting, and dependents. |
+| `query` | `list_groups` | Group instances with type, attached/detail metadata, and optional member ids. |
+| `query` | `get_group_members` | Members of a group instance with category, type, owner view, and pinned state. |
+| `query` | `list_assemblies` | Assembly instances with type, naming category, member count, and optional member ids. |
+| `query` | `get_assembly_members` | Members of an assembly instance with category, type, group, and workset ids. |
+| `query` | `list_worksets` | Worksets, active workset, edit/open state, and optional element counts. |
 | `create` | `create_line_based_element` | Wall or other line-based element. |
 | `create` | `create_point_based_element` | Door, window, furniture or other point element. |
 | `create` | `create_surface_based_element` | Floor or ceiling from a polyline. |
 | `create` | `create_level` | Level at elevation in mm. |
 | `create` | `create_grid` | Grid line between two points in mm. |
 | `create` | `create_room` | Room at a point, bound by walls. |
+| `create` | `create_group_from_elements` | Create a model/detail group from two or more elements. |
 | `modify` | `operate_element` | Select, hide, unhide, isolate, or set-color on IDs. |
 | `modify` | `color_elements` | Color-code a category by parameter value. |
+| `modify` | `set_element_parameter_values` | Set an instance parameter across multiple elements. |
+| `modify` | `set_type_parameter_values` | Set a type parameter across explicit or element-resolved types. |
+| `modify` | `change_element_type` | Change elements to a target compatible type. |
+| `modify` | `assign_elements_to_workset` | Assign elements to a user workset in a workshared model. |
 | `delete` | `delete_element` | Delete by ID list. Keep off unless explicitly needed. |
 | `view` | `create_view` | Floor plan or 3D view. |
 | `view` | `place_view_on_sheet` | Drop a view onto a new or existing sheet. |
