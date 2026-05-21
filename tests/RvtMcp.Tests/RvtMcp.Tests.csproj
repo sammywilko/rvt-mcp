@@ -35,7 +35,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\server\Bimwright.Rvt.Server.csproj" />
+    <ProjectReference Include="..\..\src\server\RvtMcp.Server.csproj" />
   </ItemGroup>
 
   <ItemGroup>
