@@ -40,6 +40,7 @@ namespace RvtMcp.Server
             // A9 3-layer config precedence (JSON < env < CLI). AuthToken.Target + transport
             // mode (--http) stay as separate CLI parses for now; A3 toolsets gating uses
             // RvtMcpConfig.
+            LegacyDataMigration.MigrateOnce();
             var config = RvtMcpConfig.Load(args);
             ServerState.Config = config;
             if (!string.IsNullOrWhiteSpace(config.Target))

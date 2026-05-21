@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Autodesk.Revit.UI;
 using Autodesk.Revit.UI.Events;
 using RvtMcp.Plugin.Views;
@@ -34,6 +34,7 @@ namespace RvtMcp.Plugin
             DebugLog("OnStartup: BEGIN");
 
             McpLogger.Initialize();
+            LegacyDataMigration.MigrateOnce();
             SessionLog = new McpSessionLog();
             Config = RvtMcpConfig.Load(args: null);
             DebugLog("OnStartup: McpLogger + SessionLog OK");

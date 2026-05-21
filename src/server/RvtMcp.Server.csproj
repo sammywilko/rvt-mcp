@@ -37,6 +37,7 @@
     <Compile Include="..\shared\Security\SecretMasker.cs" Link="Shared\SecretMasker.cs" />
     <Compile Include="..\shared\ToolBaker\BakedToolRecord.cs" Link="Shared\BakedToolRecord.cs" />
     <Compile Include="..\shared\ToolBaker\BakedToolRuntimeSource.cs" Link="Shared\BakedToolRuntimeSource.cs" />
+    <Compile Include="..\shared\Infrastructure\LegacyDataMigration.cs" Link="Shared\LegacyDataMigration.cs" />
   </ItemGroup>
 
   <!-- Expose internal helpers (ParseCsv, ApplyCliArgs, ApplyEnvVars, Load overloads, etc.)
