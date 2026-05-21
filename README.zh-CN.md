@@ -10,7 +10,7 @@
   <a href="https://github.com/bimwright/rvt-mcp/actions/workflows/build.yml"><img src="https://github.com/bimwright/rvt-mcp/actions/workflows/build.yml/badge.svg" alt="build" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="license" /></a>
   <a href="#supported-revit-versions"><img src="https://img.shields.io/badge/Revit-2022--2027-186BFF" alt="Revit 2022-2027" /></a>
-  <a href="#toolsets"><img src="https://img.shields.io/badge/MCP-57%20tools%20%7C%2060%20adaptive-6C47FF" alt="MCP tools" /></a>
+  <a href="#toolsets"><img src="https://img.shields.io/badge/MCP-175%20tools%20%7C%20178%20adaptive-6C47FF" alt="MCP tools" /></a>
 </p>
 
 <p align="center">
@@ -306,13 +306,13 @@ pwsh .\uninstall-all.ps1 -KeepLogs
 
 ## Toolsets
 
-非 adaptive surface 包含 57 个 tools，分布在 12 个 toolsets。启用 adaptive bake 后，surface 扩展到 60 个 tools。
+非 adaptive surface 包含 175 个 tools，分布在 19 个 toolsets。启用 adaptive bake 后，surface 扩展到 178 个 tools。
 
-默认启用 toolsets：`query`、`create`、`view`、`toolbaker`、`meta`、`lint`。
+默认启用 toolsets：`query`、`create`、`view`、`schedule`、`families`、`mep`、`graphics`、`export`、`toolbaker`、`meta`、`lint`、`sheets`、`materials`、`geometry`、`annotation`、`rooms`、`links`。
 
-可选 toolsets：`modify`、`delete`、`annotation`、`export`、`mep`。
+可选 toolsets：`modify`、`delete`。
 
-使用 `--toolsets query,create,modify,meta` 或 `--toolsets all` 启用。加上 `--read-only` 会移除 `create`、`modify`、`delete` 和 `toolbaker`，无论它们是如何被请求的。
+使用 `--toolsets query,create,modify,meta` 或 `--toolsets all` 启用。加上 `--read-only` 会移除 write-capable toolsets，无论它们是如何被请求的。
 
 | Toolset | Tools | Default |
 |---------|-------|---------|
@@ -324,10 +324,15 @@ pwsh .\uninstall-all.ps1 -KeepLogs
 | `schedule` | list/inspect, fields/formulas/data/elements, create + add/update field, filter+sort | on |
 | `modify` | `operate_element`, `color_elements`, parameter/type/workset edits | off |
 | `delete` | `delete_element` | off |
-| `annotation` | `tag_all_rooms`, `tag_all_walls` | off |
-| `export` | `export_room_data` | off |
-| `mep` | `detect_system_elements` | off |
+| `annotation` | element/category 标注、文字注释、尺寸标注、filled region、detail line、callout、keynote、未标注/未尺寸检查、空 tag 清理 | on |
+| `export` | `export_room_data` | on |
+| `mep` | `detect_system_elements` | on |
 | `toolbaker` | accepted-tool list/run, send-code, adaptive suggestion lifecycle | on |
+| `sheets` | sheet 创建、复制、占位符 sheet、列表 sheet、图纸标题栏参数设置、明细表放置、版本修订及关联、图纸重命名/重编号 | on |
+| `materials` | 列表/创建/复制材质，设置外观/身份/结构/热力属性，材质工程量统计，分配材质到图元 | on |
+| `geometry` | 图元包围盒、几何实体信息、测量图元间距、冲突碰撞检测、射线投射、体积和面积分析、图元形心位置、几何复杂度分析 | on |
+| `rooms` | rooms、areas、spaces、边界、洞口、room separator、finishes、自动创建 rooms、area tag | on |
+| `links` | Revit/CAD link 列表、CAD import/link、Revit link load/unload/reload、link elements、坐标、project base point | on |
 
 ### 全部 tools
 

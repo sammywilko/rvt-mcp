@@ -10,7 +10,7 @@
   <a href="https://github.com/bimwright/rvt-mcp/actions/workflows/build.yml"><img src="https://github.com/bimwright/rvt-mcp/actions/workflows/build.yml/badge.svg" alt="build" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="license" /></a>
   <a href="#supported-revit-versions"><img src="https://img.shields.io/badge/Revit-2022--2027-186BFF" alt="Revit 2022-2027" /></a>
-  <a href="#toolsets"><img src="https://img.shields.io/badge/MCP-57%20tools%20%7C%2060%20adaptive-6C47FF" alt="MCP tools" /></a>
+  <a href="#toolsets"><img src="https://img.shields.io/badge/MCP-175%20tools%20%7C%20178%20adaptive-6C47FF" alt="MCP tools" /></a>
 </p>
 
 <p align="center">
@@ -300,13 +300,13 @@ powershell -ExecutionPolicy Bypass -File .\install.ps1 -SourceDir . -Client none
 
 ## Toolsets
 
-Surface không adaptive có 57 tools trên 12 toolsets. Khi bật adaptive bake, surface mở rộng thành 60 tools.
+Surface không adaptive có 175 tools trên 19 toolsets. Khi bật adaptive bake, surface mở rộng thành 178 tools.
 
-Toolsets bật mặc định: `query`, `create`, `view`, `toolbaker`, `meta`, `lint`.
+Toolsets bật mặc định: `query`, `create`, `view`, `schedule`, `families`, `mep`, `graphics`, `export`, `toolbaker`, `meta`, `lint`, `sheets`, `materials`, `geometry`, `annotation`, `rooms`, `links`.
 
-Toolsets tùy chọn: `modify`, `delete`, `annotation`, `export`, `mep`.
+Toolsets tùy chọn: `modify`, `delete`.
 
-Bật bằng `--toolsets query,create,modify,meta` hoặc `--toolsets all`. Thêm `--read-only` để loại `create`, `modify`, `delete` và `toolbaker` dù chúng được request bằng cách nào.
+Bật bằng `--toolsets query,create,modify,meta` hoặc `--toolsets all`. Thêm `--read-only` để loại write-capable toolsets dù chúng được request bằng cách nào.
 
 | Toolset | Tools | Default |
 |---------|-------|---------|
@@ -318,10 +318,15 @@ Bật bằng `--toolsets query,create,modify,meta` hoặc `--toolsets all`. Thê
 | `schedule` | list/inspect, fields/formulas/data/elements, create + add/update field, filter+sort | on |
 | `modify` | `operate_element`, `color_elements`, parameter/type/workset edits | off |
 | `delete` | `delete_element` | off |
-| `annotation` | `tag_all_rooms`, `tag_all_walls` | off |
-| `export` | `export_room_data` | off |
-| `mep` | `detect_system_elements` | off |
+| `annotation` | tag element/category, text note, dimension, filled region, detail line, callout, keynote, kiểm tra untagged/undimensioned, dọn empty tags | on |
+| `export` | `export_room_data` | on |
+| `mep` | `detect_system_elements` | on |
 | `toolbaker` | accepted-tool list/run, send-code, adaptive suggestion lifecycle | on |
+| `sheets` | tạo sheet, duplicate, placeholder sheet, list sheets, titleblock parameters, đặt schedule, revisions, đánh số lại sheet | on |
+| `materials` | list/tạo/duplicate material, properties của appearance/identity/structural/thermal, material takeoff, gán vào element | on |
+| `geometry` | bounding box của element, geometry, đo khoảng cách, phát hiện va chạm (clash), raycast, tính volume/area, centroid, độ phức tạp | on |
+| `rooms` | rooms, areas, spaces, boundaries, openings, room separators, finishes, auto-create rooms, tag areas | on |
+| `links` | list Revit/CAD links, import/link CAD, link/unload/reload Revit model, link elements, coordinates, project base point | on |
 
 ### Tất cả tools
 

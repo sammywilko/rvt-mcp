@@ -20,6 +20,10 @@ namespace Bimwright.Rvt.Tests
             Path.GetDirectoryName(typeof(ToolsListSnapshotTests).Assembly.Location)!,
             "..", "..", "..", "Golden", "tools-list-adaptive-bake.json");
 
+        private static readonly string StructuralGoldenPath = Path.Combine(
+            Path.GetDirectoryName(typeof(ToolsListSnapshotTests).Assembly.Location)!,
+            "..", "..", "..", "Golden", "tools-list-structural.json");
+
         [Fact]
         public void Tools_list_matches_golden_snapshot()
         {
@@ -71,6 +75,34 @@ namespace Bimwright.Rvt.Tests
             }
 
             var expected = File.ReadAllText(AdaptiveGoldenPath);
+            Assert.Equal(expected.ReplaceLineEndings("\n"), captured.ReplaceLineEndings("\n"));
+        }
+
+        [Fact]
+        public void Structural_toolset_matches_golden_snapshot()
+        {
+            var captured = CaptureToolsList(new BimwrightConfig
+            {
+                Toolsets = new System.Collections.Generic.List<string> { "structural" }
+            });
+
+            var update = Environment.GetEnvironmentVariable("UPDATE_SNAPSHOTS") == "1";
+            var goldenExists = File.Exists(StructuralGoldenPath);
+
+            if (update || !goldenExists)
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(StructuralGoldenPath)!);
+                File.WriteAllText(StructuralGoldenPath, captured);
+                if (!goldenExists)
+                {
+                    Console.Error.WriteLine(
+                        $"[ToolsListSnapshot] Structural golden file bootstrapped at {StructuralGoldenPath}. " +
+                        "Please commit it.");
+                }
+                return;
+            }
+
+            var expected = File.ReadAllText(StructuralGoldenPath);
             Assert.Equal(expected.ReplaceLineEndings("\n"), captured.ReplaceLineEndings("\n"));
         }
 

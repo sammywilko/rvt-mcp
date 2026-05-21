@@ -10,7 +10,7 @@
   <a href="https://github.com/bimwright/rvt-mcp/actions/workflows/build.yml"><img src="https://github.com/bimwright/rvt-mcp/actions/workflows/build.yml/badge.svg" alt="build" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="license" /></a>
   <a href="#supported-revit-versions"><img src="https://img.shields.io/badge/Revit-2022--2027-186BFF" alt="Revit 2022-2027" /></a>
-  <a href="#toolsets"><img src="https://img.shields.io/badge/MCP-57%20tools%20%7C%2060%20adaptive-6C47FF" alt="MCP tools" /></a>
+  <a href="#toolsets"><img src="https://img.shields.io/badge/MCP-175%20tools%20%7C%20178%20adaptive-6C47FF" alt="MCP tools" /></a>
 </p>
 
 <p align="center">
@@ -300,13 +300,13 @@ This path is for development and backward compatibility. Client machines should 
 
 ## Toolsets
 
-The non-adaptive surface contains 57 tools across 12 toolsets. When adaptive bake is enabled, the surface expands to 60 tools.
+The non-adaptive surface contains 175 tools across 19 toolsets. When adaptive bake is enabled, the surface expands to 178 tools.
 
-Default-on toolsets: `query`, `create`, `view`, `toolbaker`, `meta`, `lint`.
+Default-on toolsets: `query`, `create`, `view`, `schedule`, `families`, `mep`, `graphics`, `export`, `toolbaker`, `meta`, `lint`, `sheets`, `materials`, `geometry`, `annotation`, `rooms`, `links`.
 
-Optional toolsets: `modify`, `delete`, `annotation`, `export`, `mep`.
+Optional toolsets: `modify`, `delete`.
 
-Enable with `--toolsets query,create,modify,meta` or `--toolsets all`. Add `--read-only` to strip `create`, `modify`, `delete`, and `toolbaker` regardless of what was requested.
+Enable with `--toolsets query,create,modify,meta` or `--toolsets all`. Add `--read-only` to strip write-capable toolsets regardless of what was requested.
 
 | Toolset | Tools | Default |
 |---------|-------|---------|
@@ -318,10 +318,15 @@ Enable with `--toolsets query,create,modify,meta` or `--toolsets all`. Add `--re
 | `schedule` | list/inspect, fields/formulas/data/elements, create + add/update field, filter+sort | on |
 | `modify` | `operate_element`, `color_elements`, parameter/type/workset edits | off |
 | `delete` | `delete_element` | off |
-| `annotation` | `tag_all_rooms`, `tag_all_walls` | off |
-| `export` | `export_room_data` | off |
-| `mep` | `detect_system_elements` | off |
+| `annotation` | element/category tagging, text notes, dimensions, filled regions, detail lines, callouts, keynotes, untagged/undimensioned checks, empty-tag cleanup | on |
+| `export` | `export_room_data` | on |
+| `mep` | `detect_system_elements` | on |
 | `toolbaker` | accepted-tool list/run, send-code, adaptive suggestion lifecycle | on |
+| `sheets` | sheet creation, duplication, placeholder sheets, list sheets, titleblock parameters, place schedule, revisions, sheet renumbering | on |
+| `materials` | list/create/duplicate materials, material appearance/identity/structural/thermal properties, material takeoff, element assignment | on |
+| `geometry` | element bounding box, element geometry, distance measurement, clash detection, raycasting, volume/area analysis, centroid, complexity | on |
+| `rooms` | rooms, areas, spaces, boundaries, openings, room separators, finishes, auto-room creation, area tagging | on |
+| `links` | Revit/CAD link listing, CAD import/link, Revit link load/unload/reload, link elements, coordinates, project base point | on |
 
 ### All Tools
 

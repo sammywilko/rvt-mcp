@@ -41,6 +41,7 @@ namespace Bimwright.Rvt.Server
             // mode (--http) stay as separate CLI parses for now; A3 toolsets gating uses
             // BimwrightConfig.
             var config = BimwrightConfig.Load(args);
+            ServerState.Config = config;
             if (!string.IsNullOrWhiteSpace(config.Target))
             {
                 var target = config.Target.ToUpperInvariant();
@@ -1108,6 +1109,107 @@ namespace Bimwright.Rvt.Server
             }
             catch (Exception ex) { return $"Error: {ex.Message}"; }
         }
+
+        [McpServerTool(Name = "capture_view_image"), System.ComponentModel.Description("Export a view to a raster image. output_path must be absolute and inside %TEMP% or %LOCALAPPDATA%\\Bimwright\\captures\\. Params: view_id (optional, default active), output_path (required), pixel_size (default 1600), image_format ('png'|'jpeg', default 'png').")]
+        public static async Task<string> CaptureViewImage(
+            string output_path,
+            long? view_id = null, int pixel_size = 1600, string image_format = "png")
+        {
+            var blocked = ServerState.BlockIfReadOnly("capture_view_image");
+            if (blocked != null) return blocked;
+
+            try
+            {
+                var result = await ToolGateway.SendToRevit("capture_view_image", new
+                {
+                    view_id,
+                    output_path,
+                    pixel_size,
+                    image_format
+                });
+                return JsonConvert.SerializeObject(result, Formatting.Indented);
+            }
+            catch (Exception ex) { return $"Error: {ex.Message}"; }
+        }
+
+        [McpServerTool(Name = "set_view_crop"), System.ComponentModel.Description("Modify view crop: enabled, visible, explicit bounds_json (mm), or fit_element_ids with padding_mm. Params: view_id (optional, default active), enabled, visible, bounds_json, fit_element_ids, padding_mm (default 100).")]
+        public static async Task<string> SetViewCrop(
+            long? view_id = null, bool? enabled = null, bool? visible = null,
+            string bounds_json = null, long[] fit_element_ids = null, double padding_mm = 100)
+        {
+            var blocked = ServerState.BlockIfReadOnly("set_view_crop");
+            if (blocked != null) return blocked;
+
+            try
+            {
+                object boundsObj = null;
+                if (!string.IsNullOrWhiteSpace(bounds_json))
+                    boundsObj = JObject.Parse(bounds_json);
+
+                var result = await ToolGateway.SendToRevit("set_view_crop", new
+                {
+                    view_id,
+                    enabled,
+                    visible,
+                    bounds = boundsObj,
+                    fit_element_ids,
+                    padding_mm
+                });
+                return JsonConvert.SerializeObject(result, Formatting.Indented);
+            }
+            catch (Exception ex) { return $"Error: {ex.Message}"; }
+        }
+
+        [McpServerTool(Name = "set_view_scale"), System.ComponentModel.Description("Set the graphical scale denominator of a view (e.g., 50 for 1:50). Params: view_id (optional, default active), scale (required, positive integer).")]
+        public static async Task<string> SetViewScale(int scale, long? view_id = null)
+        {
+            var blocked = ServerState.BlockIfReadOnly("set_view_scale");
+            if (blocked != null) return blocked;
+
+            try
+            {
+                var result = await ToolGateway.SendToRevit("set_view_scale", new { view_id, scale });
+                return JsonConvert.SerializeObject(result, Formatting.Indented);
+            }
+            catch (Exception ex) { return $"Error: {ex.Message}"; }
+        }
+
+        [McpServerTool(Name = "activate_view"), System.ComponentModel.Description("Set the active view in Revit UI. UI-only operation. Params: view_id OR view_name (required).")]
+        public static async Task<string> ActivateView(long? view_id = null, string view_name = null)
+        {
+            var blocked = ServerState.BlockIfReadOnly("activate_view");
+            if (blocked != null) return blocked;
+
+            try
+            {
+                var result = await ToolGateway.SendToRevit("activate_view", new { view_id, view_name });
+                return JsonConvert.SerializeObject(result, Formatting.Indented);
+            }
+            catch (Exception ex) { return $"Error: {ex.Message}"; }
+        }
+
+        [McpServerTool(Name = "show_element_in_view"), System.ComponentModel.Description("Activate view, select elements, zoom to elements. UI-only. Params: element_ids (required), view_id (optional), activate_view (default true), select (default true), zoom (default true).")]
+        public static async Task<string> ShowElementInView(
+            long[] element_ids,
+            long? view_id = null, bool activate_view = true, bool select = true, bool zoom = true)
+        {
+            var blocked = ServerState.BlockIfReadOnly("show_element_in_view");
+            if (blocked != null) return blocked;
+
+            try
+            {
+                var result = await ToolGateway.SendToRevit("show_element_in_view", new
+                {
+                    element_ids,
+                    view_id,
+                    activate_view,
+                    select,
+                    zoom
+                });
+                return JsonConvert.SerializeObject(result, Formatting.Indented);
+            }
+            catch (Exception ex) { return $"Error: {ex.Message}"; }
+        }
     }
 
     [McpServerToolType, Toolset("export")]
@@ -2057,6 +2159,51 @@ namespace Bimwright.Rvt.Server
             catch (Exception ex) { return $"Error: {ex.Message}"; }
         }
 
+        [McpServerTool(Name = "set_project_info"), System.ComponentModel.Description("Set typed fields on doc.ProjectInformation. Params: name, number, client_name, address, status, issue_date (all optional, at least one required). Returns changed_fields and skipped reasons for read-only/missing parameters.")]
+        public static async Task<string> SetProjectInfo(
+            string name = null, string number = null,
+            string client_name = null, string address = null,
+            string status = null, string issue_date = null)
+        {
+            try
+            {
+                var result = await ToolGateway.SendToRevit("set_project_info", new
+                {
+                    name,
+                    number,
+                    client_name,
+                    address,
+                    status,
+                    issue_date
+                });
+                return JsonConvert.SerializeObject(result, Formatting.Indented);
+            }
+            catch (Exception ex) { return $"Error: {ex.Message}"; }
+        }
+
+        [McpServerTool(Name = "purge_unused"), System.ComponentModel.Description("Conservative purge of unused loadable family symbols. MVP supports targets=['families'] only. Skips in-place families and symbols with any placed instance. dry_run defaults to true.")]
+        public static async Task<string> PurgeUnused(
+            string[] targets = null, bool dry_run = true, int limit = 500)
+        {
+            if (!dry_run)
+            {
+                var blocked = ServerState.BlockIfReadOnly("purge_unused");
+                if (blocked != null) return blocked;
+            }
+
+            try
+            {
+                var result = await ToolGateway.SendToRevit("purge_unused", new
+                {
+                    targets = targets ?? new[] { "families" },
+                    dry_run,
+                    limit
+                });
+                return JsonConvert.SerializeObject(result, Formatting.Indented);
+            }
+            catch (Exception ex) { return $"Error: {ex.Message}"; }
+        }
+
         [McpServerTool(Name = "analyze_usage_patterns", ReadOnly = true, Idempotent = true), System.ComponentModel.Description(
             "Analyze MCP tool usage. Returns session stats (call counts, success rates, top tools, flags) " +
             "plus historical data from journal files. " +
@@ -2129,7 +2276,163 @@ namespace Bimwright.Rvt.Server
     [McpServerToolType, Toolset("structural")]
     public class StructuralTools
     {
-        // Handlers added in Tasks 2-11.
+        [McpServerTool(Name = "create_structural_column"), System.ComponentModel.Description("Create a structural column at a point. Params: type_id OR type_name (structural column family), x_mm/y_mm/z_mm (default 0), level_id OR level_name (default lowest level), height_mm (optional top offset), rotation_deg (optional, default 0).")]
+        public static async Task<string> CreateStructuralColumn(
+            long? type_id = null, string type_name = null,
+            double x_mm = 0, double y_mm = 0, double z_mm = 0,
+            long? level_id = null, string level_name = null,
+            double? height_mm = null, double rotation_deg = 0)
+        {
+            try
+            {
+                var result = await ToolGateway.SendToRevit("create_structural_column", new {
+                    type_id, type_name, x_mm, y_mm, z_mm,
+                    level_id, level_name, height_mm, rotation_deg
+                });
+                return JsonConvert.SerializeObject(result, Formatting.Indented);
+            }
+            catch (Exception ex) { return $"Error: {ex.Message}"; }
+        }
+
+        [McpServerTool(Name = "create_structural_beam"), System.ComponentModel.Description("Create a structural beam between two points. Params: type_id OR type_name (structural framing family), start_x_mm/start_y_mm/start_z_mm (required), end_x_mm/end_y_mm/end_z_mm (required), level_id OR level_name, usage ('beam'|'brace'|'joist', default 'beam').")]
+        public static async Task<string> CreateStructuralBeam(
+            double start_x_mm, double start_y_mm, double end_x_mm, double end_y_mm,
+            long? type_id = null, string type_name = null,
+            double start_z_mm = 0, double end_z_mm = 0,
+            long? level_id = null, string level_name = null, string usage = "beam")
+        {
+            try
+            {
+                var result = await ToolGateway.SendToRevit("create_structural_beam", new {
+                    type_id, type_name, start_x_mm, start_y_mm, start_z_mm,
+                    end_x_mm, end_y_mm, end_z_mm, level_id, level_name, usage
+                });
+                return JsonConvert.SerializeObject(result, Formatting.Indented);
+            }
+            catch (Exception ex) { return $"Error: {ex.Message}"; }
+        }
+
+        [McpServerTool(Name = "create_structural_wall"), System.ComponentModel.Description("Create a structural wall between two points. Params: start_x_mm/start_y_mm/end_x_mm/end_y_mm (required), wall_type_id OR wall_type_name (optional, default current), level_id OR level_name, height_mm (default 3000). Sets isStructural=true.")]
+        public static async Task<string> CreateStructuralWall(
+            double start_x_mm, double start_y_mm, double end_x_mm, double end_y_mm,
+            long? wall_type_id = null, string wall_type_name = null,
+            long? level_id = null, string level_name = null, double height_mm = 3000)
+        {
+            try
+            {
+                var result = await ToolGateway.SendToRevit("create_structural_wall", new {
+                    wall_type_id, wall_type_name, start_x_mm, start_y_mm,
+                    end_x_mm, end_y_mm, level_id, level_name, height_mm
+                });
+                return JsonConvert.SerializeObject(result, Formatting.Indented);
+            }
+            catch (Exception ex) { return $"Error: {ex.Message}"; }
+        }
+
+        [McpServerTool(Name = "create_foundation_isolated"), System.ComponentModel.Description("Create an isolated/spread footing at a point or under an existing column. Params: type_id OR type_name (StructuralFoundation), x_mm/y_mm (required), z_mm (default 0), level_id OR level_name, host_column_id (optional — when supplied, location is taken from the column), rotation_deg.")]
+        public static async Task<string> CreateFoundationIsolated(
+            double x_mm, double y_mm,
+            long? type_id = null, string type_name = null, double z_mm = 0,
+            long? level_id = null, string level_name = null,
+            long? host_column_id = null, double rotation_deg = 0)
+        {
+            try
+            {
+                var result = await ToolGateway.SendToRevit("create_foundation_isolated", new {
+                    type_id, type_name, x_mm, y_mm, z_mm,
+                    level_id, level_name, host_column_id, rotation_deg
+                });
+                return JsonConvert.SerializeObject(result, Formatting.Indented);
+            }
+            catch (Exception ex) { return $"Error: {ex.Message}"; }
+        }
+
+        [McpServerTool(Name = "create_foundation_wall"), System.ComponentModel.Description("Create a wall foundation under an existing wall. Params: wall_id (required), foundation_type_id OR foundation_type_name (optional, defaults to first WallFoundation type).")]
+        public static async Task<string> CreateFoundationWall(
+            long wall_id,
+            long? foundation_type_id = null, string foundation_type_name = null)
+        {
+            try
+            {
+                var result = await ToolGateway.SendToRevit("create_foundation_wall", new {
+                    wall_id, foundation_type_id, foundation_type_name
+                });
+                return JsonConvert.SerializeObject(result, Formatting.Indented);
+            }
+            catch (Exception ex) { return $"Error: {ex.Message}"; }
+        }
+
+        [McpServerTool(Name = "list_rebar", ReadOnly = true, Idempotent = true), System.ComponentModel.Description("List rebar instances. Optional filters: host_id, view_id, limit (default 500). Returns id, bar_type, diameter_mm, quantity, layout_rule, host_id, host_category.")]
+        public static async Task<string> ListRebar(long? host_id = null, long? view_id = null, int limit = 500)
+        {
+            try
+            {
+                var result = await ToolGateway.SendToRevit("list_rebar", new { host_id, view_id, limit });
+                return JsonConvert.SerializeObject(result, Formatting.Indented);
+            }
+            catch (Exception ex) { return $"Error: {ex.Message}"; }
+        }
+
+        [McpServerTool(Name = "get_structural_loads", ReadOnly = true, Idempotent = true), System.ComponentModel.Description("List structural loads (point, line, area). Filter by element_id (host) or load_type ('point'|'line'|'area'). Returns force/moment components per load.")]
+        public static async Task<string> GetStructuralLoads(
+            long? element_id = null, string load_type = null, int limit = 500)
+        {
+            try
+            {
+                var result = await ToolGateway.SendToRevit("get_structural_loads", new { element_id, load_type, limit });
+                return JsonConvert.SerializeObject(result, Formatting.Indented);
+            }
+            catch (Exception ex) { return $"Error: {ex.Message}"; }
+        }
+
+        [McpServerTool(Name = "set_structural_load"), System.ComponentModel.Description("Update force/moment of an existing structural load. action='update' supported; action='create' returns not_implemented. Params: action ('update'), load_id (required for update), force_x/y/z, moment_x/y/z (optional, units = Revit internal).")]
+        public static async Task<string> SetStructuralLoad(
+            string action,
+            long? load_id = null,
+            double? force_x = null, double? force_y = null, double? force_z = null,
+            double? moment_x = null, double? moment_y = null, double? moment_z = null)
+        {
+            try
+            {
+                var result = await ToolGateway.SendToRevit("set_structural_load", new
+                {
+                    action,
+                    load_id,
+                    force_x,
+                    force_y,
+                    force_z,
+                    moment_x,
+                    moment_y,
+                    moment_z
+                });
+                return JsonConvert.SerializeObject(result, Formatting.Indented);
+            }
+            catch (Exception ex) { return $"Error: {ex.Message}"; }
+        }
+
+        [McpServerTool(Name = "analyze_structural_connections", ReadOnly = true, Idempotent = true), System.ComponentModel.Description("Audit structural joins between columns and beams. Optional element_ids filter (default = all structural framing + columns). Returns joined_count and joined_with per element.")]
+        public static async Task<string> AnalyzeStructuralConnections(
+            long[] element_ids = null, int limit = 500)
+        {
+            try
+            {
+                var result = await ToolGateway.SendToRevit("analyze_structural_connections", new { element_ids, limit });
+                return JsonConvert.SerializeObject(result, Formatting.Indented);
+            }
+            catch (Exception ex) { return $"Error: {ex.Message}"; }
+        }
+
+        [McpServerTool(Name = "tag_structural_framing"), System.ComponentModel.Description("Place structural framing tags on beams in the active or specified view. Params: view_id (optional, default active view), tag_type_id (optional, default first StructuralFramingTags), element_ids (optional, default all framing in view).")]
+        public static async Task<string> TagStructuralFraming(
+            long? view_id = null, long? tag_type_id = null, long[] element_ids = null)
+        {
+            try
+            {
+                var result = await ToolGateway.SendToRevit("tag_structural_framing", new { view_id, tag_type_id, element_ids });
+                return JsonConvert.SerializeObject(result, Formatting.Indented);
+            }
+            catch (Exception ex) { return $"Error: {ex.Message}"; }
+        }
     }
 
     [McpServerToolType, Toolset("lint")]
@@ -2163,6 +2466,18 @@ namespace Bimwright.Rvt.Server
             try
             {
                 var result = await ToolGateway.SendToRevit("detect_firm_profile");
+                return JsonConvert.SerializeObject(result, Formatting.Indented);
+            }
+            catch (Exception ex) { return $"Error: {ex.Message}"; }
+        }
+
+        [McpServerTool(Name = "get_model_warnings_summary", ReadOnly = true, Idempotent = true), System.ComponentModel.Description("Group doc.GetWarnings() by description; return count, severity, and optional example failing element ids per group. Params: include_examples (default true), max_examples_per_type (default 5).")]
+        public static async Task<string> GetModelWarningsSummary(
+            bool include_examples = true, int max_examples_per_type = 5)
+        {
+            try
+            {
+                var result = await ToolGateway.SendToRevit("get_model_warnings_summary", new { include_examples, max_examples_per_type });
                 return JsonConvert.SerializeObject(result, Formatting.Indented);
             }
             catch (Exception ex) { return $"Error: {ex.Message}"; }
