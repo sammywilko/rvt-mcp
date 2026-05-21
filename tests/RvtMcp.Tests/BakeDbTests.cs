@@ -147,8 +147,8 @@ namespace RvtMcp.Tests
 
             var first = DateTimeOffset.Parse("2026-04-27T01:00:00Z");
             var second = DateTimeOffset.Parse("2026-04-27T02:00:00Z");
-            Assert.True(db.TryRecordRegistryRun("accepted_tool", "R26", success: true, error: null, now: first));
-            Assert.True(db.TryRecordRegistryRun("accepted_tool", "R27", success: false, error: "Compile failed", now: second));
+            Assert.True(db.TryRecordRegistryRun("accepted_tool", "2026", success: true, error: null, now: first));
+            Assert.True(db.TryRecordRegistryRun("accepted_tool", "2027", success: false, error: "Compile failed", now: second));
 
             var record = Assert.Single(db.ReadRegistryRecords());
             Assert.Equal(1, record.UsageCount);
@@ -156,9 +156,9 @@ namespace RvtMcp.Tests
             Assert.Equal(0.5, record.FailureRate, precision: 3);
 
             var compat = JObject.Parse(record.CompatMap);
-            Assert.True((bool)compat["tested"]!["R26"]!["ok"]!);
-            Assert.False((bool)compat["tested"]!["R27"]!["ok"]!);
-            Assert.Equal("Compile failed", (string)compat["tested"]!["R27"]!["last_error"]);
+            Assert.True((bool)compat["tested"]!["2026"]!["ok"]!);
+            Assert.False((bool)compat["tested"]!["2027"]!["ok"]!);
+            Assert.Equal("Compile failed", (string)compat["tested"]!["2027"]!["last_error"]);
 
             var history = JArray.Parse(record.VersionHistoryBlob);
             Assert.Equal(new[] { "run_succeeded", "run_failed" }, history.Select(e => (string)e!["event"]).ToArray());
@@ -293,7 +293,7 @@ INSERT INTO suggestions(
                 Description = "Accepted",
                 Source = "send_code",
                 ParamsSchema = "{}",
-                CompatMap = @"{""origin"":""R26"",""tested"":{}}",
+                CompatMap = @"{""origin"":""2026"",""tested"":{}}",
                 ReviewedByUser = true,
                 CreatedAt = "2026-04-27T00:00:00.0000000+00:00",
                 FailureRate = 0,

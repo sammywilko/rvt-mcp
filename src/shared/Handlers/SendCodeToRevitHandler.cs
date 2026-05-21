@@ -90,11 +90,15 @@ public class McpDynamicScript
                         return Fail("Method 'Run(UIApplication)' not found in McpDynamicScript.");
 
                     var output = method.Invoke(null, new object[] { app });
-                    return CommandResult.Ok(McpResponsePrivacy.RedactDataForResponse(Name, new
+                    // Live wire returns raw output so the agent can read structured JSON
+                    // (anonymous objects serialize properly, strings stay strings, numbers stay numbers).
+                    // Persistence paths (McpLogger, McpSessionLog, JournalEntry, bake suggestions, usage
+                    // events) call BakeRedactor independently at write time, so logs/bakes remain redacted.
+                    return CommandResult.Ok(new
                     {
                         executed = true,
-                        result = output?.ToString() ?? "(null)"
-                    }));
+                        result = output
+                    });
                 }
             }
             catch (TargetInvocationException ex)

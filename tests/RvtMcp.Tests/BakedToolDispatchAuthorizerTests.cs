@@ -112,13 +112,13 @@ namespace RvtMcp.Tests
             var meta = new BakedToolMeta
             {
                 Name = "custom_baked_command",
-                CompatMap = @"{""origin"":""R26"",""tested"":{""R26"":{""ok"":true}}}"
+                CompatMap = @"{""origin"":""2026"",""tested"":{""2026"":{""ok"":true}}}"
             };
 
-            var hasWarning = BakedToolDispatchAuthorizer.TryGetCompatWarning(meta, "R27", out var warning);
+            var hasWarning = BakedToolDispatchAuthorizer.TryGetCompatWarning(meta, "2027", out var warning);
 
             Assert.True(hasWarning);
-            Assert.Contains("untested in Revit R27", warning);
+            Assert.Contains("untested in Revit 2027", warning);
         }
 
         [Fact]

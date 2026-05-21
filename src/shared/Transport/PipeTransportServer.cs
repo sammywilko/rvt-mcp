@@ -49,7 +49,7 @@ namespace RvtMcp.Plugin
             }
             catch { }
 
-            AuthToken.DeleteDiscoveryFile("pipe");
+            AuthToken.DeleteDiscoveryFile();
 
             Log("Stopped");
         }

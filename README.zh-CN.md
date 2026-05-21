@@ -1,4 +1,4 @@
-﻿<!-- mcp-name: io.github.bimwright/rvt-mcp -->
+<!-- mcp-name: io.github.bimwright/rvt-mcp -->
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/bimwright/.github/master/assets/logos/rvt-mcp.png" alt="rvt-mcp" width="180" />
@@ -431,7 +431,7 @@ pwsh .\uninstall-all.ps1 -KeepLogs
 
 | Setting | CLI | Env | JSON key |
 |---------|-----|-----|----------|
-| Target Revit year | `--target R23` | `BIMWRIGHT_TARGET` | `target` |
+| Target Revit year | `--target 2023` | `BIMWRIGHT_TARGET` | `target` |
 | Toolsets | `--toolsets query,create` | `BIMWRIGHT_TOOLSETS` | `toolsets` |
 | Read-only | `--read-only` | `BIMWRIGHT_READ_ONLY=1` | `readOnly` |
 | Allow LAN bind | plugin-side only | `BIMWRIGHT_ALLOW_LAN_BIND=1` | `allowLanBind` |

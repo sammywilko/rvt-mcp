@@ -67,7 +67,7 @@ namespace RvtMcp.Tests
                 ""sample"":{""projectName"":""Project Alpha"",""url"":""https://example.com/client""}
             }";
 
-            var url = CreateBakeIssueDraftHandler.Handle(suggestion, "R26");
+            var url = CreateBakeIssueDraftHandler.Handle(suggestion, "2026");
 
             Assert.StartsWith("https://github.com/bimwright/rvt-mcp/issues/new?", url);
             Assert.Contains("title=MCP%20gap%20signal%3A%20recurring%20send_code_to_revit%20pattern", url);
@@ -76,7 +76,7 @@ namespace RvtMcp.Tests
             var body = GetQueryValue(url, "body");
             Assert.Contains("Source: `send_code_to_revit` cluster", body);
             Assert.Contains("Frequency: 9 over 10 days", body);
-            Assert.Contains("Current Revit version: R26", body);
+            Assert.Contains("Current Revit version: 2026", body);
             Assert.Contains("Redacted summary:", body);
             Assert.DoesNotContain(@"C:\Users\Admin", body);
             Assert.DoesNotContain("Project Alpha", body);
@@ -100,7 +100,7 @@ namespace RvtMcp.Tests
                 "s1",
                 "never_with_gap_signal",
                 DateTimeOffset.Parse("2026-04-27T00:00:00Z"),
-                "R26",
+                "2026",
                 auditLog);
 
             Assert.StartsWith("https://github.com/bimwright/rvt-mcp/issues/new?", url);
@@ -127,7 +127,7 @@ namespace RvtMcp.Tests
                 "s1",
                 "never_with_gap_signal",
                 DateTimeOffset.Parse("2026-04-27T00:00:00Z"),
-                "R26");
+                "2026");
 
             var root = JObject.Parse(json);
             Assert.False((bool)root["ok"]!);
@@ -246,7 +246,7 @@ namespace RvtMcp.Tests
                     ["source_code"] = "compiled source",
                     ["params_schema"] = (string)request["params_schema"],
                     ["dll_base64"] = System.Convert.ToBase64String(new byte[] { 1, 2, 3 }),
-                    ["revit_version"] = "R26"
+                    ["revit_version"] = "2026"
                 }));
 
             var root = JObject.Parse(json);
@@ -291,7 +291,7 @@ namespace RvtMcp.Tests
                         ["source_code"] = capturedSource,
                         ["params_schema"] = (string)request["params_schema"],
                         ["dll_base64"] = System.Convert.ToBase64String(new byte[] { 4, 5, 6 }),
-                        ["revit_version"] = "R26"
+                        ["revit_version"] = "2026"
                     });
                 });
 

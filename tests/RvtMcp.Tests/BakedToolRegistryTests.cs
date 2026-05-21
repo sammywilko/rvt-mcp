@@ -59,11 +59,11 @@ namespace RvtMcp.Tests
             Assert.True(db.TryInsertRegistryRecord(Record("shared_tool", usageCount: 0, history: "[]")));
             var registry = new BakedToolRegistry(bakedDir);
 
-            Assert.True(db.TryRecordRegistryRun("shared_tool", "R27", success: true, error: null, DateTimeOffset.UtcNow));
+            Assert.True(db.TryRecordRegistryRun("shared_tool", "2027", success: true, error: null, DateTimeOffset.UtcNow));
 
             var tool = Assert.Single(registry.GetAllSortedForList());
             var tested = (JObject)JObject.Parse(tool.CompatMap)["tested"];
-            Assert.True(tested["R27"].Value<bool>("ok"));
+            Assert.True(tested["2027"].Value<bool>("ok"));
             Assert.Equal(1, tool.UsageCount);
         }
 
@@ -75,7 +75,7 @@ namespace RvtMcp.Tests
                 Description = name,
                 Source = "send_code",
                 ParamsSchema = "{}",
-                CompatMap = @"{""origin"":""R26"",""tested"":{}}",
+                CompatMap = @"{""origin"":""2026"",""tested"":{}}",
                 ReviewedByUser = true,
                 CreatedAt = DateTimeOffset.UtcNow.ToString("o"),
                 UsageCount = usageCount,
@@ -115,7 +115,7 @@ INSERT INTO registry(
     name, description, source, params_schema, compat_map, source_code,
     reviewed_by_user, created_at, last_used_at, failure_rate, version_history_blob
 ) VALUES (
-    'task8_tool', 'Task 8', 'send_code', '{}', '{""origin"":""R26"",""tested"":{}}', 'source',
+    'task8_tool', 'Task 8', 'send_code', '{}', '{""origin"":""2026"",""tested"":{}}', 'source',
     1, '2026-04-27T00:00:00Z', NULL, 0, '[]'
 );";
             command.ExecuteNonQuery();

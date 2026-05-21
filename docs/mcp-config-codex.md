@@ -61,12 +61,12 @@ tool_timeout_sec = 60                # default 60 — per-tool call timeout in s
 
 # Tool filtering
 enabled_tools = []                   # allow list — empty means "all tools allowed"
-disabled_tools = ["send_code_to_revit"]   # deny list — applied after allow list
+disabled_tools = ["revit_send_code_to_revit"]   # deny list — applied after allow list
 default_tools_approval_mode = "auto" # "auto" | "prompt" | "approve" (auto = no prompt, approve = always ask)
 
 # Per-tool approval override
-[mcp_servers.rvt-mcp.tools.batch_execute]
-approval_mode = "prompt"             # ask before each batch_execute call even if server default is "auto"
+[mcp_servers.rvt-mcp.tools.revit_batch_execute]
+approval_mode = "prompt"             # ask before each revit_batch_execute call even if server default is "auto"
 
 # Environment variables passed to the server process
 [mcp_servers.rvt-mcp.env]
@@ -133,7 +133,7 @@ codex mcp add rvt-mcp \
   -- "%LOCALAPPDATA%\\RvtMcp\\server\\0.4.0\\RvtMcp.Server.exe"
 
 # Pin a specific Revit year
-codex mcp add rvt-mcp-r24 -- "%LOCALAPPDATA%\\RvtMcp\\server\\0.4.0\\RvtMcp.Server.exe" --target R24
+codex mcp add rvt-mcp-2024 -- "%LOCALAPPDATA%\\RvtMcp\\server\\0.5.0\\RvtMcp.Server.exe" --target 2024
 ```
 
 The `--` separates Codex's own flags from the command + args passed to the MCP server, identical convention to `claude mcp add`.
@@ -218,7 +218,7 @@ codex mcp list                    # CLI
 
 Codex's docs do not currently publish the exact prefix format Codex uses internally for MCP tool names (Anthropic publishes `mcp__<server>__<tool>` with a 64-char limit; OpenAI has not documented an equivalent). Empirically Codex prefixes tools with the server name but accepts longer names than Claude Code's 64-char ceiling. Until OpenAI publishes a spec, **keep tool names ≤ 51 chars** to stay safe across both vendors.
 
-For RvtMcp specifically (longest tool name = `analyze_structural_connections` at 30 chars), this is well within both limits.
+For RvtMcp v0.5+ (longest tool name = `revit_measure_distance_between_elements` at 39 chars), this is well within both limits.
 
 ---
 

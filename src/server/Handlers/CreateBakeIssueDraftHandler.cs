@@ -81,15 +81,15 @@ namespace RvtMcp.Server.Handlers
             if (string.IsNullOrWhiteSpace(currentRevitVersion))
                 return "unknown";
 
-            var value = currentRevitVersion.Trim().ToUpperInvariant();
+            var value = currentRevitVersion.Trim();
             switch (value)
             {
-                case "R22":
-                case "R23":
-                case "R24":
-                case "R25":
-                case "R26":
-                case "R27":
+                case "2022":
+                case "2023":
+                case "2024":
+                case "2025":
+                case "2026":
+                case "2027":
                     return value;
                 default:
                     return "unknown";

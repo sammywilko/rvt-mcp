@@ -25,14 +25,28 @@ Every plugin writes a per-version discovery file to `%LOCALAPPDATA%\RvtMcp\` on 
 
 | Revit | Discovery file | Transport |
 |-------|----------------|-----------|
-| 2022  | `portR22.txt` | TCP |
-| 2023  | `portR23.txt` | TCP |
-| 2024  | `portR24.txt` | TCP |
-| 2025  | `pipeR25.txt` | Named Pipe |
-| 2026  | `pipeR26.txt` | Named Pipe |
-| 2027  | `pipeR27.txt` | Named Pipe |
+| 2022  | `revit-2022.json` | TCP |
+| 2023  | `revit-2023.json` | TCP |
+| 2024  | `revit-2024.json` | TCP |
+| 2025  | `revit-2025.json` | Named Pipe |
+| 2026  | `revit-2026.json` | Named Pipe |
+| 2027  | `revit-2027.json` | Named Pipe |
 
-Each file has three lines: transport endpoint, auth token, owning PID. Server scans these on connect, verifies the PID is alive, and auto-deletes orphan files. Installer-generated MCP config uses one auto-detect `rvt-mcp` entry; `switch_target` or explicit `--target R23` can pin a specific version when multiple Revits run concurrently.
+Each file is a self-describing JSON object:
+
+```json
+{
+  "schema_version": 2,
+  "revit_year": 2024,
+  "transport": "tcp",
+  "port": 49152,
+  "pipe_name": null,
+  "auth_token": "base64...",
+  "pid": 12345
+}
+```
+
+Server scans these on connect, verifies the PID is alive, and auto-deletes orphan files. Installer-generated MCP config uses one auto-detect `rvt-mcp` entry; the agent can call `revit_list_available_targets` to discover which years are running, then `revit_switch_target` (or explicit `--target 2024` at server start) to pin a specific version when multiple Revits run concurrently. **Versions are 4-digit calendar years (`2024`), not R-codes (`R24`) — v0.5+ rejects R-codes with an educational error pointing back to `revit_list_available_targets`.**
 
 ## Multi-version strategy
 

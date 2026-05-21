@@ -36,9 +36,9 @@ param(
     [string]$SourceDir,
     [switch]$Uninstall,
     [int[]]$Years,
-    [ValidateSet('Auto', 'codex', 'opencode', 'claude', 'none')]
+    [ValidateSet('Auto', 'codex', 'opencode', 'kilo', 'claude', 'none')]
     [string]$Client = 'Auto',
-    [ValidateSet('opencode', 'codex')]
+    [ValidateSet('opencode', 'codex', 'kilo')]
     [string]$WireClient,
     [string]$ServerInstallRoot
 )
@@ -267,11 +267,15 @@ function Add-OpencodeEntry {
     $desired = @{}
     foreach ($t in $Targets) {
         $name = $t.Name
-        $desired[$name] = [ordered]@{
+        $entry = [ordered]@{
             type    = 'local'
             command = @($t.ServerCmd) + @($t.Args)
             enabled = $true
         }
+        if ($t.PSObject.Properties.Name -contains 'Env' -and $t.Env -and $t.Env.Count -gt 0) {
+            $entry['environment'] = $t.Env
+        }
+        $desired[$name] = $entry
     }
 
     $legacyRemoved = Remove-LegacyBimwrightEntries -Map $cfg['mcp']
@@ -294,6 +298,75 @@ function Add-OpencodeEntry {
         $content = $cfg | ConvertTo-Json -Depth 50
         $bak = Write-ConfigAtomic -Path $ConfigPath -Content $content
         Write-Host ("[opencode] wired {0} entry -> {1} (backup: {2})" -f $desired.Count, $ConfigPath, $bak)
+    }
+    return $true
+}
+
+function Add-KiloEntry {
+    [CmdletBinding(SupportsShouldProcess = $true)]
+    param(
+        [Parameter(Mandatory = $true)][string]$ConfigPath,
+        [Parameter(Mandatory = $true)][object[]]$Targets,
+        [switch]$RequireExisting
+    )
+
+    if (-not (Test-Path $ConfigPath)) {
+        # Kilo will create the config dir on first run; create the file if user opted in
+        # explicitly (-Client kilo). Auto mode still requires the file to exist.
+        if ($RequireExisting) {
+            $parent = Split-Path -Parent $ConfigPath
+            if (-not (Test-Path $parent)) { New-Item -ItemType Directory -Path $parent -Force | Out-Null }
+            Set-Content -Path $ConfigPath -Value '{}' -Encoding UTF8 -NoNewline
+        } else {
+            Write-Host "[kilo] config not found at $ConfigPath - skipping"
+            return $false
+        }
+    }
+
+    try {
+        $cfg = Read-JsonHashtable -Path $ConfigPath
+    } catch {
+        Write-Warning ("[kilo] parse failed at {0}: {1} - skipping" -f $ConfigPath, $_.Exception.Message)
+        return $false
+    }
+
+    if (-not $cfg.ContainsKey('mcp')) { $cfg['mcp'] = @{} }
+
+    $desired = @{}
+    foreach ($t in $Targets) {
+        $name = $t.Name
+        $entry = [ordered]@{
+            type    = 'local'
+            command = @($t.ServerCmd) + @($t.Args)
+            enabled = $true
+            timeout = 30000
+        }
+        if ($t.PSObject.Properties.Name -contains 'Env' -and $t.Env -and $t.Env.Count -gt 0) {
+            $entry['environment'] = $t.Env
+        }
+        $desired[$name] = $entry
+    }
+
+    $legacyRemoved = Remove-LegacyBimwrightEntries -Map $cfg['mcp']
+    $changed = $legacyRemoved -gt 0
+    foreach ($k in $desired.Keys) {
+        $existingJson = if ($cfg['mcp'].ContainsKey($k)) { ($cfg['mcp'][$k] | ConvertTo-Json -Depth 20 -Compress) } else { $null }
+        $newJson = $desired[$k] | ConvertTo-Json -Depth 20 -Compress
+        if ($existingJson -ne $newJson) {
+            $cfg['mcp'][$k] = $desired[$k]
+            $changed = $true
+        }
+    }
+
+    if (-not $changed) {
+        Write-Host ("[kilo] no changes needed at {0}" -f $ConfigPath)
+        return $true
+    }
+
+    if ($PSCmdlet.ShouldProcess($ConfigPath, 'Upsert rvt-mcp entry')) {
+        $content = $cfg | ConvertTo-Json -Depth 50
+        $bak = Write-ConfigAtomic -Path $ConfigPath -Content $content
+        Write-Host ("[kilo] wired {0} entry -> {1} (backup: {2})" -f $desired.Count, $ConfigPath, $bak)
     }
     return $true
 }
@@ -328,14 +401,21 @@ function Add-CodexEntry {
         $headerLiteral = "[mcp_servers.$name]"
         $commandValue = ConvertTo-TomlString -Value $t.ServerCmd
         $argsValue = ConvertTo-TomlStringArray -Values $t.Args
+        $envLines = ''
+        if ($t.PSObject.Properties.Name -contains 'Env' -and $t.Env -and $t.Env.Count -gt 0) {
+            $envHeader = "[mcp_servers.$name.env]"
+            $envBody = @()
+            foreach ($k in $t.Env.Keys) { $envBody += ("{0} = {1}" -f $k, (ConvertTo-TomlString -Value ([string]$t.Env[$k]))) }
+            $envLines = "`n`n" + $envHeader + "`n" + ($envBody -join "`n")
+        }
         $desiredBlock = @"
 $headerLiteral
 command = $commandValue
 args = $argsValue
-enabled = true
+enabled = true$envLines
 "@
 
-        $pattern = '(?ms)^\[mcp_servers\.' + [regex]::Escape($name) + '\].*?(?=^\[|\z)'
+        $pattern = '(?ms)^\[mcp_servers\.' + [regex]::Escape($name) + '\](?:\.env)?.*?(?=^\[mcp_servers\.(?!' + [regex]::Escape($name) + '(?:\.env)?\b)|\z)'
         $existingMatch = [regex]::Match($raw, $pattern)
         if ($existingMatch.Success) {
             $existingTrim = ($existingMatch.Value -replace '\s+$', '')
@@ -389,10 +469,14 @@ function Add-ClaudeEntry {
     $desired = @{}
     foreach ($t in $Targets) {
         $name = $t.Name
-        $desired[$name] = [ordered]@{
+        $entry = [ordered]@{
             command = $t.ServerCmd
             args = @($t.Args)
         }
+        if ($t.PSObject.Properties.Name -contains 'Env' -and $t.Env -and $t.Env.Count -gt 0) {
+            $entry['env'] = $t.Env
+        }
+        $desired[$name] = $entry
     }
 
     $legacyRemoved = Remove-LegacyBimwrightEntries -Map $cfg['mcpServers']
@@ -569,6 +653,10 @@ if (-not $Uninstall -and $Client -ne 'none') {
             if ($Client -eq 'Auto' -or $Client -eq 'opencode') {
                 $ok = Add-OpencodeEntry -ConfigPath (Join-Path $env:USERPROFILE '.config\opencode\opencode.json') -Targets $targets -RequireExisting:$requireExisting
                 if ($ok) { $wireStatus += 'opencode' }
+            }
+            if ($Client -eq 'Auto' -or $Client -eq 'kilo') {
+                $ok = Add-KiloEntry -ConfigPath (Join-Path $env:USERPROFILE '.config\kilo\kilo.json') -Targets $targets -RequireExisting:($Client -eq 'kilo')
+                if ($ok) { $wireStatus += 'kilo' }
             }
             if ($Client -eq 'Auto' -or $Client -eq 'codex') {
                 $ok = Add-CodexEntry -ConfigPath (Join-Path $env:USERPROFILE '.codex\config.toml') -Targets $targets -RequireExisting:$requireExisting

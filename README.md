@@ -240,11 +240,11 @@ If you have v0.3.0 or earlier installed:
 
    It **preserves** `%LOCALAPPDATA%\Bimwright\baked\`, `journal\`, `firm-profiles\`, and `*.log` files — these contain user data and are migrated to `%LOCALAPPDATA%\RvtMcp\` on first launch of v0.4.0.
 
-3. **Install v0.4.0:**
+3. **Install v0.5.0:**
    ```powershell
    dotnet tool update -g Bimwright.Rvt.Server --version 0.3.0   # ensure clean uninstall first
    dotnet tool uninstall -g Bimwright.Rvt.Server
-   dotnet tool install -g RvtMcp.Server --version 0.4.0
+   dotnet tool install -g RvtMcp.Server --version 0.5.0
    ```
 
 4. **Re-wire your MCP client.** Old MCP entries `bimwright-rvt-r22`..`bimwright-rvt-r27` are auto-removed by `install.ps1`. The new entry is `rvt-mcp` (single, auto-detects Revit version).
@@ -454,7 +454,7 @@ Three layers, later wins: JSON file, then env vars, then CLI args.
 
 | Setting | CLI | Env | JSON key |
 |---------|-----|-----|----------|
-| Target Revit year | `--target R23` | `BIMWRIGHT_TARGET` | `target` |
+| Target Revit year | `--target 2023` | `BIMWRIGHT_TARGET` | `target` |
 | Toolsets | `--toolsets query,create` | `BIMWRIGHT_TOOLSETS` | `toolsets` |
 | Read-only | `--read-only` | `BIMWRIGHT_READ_ONLY=1` | `readOnly` |
 | Allow LAN bind | plugin-side only | `BIMWRIGHT_ALLOW_LAN_BIND=1` | `allowLanBind` |

@@ -103,6 +103,8 @@ namespace RvtMcp.Plugin
 
                     var result = command.Execute(app, request.ParamsJson);
                     sw.Stop();
+                    // responseData is the redacted view used ONLY for session log + summary.
+                    // The wire response (below) uses result.Data raw so the agent sees real values.
                     var responseData = McpResponsePrivacy.RedactDataForResponse(request.CommandName, result.Data);
 
                     string codeSnippet = null;
@@ -148,7 +150,7 @@ namespace RvtMcp.Plugin
                     {
                         id = request.Id,
                         success = result.Success,
-                        data = responseData,
+                        data = result.Data,
                         error = resultError
                     });
 

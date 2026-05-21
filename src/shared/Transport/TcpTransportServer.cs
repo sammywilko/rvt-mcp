@@ -67,7 +67,7 @@ namespace RvtMcp.Plugin
         {
             _running = false;
             try { _listener?.Stop(); } catch { }
-            AuthToken.DeleteDiscoveryFile("port");
+            AuthToken.DeleteDiscoveryFile();
             Log("Stopped");
         }
 

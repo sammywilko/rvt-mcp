@@ -111,9 +111,9 @@ namespace RvtMcp.Tests
         {
             var captured = CaptureToolsList(AllToolsetsConfig(enableAdaptiveBake: false));
 
-            Assert.DoesNotContain("\"name\": \"list_bake_suggestions\"", captured);
-            Assert.DoesNotContain("\"name\": \"accept_bake_suggestion\"", captured);
-            Assert.DoesNotContain("\"name\": \"dismiss_bake_suggestion\"", captured);
+            Assert.DoesNotContain("\"name\": \"revit_list_bake_suggestions\"", captured);
+            Assert.DoesNotContain("\"name\": \"revit_accept_bake_suggestion\"", captured);
+            Assert.DoesNotContain("\"name\": \"revit_dismiss_bake_suggestion\"", captured);
         }
 
         [Fact]
@@ -121,12 +121,12 @@ namespace RvtMcp.Tests
         {
             var captured = CaptureToolsList(new RvtMcpConfig());
 
-            Assert.Contains("\"name\": \"send_code_to_revit\"", captured);
-            Assert.Contains("\"name\": \"list_baked_tools\"", captured);
-            Assert.Contains("\"name\": \"run_baked_tool\"", captured);
-            Assert.DoesNotContain("\"name\": \"list_bake_suggestions\"", captured);
-            Assert.DoesNotContain("\"name\": \"accept_bake_suggestion\"", captured);
-            Assert.DoesNotContain("\"name\": \"dismiss_bake_suggestion\"", captured);
+            Assert.Contains("\"name\": \"revit_send_code_to_revit\"", captured);
+            Assert.Contains("\"name\": \"revit_list_baked_tools\"", captured);
+            Assert.Contains("\"name\": \"revit_run_baked_tool\"", captured);
+            Assert.DoesNotContain("\"name\": \"revit_list_bake_suggestions\"", captured);
+            Assert.DoesNotContain("\"name\": \"revit_accept_bake_suggestion\"", captured);
+            Assert.DoesNotContain("\"name\": \"revit_dismiss_bake_suggestion\"", captured);
         }
 
         [Fact]
@@ -138,16 +138,16 @@ namespace RvtMcp.Tests
                 Toolsets = new System.Collections.Generic.List<string> { "all" }
             });
 
-            Assert.Contains("\"name\": \"list_bake_suggestions\"", captured);
-            Assert.Contains("\"name\": \"accept_bake_suggestion\"", captured);
-            Assert.Contains("\"name\": \"dismiss_bake_suggestion\"", captured);
+            Assert.Contains("\"name\": \"revit_list_bake_suggestions\"", captured);
+            Assert.Contains("\"name\": \"revit_accept_bake_suggestion\"", captured);
+            Assert.Contains("\"name\": \"revit_dismiss_bake_suggestion\"", captured);
             Assert.Equal(3, new[]
             {
-                "\"name\": \"list_bake_suggestions\"",
-                "\"name\": \"accept_bake_suggestion\"",
-                "\"name\": \"dismiss_bake_suggestion\""
+                "\"name\": \"revit_list_bake_suggestions\"",
+                "\"name\": \"revit_accept_bake_suggestion\"",
+                "\"name\": \"revit_dismiss_bake_suggestion\""
             }.Count(captured.Contains));
-            Assert.DoesNotContain("\"name\": \"bake_tool\"", captured);
+            Assert.DoesNotContain("\"name\": \"revit_bake_tool\"", captured);
         }
 
         [Fact]
@@ -155,7 +155,7 @@ namespace RvtMcp.Tests
         {
             var captured = CaptureToolsList(AllToolsetsConfig(enableAdaptiveBake: false));
 
-            Assert.DoesNotContain("\"name\": \"bake_tool\"", captured);
+            Assert.DoesNotContain("\"name\": \"revit_bake_tool\"", captured);
         }
 
         private static string CaptureToolsList(RvtMcpConfig config)

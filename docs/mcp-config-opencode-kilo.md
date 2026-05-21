@@ -114,7 +114,7 @@ OpenCode lets you allow / deny individual tools via glob in the top-level `tools
   "mcp": { "rvt-mcp": { /* ... */ } },
   "tools": {
     "rvt-mcp*": true,                // allow everything (default if absent)
-    "rvt-mcp_send_code_to_revit": false   // but deny one specific tool
+    "rvt-mcp_revit_send_code_to_revit": false   // but deny one specific tool
   }
 }
 ```
@@ -173,7 +173,7 @@ Precedence: **project > global** (project wins on conflicting keys, no merge bey
     }
   },
   "permissions": {
-    "rvt-mcp_send_code_to_revit": "ask",     // prompt before running
+    "rvt-mcp_revit_send_code_to_revit": "ask",     // prompt before running
     "rvt-mcp_*": "allow"                     // allow everything else from this server
   }
 }
@@ -225,8 +225,8 @@ Example for RvtMcp's locked-down read-only mode:
 ```jsonc
 {
   "permissions": {
-    "rvt-mcp_send_code_to_revit": "deny",
-    "rvt-mcp_batch_execute": "ask",
+    "rvt-mcp_revit_send_code_to_revit": "deny",
+    "rvt-mcp_revit_batch_execute": "ask",
     "rvt-mcp_*": "allow"
   }
 }
@@ -252,9 +252,9 @@ Kilo's official docs include this caution prominently:
 
 > "MCP servers add to your context, so be careful with which ones you enable. Certain MCP servers with many tools can quickly add up and exceed the context limit."
 
-For RvtMcp (248 tools), this is **the** issue. Two mitigations:
+For RvtMcp (224 tools), this is **the** issue. Two mitigations:
 
-1. Use `enabled_tools` filter via permissions (`"rvt-mcp_*": "deny"` then enable specific ones with `"rvt-mcp_create_grid": "allow"`).
+1. Use `enabled_tools` filter via permissions (`"rvt-mcp_*": "deny"` then enable specific ones with `"rvt-mcp_revit_create_grid": "allow"`).
 2. Run RvtMcp with a narrower toolset via env var: `"environment": { "BIMWRIGHT_TOOLSETS": "query,view" }`.
 
 ---
@@ -275,23 +275,33 @@ A fourth subtle one for **Kilo specifically**: tool permissions use `<server>_<t
 
 ---
 
-## 5. How RvtMcp's `install.ps1` handles these
+## 5. How RvtMcp's `install.ps1` handles these (v0.5+)
 
-`scripts/install.ps1` includes `Add-OpencodeEntry` which writes to `~/.config/opencode/opencode.json` with the correct format:
+`scripts/install.ps1` wires both OpenCode and Kilo automatically via `Add-OpencodeEntry` and `Add-KiloEntry` (added in v0.5). Both functions emit the same JSONC shape:
 
 ```powershell
-$cfg['mcp'][$k] = [ordered]@{
+$entry = [ordered]@{
     type    = 'local'
     command = @($t.ServerCmd) + @($t.Args)   # array form ✅
     enabled = $true
 }
+if ($t.PSObject.Properties.Name -contains 'Env' -and $t.Env -and $t.Env.Count -gt 0) {
+    $entry['environment'] = $t.Env           # optional environment block ✅
+}
+$cfg['mcp'][$k] = $entry
 ```
 
-It uses the correct **array-form `command`**, the right **root key `mcp`**, and the right **`type: "local"`**. ✅
+Differences:
 
-⚠ **Gap:** `install.ps1` does **not** include `environment` block for env-vars, so RvtMcp env knobs (`BIMWRIGHT_TOOLSETS`, `BIMWRIGHT_READ_ONLY`) must be set in the shell environment globally, not per-server. Acceptable for now; consider extending if users complain.
+| Aspect | `Add-OpencodeEntry` | `Add-KiloEntry` |
+|---|---|---|
+| Target file | `%USERPROFILE%\.config\opencode\opencode.json` | `%USERPROFILE%\.config\kilo\kilo.json` |
+| Extra fields | none | `timeout = 30000` (Kilo's default 5000 ms is too short for Revit cold-start) |
+| Auto-create file if missing | no (skip if absent) | yes when `-Client kilo` explicit; no when `-Client Auto` |
 
-⚠ **No Kilo wiring exists.** If you want to support Kilo users out-of-the-box, add an `Add-KiloEntry` function similar to `Add-OpencodeEntry`, targeting `~/.config/kilo/kilo.json`. The config format is nearly identical to OpenCode's — the function could be a near-copy.
+Both honor an optional `Env` hashtable on each target so RvtMcp env knobs (`BIMWRIGHT_TOOLSETS`, `BIMWRIGHT_READ_ONLY`) can be wired per-server. Currently `Get-RvtMcpClientTargets` does not emit `Env`; pass `-Client kilo` and edit the resulting JSON manually if you need env knobs (or extend the script to populate `Env` from CLI flags).
+
+Run `pwsh .\install.ps1 -Client kilo -WhatIf` to preview, `-Client kilo` to apply.
 
 ---
 

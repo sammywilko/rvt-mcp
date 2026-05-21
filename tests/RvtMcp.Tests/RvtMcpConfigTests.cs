@@ -59,8 +59,8 @@ namespace RvtMcp.Tests
         public void ApplyCliArgs_StringArgConsumesNext()
         {
             var config = new RvtMcpConfig();
-            RvtMcpConfig.ApplyCliArgs(config, new[] { "--target", "R25" });
-            Assert.Equal("R25", config.Target);
+            RvtMcpConfig.ApplyCliArgs(config, new[] { "--target", "2025" });
+            Assert.Equal("2025", config.Target);
         }
 
         [Fact]
@@ -129,7 +129,7 @@ namespace RvtMcp.Tests
             var config = new RvtMcpConfig();
             RvtMcpConfig.ApplyEnvVars(config, EnvLookup(new Dictionary<string, string>
             {
-                [RvtMcpConfig.EnvTarget] = "R27",
+                [RvtMcpConfig.EnvTarget] = "2027",
                 [RvtMcpConfig.EnvToolsets] = "query,create",
                 [RvtMcpConfig.EnvReadOnly] = "true",
                 [RvtMcpConfig.EnvAllowLanBind] = "1",
@@ -137,7 +137,7 @@ namespace RvtMcp.Tests
                 [RvtMcpConfig.EnvEnableAdaptiveBake] = "true",
                 [RvtMcpConfig.EnvCacheSendCodeBodies] = "1",
             }));
-            Assert.Equal("R27", config.Target);
+            Assert.Equal("2027", config.Target);
             Assert.Equal(new[] { "query", "create" }, config.Toolsets);
             Assert.True(config.ReadOnly);
             Assert.True(config.AllowLanBind);
@@ -149,9 +149,9 @@ namespace RvtMcp.Tests
         [Fact]
         public void ApplyEnvVars_UnsetVarsLeaveFieldUnchanged()
         {
-            var config = new RvtMcpConfig { Target = "R23" };
+            var config = new RvtMcpConfig { Target = "2023" };
             RvtMcpConfig.ApplyEnvVars(config, EnvLookup(new Dictionary<string, string>()));
-            Assert.Equal("R23", config.Target);
+            Assert.Equal("2023", config.Target);
             Assert.Null(config.ReadOnly);
         }
 
@@ -183,7 +183,7 @@ namespace RvtMcp.Tests
             try
             {
                 File.WriteAllText(path, @"{
-                    ""target"":""R24"",
+                    ""target"":""2024"",
                     ""toolsets"":[""query"",""view""],
                     ""readOnly"":true,
                     ""enableToolbaker"":false,
@@ -192,7 +192,7 @@ namespace RvtMcp.Tests
                 }");
                 var config = RvtMcpConfig.LoadFromJsonFile(path);
                 Assert.NotNull(config);
-                Assert.Equal("R24", config.Target);
+                Assert.Equal("2024", config.Target);
                 Assert.Equal(new[] { "query", "view" }, config.Toolsets);
                 Assert.True(config.ReadOnly);
                 Assert.Null(config.AllowLanBind); // absent → null
@@ -211,19 +211,19 @@ namespace RvtMcp.Tests
             var path = Path.GetTempFileName();
             try
             {
-                File.WriteAllText(path, @"{""target"":""R22"",""readOnly"":false}");
+                File.WriteAllText(path, @"{""target"":""2022"",""readOnly"":false}");
 
                 var env = EnvLookup(new Dictionary<string, string>
                 {
-                    [RvtMcpConfig.EnvTarget]    = "R25",
+                    [RvtMcpConfig.EnvTarget]    = "2025",
                     [RvtMcpConfig.EnvReadOnly]  = "true",
                 });
 
-                var cli = new[] { "--target", "R27" }; // CLI only overrides target
+                var cli = new[] { "--target", "2027" }; // CLI only overrides target
 
                 var config = RvtMcpConfig.Load(cli, path, env);
 
-                Assert.Equal("R27", config.Target);   // CLI wins
+                Assert.Equal("2027", config.Target);   // CLI wins
                 Assert.True(config.ReadOnly);          // env wins (CLI didn't set)
             }
             finally { File.Delete(path); }
@@ -235,9 +235,9 @@ namespace RvtMcp.Tests
             var path = Path.GetTempFileName();
             try
             {
-                File.WriteAllText(path, @"{""target"":""R24""}");
+                File.WriteAllText(path, @"{""target"":""2024""}");
                 var config = RvtMcpConfig.Load(args: null, configFilePath: path, envLookup: EnvLookup(new Dictionary<string, string>()));
-                Assert.Equal("R24", config.Target);
+                Assert.Equal("2024", config.Target);
             }
             finally { File.Delete(path); }
         }

@@ -59,7 +59,7 @@ claude mcp add rvt-mcp --scope user -- "D:/Projects/bimwright/rvt-mcp/src/server
 claude mcp add rvt-mcp --scope project -- "%LOCALAPPDATA%\\RvtMcp\\server\\0.4.0\\RvtMcp.Server.exe"
 
 # Pin a specific Revit year (server otherwise auto-detects)
-claude mcp add rvt-mcp-r24 --scope user -- "...\\RvtMcp.Server.exe" --target R24
+claude mcp add rvt-mcp-2024 --scope user -- "...\\RvtMcp.Server.exe" --target 2024
 ```
 
 **Useful operations:**
@@ -171,7 +171,7 @@ Claude does **not** see the bare tool name your server exposes. It sees a prefix
 mcp__<server-name>__<tool-name>
 ```
 
-Example: server registered as `rvt-mcp`, server's `create_grid` tool → Claude sees `mcp__rvt-mcp__create_grid`.
+Example: server registered as `rvt-mcp`, server's `revit_create_grid` tool → Claude sees `mcp__rvt-mcp__revit_create_grid`.
 
 Source: `code.claude.com/docs/en/mcp` (search `mcp__` in page) and [anthropics/claude-code#18763](https://github.com/anthropics/claude-code/issues/18763).
 
@@ -191,7 +191,7 @@ The full string `mcp__<server-name>__<tool-name>` must be **≤ 64 characters**.
 | `revit-mcp` (9) | 15 | **49** chars |
 | `rvt` (3) | 9 | **55** chars |
 
-For RvtMcp specifically: longest tool in `src/server/Program.cs` is `analyze_structural_connections` (30 chars). All current tool names fit even with the longest server name — but anything over ~41 chars would have been silently broken under the old `bimwright-rvt-r22` naming.
+For RvtMcp v0.5+ (all tools prefixed with `revit_`): longest tool is `revit_measure_distance_between_elements` (39 chars). Full prefixed name `mcp__rvt-mcp__revit_measure_distance_between_elements` = 53 chars — comfortably under the 64-char ceiling.
 
 ### 5.3 Tool Search — the *critical* default behavior
 
@@ -207,17 +207,26 @@ What this changes from the naïve mental model:
   2. **Tool name** (the literal identifier after the `mcp__server__` prefix).
 - Only tools `ToolSearch` selects enter the conversation context with full description + schema.
 
-**Implication for RvtMcp:**
+**Implication for RvtMcp — addressed in v0.5:**
 
-- Tool names like `create_grid`, `analyze_sheet_layout`, `capture_view_image` give weak signal to a "Revit" search query — they don't contain "revit".
-- If the server does **not** populate the `instructions` field, Claude has almost no way to know this server is for Revit.
-- The fix is two-pronged:
-  1. Set server `instructions` (in your `Program.cs` MCP server setup) to ~1.5-2 KB of text like: *"Autodesk Revit 2022-2027 MCP gateway. Use these tools to query and modify Revit elements (walls, doors, pipes, ducts), views, sheets, schedules, families, MEP systems, structural rebar, shared parameters, view templates, and more. Toolsets gated by config: query, create, modify, view, sheets, families, mep, structural, ..."*
-  2. (Optional, larger change) Prefix tool names with `revit_` so semantic search of "revit X" lands on the right tool.
+Pre-v0.5, RvtMcp had this exact failure: 224 tools exposed but Tool Search returned nothing because (a) `instructions` field was empty and (b) tool names like `create_grid`/`capture_view_image` didn't contain "revit". Agents would say "I don't have any Revit tools" despite a healthy connection.
+
+v0.5 ships both fixes:
+
+1. **Server `instructions` populated** at `src/server/Program.cs` `ConfigureMcpServerOptions()` — ~2 KB of keyword-dense text leading with "rvt-mcp — Model Context Protocol gateway for Autodesk Revit 2022-2027" followed by every relevant domain term (wall, door, MEP, duct, pipe, structural, IFC, DWG, etc.) and a per-toolset tool-name index.
+2. **All 224 tools prefixed with `revit_`** — `create_grid` → `revit_create_grid`, `analyze_structural_connections` → `revit_analyze_structural_connections`. Semantic search of "revit X" now lands directly on the right tool.
 
 The official doc explicitly recommends:
 
 > "Add clear, descriptive server instructions that explain: What category of tasks your tools handle, When Claude should search for your tools, Key capabilities your server provides."
+
+To verify discovery is working after install:
+
+```text
+You: list every Revit-related MCP tool you have access to
+```
+
+Claude should list 224 tools all prefixed `mcp__rvt-mcp__revit_*`. If you see fewer than ~50, Tool Search is filtering — check that v0.5+ is installed and the server's `--toolsets` flag isn't narrowing the surface.
 
 ### 5.4 Server `instructions` and tool `description` are truncated at 2 KB each
 

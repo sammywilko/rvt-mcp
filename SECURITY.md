@@ -13,7 +13,7 @@ Security updates are provided for the latest minor release series only.
 
 bimwright runs on `127.0.0.1` only. The attack surface is:
 
-- Local processes that can read the discovery file (`%LOCALAPPDATA%\RvtMcp\portR22.txt` / `pipeR27.txt`, etc.)
+- Local processes that can read the discovery files (`%LOCALAPPDATA%\RvtMcp\revit-2022.json`..`revit-2027.json`)
 - Local processes that can connect to the TCP port or Named Pipe
 - Code executed via `send_code_to_revit` or materialized by the ToolBaker engine
 
@@ -32,7 +32,7 @@ bimwright runs on `127.0.0.1` only. The attack surface is:
 
 ### Input validation
 - `--http` port validated: 1–65535, numeric only.
-- `--target` validated: one of `R22`, `R23`, `R24`, `R25`, `R26`, `R27`.
+- `--target` validated: one of `2022`, `2023`, `2024`, `2025`, `2026`, `2027` (4-digit calendar years). Legacy R-codes are rejected.
 - Handler parameters validated via `SchemaValidator` before dispatch.
 - TCP line size limit: 1 MiB per message.
 - Rate limiting: 20 requests per 10 seconds on socket.

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Security.Cryptography;
 
@@ -11,47 +11,41 @@ namespace RvtMcp.Plugin
         public static string Current => _token;
 
         /// <summary>
-        /// Revit version identifier (e.g. "R22", "R25"). Set by App.cs at startup.
-        /// Used to create version-specific discovery files (portR22.txt, pipeR25.txt, etc.)
+        /// Calendar-year Revit version (e.g. "2022", "2025"). Set by each plugin's App.cs
+        /// in OnStartup before the transport starts. Used to name the discovery file
+        /// (revit-YYYY.json) that the MCP server scans on connect.
         /// </summary>
         public static string RevitVersion { get; set; }
 
         public static void GenerateAndPersist(int port)
         {
             _token = GenerateToken();
-            var version = RevitVersion ?? "R22";
-            var fileName = $"port{version}.txt";
+            var year = RevitVersion ?? "2022";
             var pid = System.Diagnostics.Process.GetCurrentProcess().Id;
-            var content = port + "\n" + _token + "\n" + pid + "\n";
-            WriteDiscoveryFile(fileName, content);
+            var json = BuildDiscoveryJson(year, transport: "tcp", port: port, pipeName: null, authToken: _token, pid: pid);
+            WriteDiscoveryFile(DiscoveryFileName(year), json);
         }
 
         public static void GenerateAndPersistPipe(string pipeName)
         {
             _token = GenerateToken();
-            var version = RevitVersion ?? "R27";
-            var fileName = $"pipe{version}.txt";
+            var year = RevitVersion ?? "2027";
             var pid = System.Diagnostics.Process.GetCurrentProcess().Id;
-            var content = pipeName + "\n" + _token + "\n" + pid + "\n";
-            WriteDiscoveryFile(fileName, content);
+            var json = BuildDiscoveryJson(year, transport: "pipe", port: null, pipeName: pipeName, authToken: _token, pid: pid);
+            WriteDiscoveryFile(DiscoveryFileName(year), json);
         }
 
         /// <summary>
-        /// Deletes the version-specific discovery file written by Generate* during startup.
-        /// Called from transport Stop() so a clean Revit shutdown leaves no stale pipeR{ver}.txt
-        /// or portR{ver}.txt behind (which would otherwise cause the MCP server to attempt
-        /// connections to a dead plugin).
+        /// Deletes this plugin's discovery file on a clean shutdown so the MCP server
+        /// doesn't waste a connect attempt on a dead plugin.
         /// </summary>
-        /// <param name="kind">"port" or "pipe" — matches the filename prefix.</param>
-        public static void DeleteDiscoveryFile(string kind)
+        public static void DeleteDiscoveryFile()
         {
             if (string.IsNullOrEmpty(RevitVersion)) return;
             try
             {
-                var dir = Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                    "RvtMcp");
-                var filePath = Path.Combine(dir, $"{kind}{RevitVersion}.txt");
+                var dir = DiscoveryDir();
+                var filePath = Path.Combine(dir, DiscoveryFileName(RevitVersion));
                 if (File.Exists(filePath)) File.Delete(filePath);
             }
             catch { /* best-effort on shutdown path */ }
@@ -69,6 +63,18 @@ namespace RvtMcp.Plugin
             return diff == 0;
         }
 
+        public static string DiscoveryDir()
+        {
+            return Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "RvtMcp");
+        }
+
+        public static string DiscoveryFileName(string year)
+        {
+            return "revit-" + year + ".json";
+        }
+
         private static string GenerateToken()
         {
             var bytes = new byte[32];
@@ -83,11 +89,52 @@ namespace RvtMcp.Plugin
             return Convert.ToBase64String(bytes);
         }
 
+        private static string BuildDiscoveryJson(string year, string transport, int? port, string pipeName, string authToken, int pid)
+        {
+            var sb = new System.Text.StringBuilder();
+            sb.Append("{\n");
+            sb.Append("  \"schema_version\": 2,\n");
+            sb.Append("  \"revit_year\": ").Append(year).Append(",\n");
+            sb.Append("  \"transport\": \"").Append(transport).Append("\",\n");
+            if (port.HasValue)
+                sb.Append("  \"port\": ").Append(port.Value).Append(",\n");
+            else
+                sb.Append("  \"port\": null,\n");
+            if (pipeName != null)
+                sb.Append("  \"pipe_name\": \"").Append(JsonEscape(pipeName)).Append("\",\n");
+            else
+                sb.Append("  \"pipe_name\": null,\n");
+            sb.Append("  \"auth_token\": \"").Append(JsonEscape(authToken)).Append("\",\n");
+            sb.Append("  \"pid\": ").Append(pid).Append("\n");
+            sb.Append("}\n");
+            return sb.ToString();
+        }
+
+        private static string JsonEscape(string s)
+        {
+            if (string.IsNullOrEmpty(s)) return string.Empty;
+            var sb = new System.Text.StringBuilder(s.Length + 8);
+            foreach (var c in s)
+            {
+                switch (c)
+                {
+                    case '"':  sb.Append("\\\""); break;
+                    case '\\': sb.Append("\\\\"); break;
+                    case '\n': sb.Append("\\n");  break;
+                    case '\r': sb.Append("\\r");  break;
+                    case '\t': sb.Append("\\t");  break;
+                    default:
+                        if (c < 0x20) sb.Append("\\u").Append(((int)c).ToString("x4"));
+                        else sb.Append(c);
+                        break;
+                }
+            }
+            return sb.ToString();
+        }
+
         private static void WriteDiscoveryFile(string fileName, string content)
         {
-            var dir = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "RvtMcp");
+            var dir = DiscoveryDir();
             Directory.CreateDirectory(dir);
             var filePath = Path.Combine(dir, fileName);
 

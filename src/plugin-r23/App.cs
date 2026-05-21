@@ -29,7 +29,7 @@ namespace RvtMcp.Plugin
 
         public Result OnStartup(UIControlledApplication application)
         {
-            AuthToken.RevitVersion = "R23";
+            AuthToken.RevitVersion = "2023";
             Instance = this;
 
             DebugLog("OnStartup: BEGIN");
