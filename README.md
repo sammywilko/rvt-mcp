@@ -10,7 +10,7 @@
   <a href="https://github.com/bimwright/rvt-mcp/actions/workflows/build.yml"><img src="https://github.com/bimwright/rvt-mcp/actions/workflows/build.yml/badge.svg" alt="build" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="license" /></a>
   <a href="#supported-revit-versions"><img src="https://img.shields.io/badge/Revit-2022--2027-186BFF" alt="Revit 2022-2027" /></a>
-  <a href="#toolsets"><img src="https://img.shields.io/badge/MCP-175%20tools%20%7C%20178%20adaptive-6C47FF" alt="MCP tools" /></a>
+  <a href="#toolsets"><img src="https://img.shields.io/badge/MCP-249%20tools%20%7C%20254%20adaptive-6C47FF" alt="MCP tools" /></a>
 </p>
 
 <p align="center">
@@ -300,21 +300,21 @@ This path is for development and backward compatibility. Client machines should 
 
 ## Toolsets
 
-The non-adaptive surface contains 175 tools across 19 toolsets. When adaptive bake is enabled, the surface expands to 178 tools.
+The non-adaptive surface contains 249 tools across 22 toolsets. When adaptive bake is enabled, the surface expands to 254 tools. Enabling the opt-in `structural` toolset adds 12 more tools (total 261 / 266 with adaptive bake).
 
-Default-on toolsets: `query`, `create`, `view`, `schedule`, `families`, `mep`, `graphics`, `export`, `toolbaker`, `meta`, `lint`, `sheets`, `materials`, `geometry`, `annotation`, `rooms`, `links`.
+Default-on toolsets: `query`, `create`, `view`, `schedule`, `families`, `mep`, `graphics`, `export`, `toolbaker`, `meta`, `lint`, `sheets`, `materials`, `geometry`, `annotation`, `rooms`, `links`, `parameters`, `organization`, `workflows`.
 
-Optional toolsets: `modify`, `delete`.
+Opt-in toolsets: `modify`, `delete`, `structural` (12 structural-engineering tools — columns, beams, walls, foundations, rebar, loads, framing tags).
 
-Enable with `--toolsets query,create,modify,meta` or `--toolsets all`. Add `--read-only` to strip write-capable toolsets regardless of what was requested.
+Enable with `--toolsets query,create,modify,meta` or `--toolsets all`. Add `--read-only` to strip write-capable toolsets regardless of what was requested. The opt-in `structural` toolset is enabled explicitly via `--toolsets structural` (or include it in your `all` request).
 
 | Toolset | Tools | Default |
 |---------|-------|---------|
 | `query` | get current view, selected elements, available family types, material quantities, model stats, AI element filter | on |
 | `create` | grid, level, room, line-based, point-based, surface-based element, group from elements | on |
-| `view` | create view, sheet layout, place view on sheet | on |
-| `meta` | `show_message`, `switch_target`, `batch_execute`, usage stats | on |
-| `lint` | view-naming pattern analysis, correction suggestions, firm-profile detect | on |
+| `view` | create view, sheet layout, place view on sheet, capture image, set crop/scale, activate view, show element | on |
+| `meta` | `show_message`, `switch_target`, `batch_execute`, usage stats, set project info, purge unused families | on |
+| `lint` | view-naming pattern analysis, correction suggestions, firm-profile detect, model warnings summary | on |
 | `schedule` | list/inspect, fields/formulas/data/elements, create + add/update field, filter+sort | on |
 | `modify` | `operate_element`, `color_elements`, parameter/type/workset edits | off |
 | `delete` | `delete_element` | off |
@@ -327,6 +327,10 @@ Enable with `--toolsets query,create,modify,meta` or `--toolsets all`. Add `--re
 | `geometry` | element bounding box, element geometry, distance measurement, clash detection, raycasting, volume/area analysis, centroid, complexity | on |
 | `rooms` | rooms, areas, spaces, boundaries, openings, room separators, finishes, auto-room creation, area tagging | on |
 | `links` | Revit/CAD link listing, CAD import/link, Revit link load/unload/reload, link elements, coordinates, project base point | on |
+| `parameters` | project/shared parameter creation, binding/unbinding, list/export shared params, set value by GUID | on |
+| `organization` | saved selections (save/load/list/delete), select elements, view templates (list/apply/create-from-view/duplicate/delete) | on |
+| `workflows` | clash review, data roundtrip, model audit, naming normalization, room documentation, sheet set, takeoff report, view cleanup | on |
+| `structural` | structural columns/beams/walls/foundations, rebar set + stirrup, structural loads, framing tags, connection analysis | **off (opt-in)** |
 
 ### All Tools
 

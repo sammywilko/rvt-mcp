@@ -15,7 +15,7 @@
 
 .EXAMPLE
   pwsh scripts/package-client-setup.ps1
-  pwsh scripts/package-client-setup.ps1 -Version 0.3.1
+  pwsh scripts/package-client-setup.ps1 -Version 0.4.0
 #>
 [CmdletBinding()]
 param(

@@ -306,13 +306,13 @@ pwsh .\uninstall-all.ps1 -KeepLogs
 
 ## Toolsets
 
-非 adaptive surface 包含 175 个 tools，分布在 19 个 toolsets。启用 adaptive bake 后，surface 扩展到 178 个 tools。
+非 adaptive surface 包含 249 个 tools，分布在 22 个 toolsets。启用 adaptive bake 后，surface 扩展到 254 个 tools。启用可选的 `structural` toolset 再增加 12 个 tools（共计 261 / 266 含 adaptive bake）。
 
-默认启用 toolsets：`query`、`create`、`view`、`schedule`、`families`、`mep`、`graphics`、`export`、`toolbaker`、`meta`、`lint`、`sheets`、`materials`、`geometry`、`annotation`、`rooms`、`links`。
+默认启用 toolsets：`query`、`create`、`view`、`schedule`、`families`、`mep`、`graphics`、`export`、`toolbaker`、`meta`、`lint`、`sheets`、`materials`、`geometry`、`annotation`、`rooms`、`links`、`parameters`、`organization`、`workflows`。
 
-可选 toolsets：`modify`、`delete`。
+可选 toolsets：`modify`、`delete`、`structural`（12 个结构工程专用 tools — 柱、梁、墙、基础、钢筋、荷载、结构构件标记）。
 
-使用 `--toolsets query,create,modify,meta` 或 `--toolsets all` 启用。加上 `--read-only` 会移除 write-capable toolsets，无论它们是如何被请求的。
+使用 `--toolsets query,create,modify,meta` 或 `--toolsets all` 启用。加上 `--read-only` 会移除 write-capable toolsets，无论它们是如何被请求的。`structural` toolset 通过 `--toolsets structural` 启用，或在 `all` 中包含。
 
 | Toolset | Tools | Default |
 |---------|-------|---------|
@@ -333,6 +333,10 @@ pwsh .\uninstall-all.ps1 -KeepLogs
 | `geometry` | 图元包围盒、几何实体信息、测量图元间距、冲突碰撞检测、射线投射、体积和面积分析、图元形心位置、几何复杂度分析 | on |
 | `rooms` | rooms、areas、spaces、边界、洞口、room separator、finishes、自动创建 rooms、area tag | on |
 | `links` | Revit/CAD link 列表、CAD import/link、Revit link load/unload/reload、link elements、坐标、project base point | on |
+| `parameters` | 创建 project/shared parameter、binding/unbinding、list/export shared params、按 GUID 设置值 | on |
+| `organization` | saved selections（save/load/list/delete）、选择元素、view templates（list/apply/create-from-view/duplicate/delete） | on |
+| `workflows` | clash review、data roundtrip、model audit、naming normalization、room documentation、sheet set、takeoff report、view cleanup | on |
+| `structural` | structural columns/beams/walls/foundations、rebar set + stirrup、结构荷载、framing tags、连接分析 | **off (opt-in)** |
 
 ### 全部 tools
 

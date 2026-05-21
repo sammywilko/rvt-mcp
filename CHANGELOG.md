@@ -1,8 +1,33 @@
 # Changelog
 
-## Unreleased
+## v0.4.0 - Full Revit tool surface
 
-### Added
+Tool surface grew from 32 → **249 tools** (default) / **254 tools** (adaptive bake), plus a new opt-in **structural** toolset (12 tools) gated behind `--toolsets structural`. Default tool count badge: 249. Adaptive bake badge: 254.
+
+### Added — Wave 14 (structural, opt-in)
+
+- Added new opt-in `structural` toolset (12 write-capable tools, NOT in `DefaultOn` — enable with `--toolsets structural`):
+  - **Structural elements (5)**: `create_structural_column`, `create_structural_beam`, `create_structural_wall`, `create_foundation_isolated`, `create_foundation_wall`.
+  - **Rebar (3)**: `list_rebar`, `create_rebar_set` (Single / FixedNumber / MaximumSpacing layouts), `create_rebar_stirrup` (shape-driven).
+  - **Loads & analysis (3)**: `get_structural_loads`, `set_structural_load` (update only; create deferred), `analyze_structural_connections`.
+  - **Tagging (1)**: `tag_structural_framing`.
+
+### Added — Wave 15 (final fill: meta / lint / view)
+
+- Added 8 high-value handlers extending existing toolsets:
+  - **Meta (2)**: `set_project_info` (typed fields: name/number/client_name/address/status/issue_date), `purge_unused` (families-only MVP, `dry_run` defaults to true, skips in-place families and instance-referenced symbols).
+  - **Lint (1)**: `get_model_warnings_summary` (groups `doc.GetWarnings()` by description, includes example failing element ids).
+  - **View (5)**: `capture_view_image` (sandboxed to `%TEMP%` or `%LOCALAPPDATA%\Bimwright\captures\`), `set_view_crop` (explicit bounds or fit-to-elements with padding), `set_view_scale`, `activate_view`, `show_element_in_view`.
+
+### Changed — Wave 15 (read-only guard)
+
+- Added `ServerState.BlockIfReadOnly` per-tool guard helper. View-write tools (`capture_view_image`, `set_view_crop`, `set_view_scale`, `activate_view`, `show_element_in_view`) plus `set_project_info`, `purge_unused` (when `!dry_run`), and `set_structural_load` (when `action='update'`) now refuse with a structured `read_only_mode` payload under `--read-only`. The `view` toolset stays in `DefaultOn` (read-only operations like `analyze_sheet_layout` remain available in read-only mode).
+
+### Added — Wave 16 (rebar follow-up)
+
+- Implemented the 2 rebar handlers deferred from Wave 14 with `#if REVIT2027_OR_GREATER` guard for the `Rebar.CreateFromCurves` signature change in R27 (legacy `RebarHookType`/`RebarHookOrientation` overload removed; new `BarTerminationsData` overload required).
+
+### Added — Earlier in this release (Waves 1-13)
 
 - Added 34 new MCP handlers across 3 new toolsets (increasing the total non-adaptive surface to 143 tools across 17 toolsets):
   - **Sheets (12 tools)**: `create_sheet`, `duplicate_sheet`, `create_placeholder_sheet`, `list_sheets`, `set_titleblock_parameters`, `get_titleblock_parameters`, `list_titleblocks`, `place_schedule_on_sheet`, `create_revision`, `assign_revision_to_sheet`, `list_revisions`, `renumber_sheets`.

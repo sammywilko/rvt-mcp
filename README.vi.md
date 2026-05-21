@@ -300,13 +300,13 @@ powershell -ExecutionPolicy Bypass -File .\install.ps1 -SourceDir . -Client none
 
 ## Toolsets
 
-Surface không adaptive có 175 tools trên 19 toolsets. Khi bật adaptive bake, surface mở rộng thành 178 tools.
+Surface không adaptive có 249 tools trên 22 toolsets. Khi bật adaptive bake, surface mở rộng thành 254 tools. Bật thêm toolset opt-in `structural` được thêm 12 tools (tổng 261 / 266 khi có adaptive bake).
 
-Toolsets bật mặc định: `query`, `create`, `view`, `schedule`, `families`, `mep`, `graphics`, `export`, `toolbaker`, `meta`, `lint`, `sheets`, `materials`, `geometry`, `annotation`, `rooms`, `links`.
+Toolsets bật mặc định: `query`, `create`, `view`, `schedule`, `families`, `mep`, `graphics`, `export`, `toolbaker`, `meta`, `lint`, `sheets`, `materials`, `geometry`, `annotation`, `rooms`, `links`, `parameters`, `organization`, `workflows`.
 
-Toolsets tùy chọn: `modify`, `delete`.
+Toolsets opt-in: `modify`, `delete`, `structural` (12 tools chuyên cho kỹ sư kết cấu — cột, dầm, tường, móng, cốt thép, tải trọng, tag kết cấu).
 
-Bật bằng `--toolsets query,create,modify,meta` hoặc `--toolsets all`. Thêm `--read-only` để loại write-capable toolsets dù chúng được request bằng cách nào.
+Bật bằng `--toolsets query,create,modify,meta` hoặc `--toolsets all`. Thêm `--read-only` để loại write-capable toolsets dù chúng được request bằng cách nào. Toolset `structural` bật explicit qua `--toolsets structural` hoặc include trong `all`.
 
 | Toolset | Tools | Default |
 |---------|-------|---------|
@@ -327,6 +327,10 @@ Bật bằng `--toolsets query,create,modify,meta` hoặc `--toolsets all`. Thê
 | `geometry` | bounding box của element, geometry, đo khoảng cách, phát hiện va chạm (clash), raycast, tính volume/area, centroid, độ phức tạp | on |
 | `rooms` | rooms, areas, spaces, boundaries, openings, room separators, finishes, auto-create rooms, tag areas | on |
 | `links` | list Revit/CAD links, import/link CAD, link/unload/reload Revit model, link elements, coordinates, project base point | on |
+| `parameters` | tạo project/shared parameter, binding/unbinding, list/export shared params, set value by GUID | on |
+| `organization` | saved selections (save/load/list/delete), chọn elements, view templates (list/apply/create-from-view/duplicate/delete) | on |
+| `workflows` | clash review, data roundtrip, model audit, naming normalization, room documentation, sheet set, takeoff report, view cleanup | on |
+| `structural` | structural columns/beams/walls/foundations, rebar set + stirrup, structural loads, framing tags, connection analysis | **off (opt-in)** |
 
 ### Tất cả tools
 
