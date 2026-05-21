@@ -1,8 +1,8 @@
-using Autodesk.Revit.Attributes;
+﻿using Autodesk.Revit.Attributes;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 
-namespace Bimwright.Rvt.Plugin.Commands
+namespace RvtMcp.Plugin.Commands
 {
     [Transaction(TransactionMode.Manual)]
     public class ShowStatusCommand : IExternalCommand
@@ -66,7 +66,7 @@ namespace Bimwright.Rvt.Plugin.Commands
                     ? $"{copiedLabel} copied to clipboard: {clipboardValue}"
                     : $"Unable to copy {copiedLabel.ToLowerInvariant()} to clipboard. Value: {clipboardValue}";
 
-            var td = new TaskDialog("BIMwright Status")
+            var td = new TaskDialog("RvtMcp Status")
             {
                 CommonButtons = TaskDialogCommonButtons.Ok,
                 MainInstruction = $"MCP is {(running ? "running" : "not running")}",

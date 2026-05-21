@@ -1,6 +1,6 @@
 using System;
 
-namespace Bimwright.Rvt.Server
+namespace RvtMcp.Server
 {
     /// <summary>
     /// Documentation marker for which toolset a tool class belongs to. The active gate

@@ -2,7 +2,7 @@ using System;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 
-namespace Bimwright.Rvt.Plugin.Handlers
+namespace RvtMcp.Plugin.Handlers
 {
     public class CreateProjectParameterHandler : IRevitCommand
     {

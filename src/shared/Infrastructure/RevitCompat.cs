@@ -1,7 +1,7 @@
 using System;
 using Autodesk.Revit.DB;
 
-namespace Bimwright.Rvt.Plugin
+namespace RvtMcp.Plugin
 {
     /// <summary>
     /// Centralizes all Revit API version differences.

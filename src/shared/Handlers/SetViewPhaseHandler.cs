@@ -1,11 +1,11 @@
-using System;
+﻿using System;
 using System.Linq;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Bimwright.Rvt.Plugin.Handlers
+namespace RvtMcp.Plugin.Handlers
 {
     public class SetViewPhaseHandler : IRevitCommand
     {
@@ -79,7 +79,7 @@ namespace Bimwright.Rvt.Plugin.Handlers
                     return Error(filterError, resolvedViewId, view.Name, null, null);
             }
 
-            using (var tx = new Transaction(doc, "Bimwright: set view phase"))
+            using (var tx = new Transaction(doc, "RvtMcp: set view phase"))
             {
                 tx.Start();
                 try

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using Autodesk.Revit.DB;
@@ -6,7 +6,7 @@ using Autodesk.Revit.UI;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Bimwright.Rvt.Plugin.Handlers
+namespace RvtMcp.Plugin.Handlers
 {
     public class SetMaterialStructuralAssetHandler : IRevitCommand
     {
@@ -133,7 +133,7 @@ namespace Bimwright.Rvt.Plugin.Handlers
             if (shearModulusMpa.HasValue)
                 fields["shear_modulus_mpa"] = new { status = "set", value = shearModulusMpa.Value };
 
-            using (var tx = new Transaction(doc, "Bimwright: set material structural asset"))
+            using (var tx = new Transaction(doc, "RvtMcp: set material structural asset"))
             {
                 tx.Start();
                 try

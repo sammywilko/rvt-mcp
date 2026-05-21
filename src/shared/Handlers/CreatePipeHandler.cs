@@ -1,11 +1,11 @@
-using System;
+﻿using System;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Plumbing;
 using Autodesk.Revit.UI;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Bimwright.Rvt.Plugin.Handlers
+namespace RvtMcp.Plugin.Handlers
 {
     /// <summary>
     /// Creates a plumbing pipe between two points. Coordinates in mm.
@@ -131,7 +131,7 @@ namespace Bimwright.Rvt.Plugin.Handlers
 
             var diameterMm = request.Value<double?>("diameter");
 
-            using (var tx = new Transaction(doc, "Bimwright: create pipe"))
+            using (var tx = new Transaction(doc, "RvtMcp: create pipe"))
             {
                 tx.Start();
                 try

@@ -1,9 +1,9 @@
-using System.Reflection;
+﻿using System.Reflection;
 using System.Collections.Generic;
 using Autodesk.Revit.UI;
-using Bimwright.Rvt.Plugin.ToolBaker;
+using RvtMcp.Plugin.ToolBaker;
 
-namespace Bimwright.Rvt.Plugin
+namespace RvtMcp.Plugin
 {
     public class RibbonResult
     {
@@ -15,10 +15,10 @@ namespace Bimwright.Rvt.Plugin
 
     public static class RibbonSetup
     {
-        private const string PanelName = "BIMwright";
+        private const string PanelName = "RvtMcp";
         private static readonly HashSet<string> CreatedButtons = new HashSet<string>();
 
-        public static RibbonResult Create(UIControlledApplication application, BimwrightConfig config = null, BakedToolRuntimeCache runtimeCache = null)
+        public static RibbonResult Create(UIControlledApplication application, RvtMcpConfig config = null, BakedToolRuntimeCache runtimeCache = null)
         {
             var assemblyPath = Assembly.GetExecutingAssembly().Location;
             var panel = ResolvePanel(application);
@@ -26,7 +26,7 @@ namespace Bimwright.Rvt.Plugin
             var toggleData = new PushButtonData(
                 "ToggleMcp", "MCP: ON",
                 assemblyPath,
-                "Bimwright.Rvt.Plugin.Commands.ToggleMcpCommand")
+                "RvtMcp.Plugin.Commands.ToggleMcpCommand")
             {
                 LargeImage = IconGenerator.McpOn32,
                 Image = IconGenerator.McpOn16,
@@ -36,7 +36,7 @@ namespace Bimwright.Rvt.Plugin
             var historyData = new PushButtonData(
                 "ShowHistory", "History (0)",
                 assemblyPath,
-                "Bimwright.Rvt.Plugin.Commands.ShowHistoryCommand")
+                "RvtMcp.Plugin.Commands.ShowHistoryCommand")
             {
                 LargeImage = IconGenerator.History32,
                 Image = IconGenerator.History16,
@@ -46,7 +46,7 @@ namespace Bimwright.Rvt.Plugin
             var statusData = new PushButtonData(
                 "ShowStatus", "Status",
                 assemblyPath,
-                "Bimwright.Rvt.Plugin.Commands.ShowStatusCommand")
+                "RvtMcp.Plugin.Commands.ShowStatusCommand")
             {
                 LargeImage = IconGenerator.Info32,
                 Image = IconGenerator.Info16,
@@ -90,7 +90,7 @@ namespace Bimwright.Rvt.Plugin
                     buttonName,
                     ShortLabel(entry.DisplayName),
                     assemblyPath,
-                    "Bimwright.Rvt.Plugin.Commands.RunBakedRibbonSlot" + entry.RibbonSlot.ToString("00") + "Command")
+                    "RvtMcp.Plugin.Commands.RunBakedRibbonSlot" + entry.RibbonSlot.ToString("00") + "Command")
                 {
                     LargeImage = IconGenerator.Info32,
                     Image = IconGenerator.Info16,
@@ -119,7 +119,7 @@ namespace Bimwright.Rvt.Plugin
                 buttonName,
                 "Bake Inbox",
                 assemblyPath,
-                "Bimwright.Rvt.Plugin.Commands.ShowBakeInboxCommand")
+                "RvtMcp.Plugin.Commands.ShowBakeInboxCommand")
             {
                 LargeImage = IconGenerator.Info32,
                 Image = IconGenerator.Info16,

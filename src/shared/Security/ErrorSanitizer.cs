@@ -1,6 +1,6 @@
 using System.Text.RegularExpressions;
 
-namespace Bimwright.Rvt.Plugin
+namespace RvtMcp.Plugin
 {
     /// <summary>
     /// S5 path-leak mask (aspect #5 §S5): strip absolute paths from error strings

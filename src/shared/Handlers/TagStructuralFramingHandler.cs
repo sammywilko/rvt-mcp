@@ -1,11 +1,11 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using Newtonsoft.Json.Linq;
 
-namespace Bimwright.Rvt.Plugin.Handlers
+namespace RvtMcp.Plugin.Handlers
 {
     public class TagStructuralFramingHandler : IRevitCommand
     {
@@ -64,7 +64,7 @@ namespace Bimwright.Rvt.Plugin.Handlers
 
             var tagged = 0;
             var skipped = 0;
-            using (var tx = new Transaction(doc, "Bimwright: Tag structural framing"))
+            using (var tx = new Transaction(doc, "RvtMcp: Tag structural framing"))
             {
                 tx.Start();
                 try

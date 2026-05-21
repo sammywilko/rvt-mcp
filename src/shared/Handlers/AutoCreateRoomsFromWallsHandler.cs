@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using Autodesk.Revit.DB;
@@ -7,7 +7,7 @@ using Autodesk.Revit.UI;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Bimwright.Rvt.Plugin.Handlers
+namespace RvtMcp.Plugin.Handlers
 {
     public class AutoCreateRoomsFromWallsHandler : IRevitCommand
     {
@@ -181,12 +181,12 @@ namespace Bimwright.Rvt.Plugin.Handlers
             }
 
             // Execute placement
-            var tg = new TransactionGroup(doc, "Bimwright: Auto Create Rooms From Walls");
+            var tg = new TransactionGroup(doc, "RvtMcp: Auto Create Rooms From Walls");
             tg.Start();
 
             try
             {
-                using (var tx = new Transaction(doc, "Bimwright: Create Rooms"))
+                using (var tx = new Transaction(doc, "RvtMcp: Create Rooms"))
                 {
                     tx.Start();
 

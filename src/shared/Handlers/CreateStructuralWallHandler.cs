@@ -1,11 +1,11 @@
-using System;
+﻿using System;
 using System.Linq;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Structure;
 using Autodesk.Revit.UI;
 using Newtonsoft.Json.Linq;
 
-namespace Bimwright.Rvt.Plugin.Handlers
+namespace RvtMcp.Plugin.Handlers
 {
     public class CreateStructuralWallHandler : IRevitCommand
     {
@@ -38,7 +38,7 @@ namespace Bimwright.Rvt.Plugin.Handlers
                 return CommandResult.Fail("start and end points are identical.");
             var line = Line.CreateBound(start, end);
 
-            using (var tx = new Transaction(doc, "Bimwright: Create structural wall"))
+            using (var tx = new Transaction(doc, "RvtMcp: Create structural wall"))
             {
                 tx.Start();
                 try

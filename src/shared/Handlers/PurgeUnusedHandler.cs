@@ -1,11 +1,11 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using Newtonsoft.Json.Linq;
 
-namespace Bimwright.Rvt.Plugin.Handlers
+namespace RvtMcp.Plugin.Handlers
 {
     public class PurgeUnusedHandler : IRevitCommand
     {
@@ -70,7 +70,7 @@ namespace Bimwright.Rvt.Plugin.Handlers
 
             var deleted = 0;
             var failed = 0;
-            using (var tx = new Transaction(doc, "Bimwright: Purge unused family symbols"))
+            using (var tx = new Transaction(doc, "RvtMcp: Purge unused family symbols"))
             {
                 tx.Start();
                 try

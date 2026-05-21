@@ -1,10 +1,10 @@
-using System;
+﻿using System;
 using System.Linq;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using Newtonsoft.Json.Linq;
 
-namespace Bimwright.Rvt.Plugin.Handlers
+namespace RvtMcp.Plugin.Handlers
 {
     public class CreatePlaceholderSheetHandler : IRevitCommand
     {
@@ -53,7 +53,7 @@ namespace Bimwright.Rvt.Plugin.Handlers
             if (sheetNumberExists)
                 return CommandResult.Fail($"Sheet with number '{sheetNumber}' already exists.");
 
-            using (var tx = new Transaction(doc, "Bimwright: create placeholder sheet"))
+            using (var tx = new Transaction(doc, "RvtMcp: create placeholder sheet"))
             {
                 tx.Start();
                 try

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Linq;
 using Autodesk.Revit.DB;
@@ -6,7 +6,7 @@ using Autodesk.Revit.UI;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Bimwright.Rvt.Plugin.Handlers
+namespace RvtMcp.Plugin.Handlers
 {
     public class CreateSharedParameterHandler : IRevitCommand
     {
@@ -89,7 +89,7 @@ namespace Bimwright.Rvt.Plugin.Handlers
                 if (createFileIfMissing)
                 {
                     string localApp = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-                    string dir = Path.Combine(localApp, "Bimwright");
+                    string dir = Path.Combine(localApp, "RvtMcp");
                     resolvedPath = Path.Combine(dir, "shared-parameters.txt");
                 }
                 else

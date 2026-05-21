@@ -4,10 +4,10 @@ using System.IO;
 using System.Linq;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
-using Bimwright.Rvt.Plugin.Lint;
+using RvtMcp.Plugin.Lint;
 using Newtonsoft.Json.Linq;
 
-namespace Bimwright.Rvt.Plugin.Handlers
+namespace RvtMcp.Plugin.Handlers
 {
     public class SuggestViewNameCorrectionsHandler : IRevitCommand
     {
@@ -105,10 +105,10 @@ namespace Bimwright.Rvt.Plugin.Handlers
             if (!string.IsNullOrEmpty(pluginDir))
                 yield return Path.Combine(pluginDir, "firm-profiles");
 
-            // User folder: %LOCALAPPDATA%\Bimwright\firm-profiles
+            // User folder: %LOCALAPPDATA%\RvtMcp\firm-profiles
             var localApp = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
             if (!string.IsNullOrEmpty(localApp))
-                yield return Path.Combine(localApp, "Bimwright", "firm-profiles");
+                yield return Path.Combine(localApp, "RvtMcp", "firm-profiles");
         }
     }
 }

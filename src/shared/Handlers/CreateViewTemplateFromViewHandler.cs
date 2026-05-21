@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using Autodesk.Revit.DB;
@@ -6,7 +6,7 @@ using Autodesk.Revit.UI;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Bimwright.Rvt.Plugin.Handlers
+namespace RvtMcp.Plugin.Handlers
 {
     public class CreateViewTemplateFromViewHandler : IRevitCommand
     {
@@ -104,7 +104,7 @@ namespace Bimwright.Rvt.Plugin.Handlers
             int controlledCount = 0;
             int nonControlledCount = 0;
 
-            using (var tx = new Transaction(doc, "Bimwright: create view template"))
+            using (var tx = new Transaction(doc, "RvtMcp: create view template"))
             {
                 tx.Start();
                 try

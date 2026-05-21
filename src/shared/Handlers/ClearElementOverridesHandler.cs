@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using Autodesk.Revit.DB;
@@ -6,7 +6,7 @@ using Autodesk.Revit.UI;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Bimwright.Rvt.Plugin.Handlers
+namespace RvtMcp.Plugin.Handlers
 {
     public class ClearElementOverridesHandler : IRevitCommand
     {
@@ -131,7 +131,7 @@ namespace Bimwright.Rvt.Plugin.Handlers
             int succeeded = 0;
             int elementCount = targets.Count;
 
-            using (var tx = new Transaction(doc, "Bimwright: clear element overrides"))
+            using (var tx = new Transaction(doc, "RvtMcp: clear element overrides"))
             {
                 tx.Start();
                 try

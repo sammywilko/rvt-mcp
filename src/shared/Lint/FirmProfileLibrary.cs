@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 
-namespace Bimwright.Rvt.Plugin.Lint
+namespace RvtMcp.Plugin.Lint
 {
     public class FirmProfileLibrary
     {

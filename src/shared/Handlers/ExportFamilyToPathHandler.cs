@@ -7,7 +7,7 @@ using Autodesk.Revit.UI;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Bimwright.Rvt.Plugin.Handlers
+namespace RvtMcp.Plugin.Handlers
 {
     /// <summary>
     /// Exports (saves) a loadable family from the current project back to an .rfa file

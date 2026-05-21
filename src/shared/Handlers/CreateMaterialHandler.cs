@@ -1,11 +1,11 @@
-using System;
+﻿using System;
 using System.Linq;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Bimwright.Rvt.Plugin.Handlers
+namespace RvtMcp.Plugin.Handlers
 {
     public class CreateMaterialHandler : IRevitCommand
     {
@@ -85,7 +85,7 @@ namespace Bimwright.Rvt.Plugin.Handlers
             var materialClass = request.Value<string>("material_class");
             var materialCategory = request.Value<string>("material_category");
 
-            using (var tx = new Transaction(doc, "Bimwright: create material"))
+            using (var tx = new Transaction(doc, "RvtMcp: create material"))
             {
                 tx.Start();
                 try

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -7,7 +7,7 @@ using Autodesk.Revit.UI;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Bimwright.Rvt.Plugin.Handlers
+namespace RvtMcp.Plugin.Handlers
 {
     public class BindSharedParameterHandler : IRevitCommand
     {
@@ -154,7 +154,7 @@ namespace Bimwright.Rvt.Plugin.Handlers
             bool rebuiltBinding = false;
             var warnings = new List<string>();
 
-            using (var tx = new Transaction(doc, "Bimwright: bind shared parameter"))
+            using (var tx = new Transaction(doc, "RvtMcp: bind shared parameter"))
             {
                 tx.Start();
 

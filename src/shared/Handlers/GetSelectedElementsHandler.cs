@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using Autodesk.Revit.UI;
 
-namespace Bimwright.Rvt.Plugin.Handlers
+namespace RvtMcp.Plugin.Handlers
 {
     public class GetSelectedElementsHandler : IRevitCommand
     {

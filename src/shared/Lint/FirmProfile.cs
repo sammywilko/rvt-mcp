@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace Bimwright.Rvt.Plugin.Lint
+namespace RvtMcp.Plugin.Lint
 {
     public class FirmProfile
     {

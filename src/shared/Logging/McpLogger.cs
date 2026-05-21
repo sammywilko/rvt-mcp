@@ -1,9 +1,9 @@
-using System;
+﻿using System;
 using System.IO;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Bimwright.Rvt.Plugin
+namespace RvtMcp.Plugin
 {
     public static class McpLogger
     {
@@ -17,7 +17,7 @@ namespace Bimwright.Rvt.Plugin
         {
             var dir = Path.Combine(
                 LocalAppDataOverride ?? Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "Bimwright");
+                "RvtMcp");
             Directory.CreateDirectory(dir);
             _logPath = Path.Combine(dir, "mcp-calls.jsonl");
             _sessionId = DateTime.Now.ToString("yyyyMMdd-HHmmss") + "-" +

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -7,7 +7,7 @@ using Autodesk.Revit.UI;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Bimwright.Rvt.Plugin.Handlers
+namespace RvtMcp.Plugin.Handlers
 {
     public class LinkRevitModelHandler : IRevitCommand
     {
@@ -100,7 +100,7 @@ namespace Bimwright.Rvt.Plugin.Handlers
             ElementId typeId = ElementId.InvalidElementId;
             RevitLinkInstance createdInstance = null;
 
-            using (var tx = new Transaction(doc, "Bimwright: Link Revit Model"))
+            using (var tx = new Transaction(doc, "RvtMcp: Link Revit Model"))
             {
                 tx.Start();
                 try

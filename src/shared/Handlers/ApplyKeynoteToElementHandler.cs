@@ -1,11 +1,11 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Bimwright.Rvt.Plugin.Handlers
+namespace RvtMcp.Plugin.Handlers
 {
     public class ApplyKeynoteToElementHandler : IRevitCommand
     {
@@ -108,7 +108,7 @@ namespace Bimwright.Rvt.Plugin.Handlers
             }
             else
             {
-                using (var tx = new Transaction(doc, "Bimwright: apply keynote to element"))
+                using (var tx = new Transaction(doc, "RvtMcp: apply keynote to element"))
                 {
                     tx.Start();
                     try

@@ -1,7 +1,7 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Bimwright.Rvt.Plugin
+namespace RvtMcp.Plugin
 {
     public static class McpResponsePrivacy
     {

@@ -1,9 +1,9 @@
 using System.Linq;
 using System.Text;
 using Autodesk.Revit.UI;
-using Bimwright.Rvt.Plugin.ToolBaker;
+using RvtMcp.Plugin.ToolBaker;
 
-namespace Bimwright.Rvt.Plugin.Views
+namespace RvtMcp.Plugin.Views
 {
     public sealed class BakeInboxWindow
     {

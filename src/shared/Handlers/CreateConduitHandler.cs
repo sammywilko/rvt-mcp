@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Linq;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Electrical;
@@ -6,7 +6,7 @@ using Autodesk.Revit.UI;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Bimwright.Rvt.Plugin.Handlers
+namespace RvtMcp.Plugin.Handlers
 {
     public class CreateConduitHandler : IRevitCommand
     {
@@ -106,7 +106,7 @@ namespace Bimwright.Rvt.Plugin.Handlers
             if (level == null)
                 return CommandResult.Fail("No level found in the project.");
 
-            using (var tx = new Transaction(doc, "Bimwright: create conduit"))
+            using (var tx = new Transaction(doc, "RvtMcp: create conduit"))
             {
                 tx.Start();
                 try

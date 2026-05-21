@@ -1,12 +1,12 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
-using Bimwright.Rvt.Plugin.Lint;
+using RvtMcp.Plugin.Lint;
 
-namespace Bimwright.Rvt.Plugin.Handlers
+namespace RvtMcp.Plugin.Handlers
 {
     public class DetectFirmProfileHandler : IRevitCommand
     {
@@ -97,7 +97,7 @@ namespace Bimwright.Rvt.Plugin.Handlers
 
             var localApp = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
             if (!string.IsNullOrEmpty(localApp))
-                yield return Path.Combine(localApp, "Bimwright", "firm-profiles");
+                yield return Path.Combine(localApp, "RvtMcp", "firm-profiles");
         }
     }
 }

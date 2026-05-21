@@ -1,4 +1,4 @@
-namespace Bimwright.Rvt.Plugin.ToolBaker
+namespace RvtMcp.Plugin.ToolBaker
 {
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;

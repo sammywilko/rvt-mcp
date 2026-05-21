@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using Autodesk.Revit.DB;
@@ -6,7 +6,7 @@ using Autodesk.Revit.UI;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Bimwright.Rvt.Plugin.Handlers
+namespace RvtMcp.Plugin.Handlers
 {
     public class RemoveParameterBindingHandler : IRevitCommand
     {
@@ -167,7 +167,7 @@ namespace Bimwright.Rvt.Plugin.Handlers
             }
             else
             {
-                using (var tx = new Transaction(doc, "Bimwright: remove parameter binding"))
+                using (var tx = new Transaction(doc, "RvtMcp: remove parameter binding"))
                 {
                     tx.Start();
 

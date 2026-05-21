@@ -1,11 +1,11 @@
-using System;
+﻿using System;
 using System.Linq;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Structure;
 using Autodesk.Revit.UI;
 using Newtonsoft.Json.Linq;
 
-namespace Bimwright.Rvt.Plugin.Handlers
+namespace RvtMcp.Plugin.Handlers
 {
     public class CreateStructuralBeamHandler : IRevitCommand
     {
@@ -53,7 +53,7 @@ namespace Bimwright.Rvt.Plugin.Handlers
                 _ => StructuralType.Beam
             };
 
-            using (var tx = new Transaction(doc, "Bimwright: Create structural beam"))
+            using (var tx = new Transaction(doc, "RvtMcp: Create structural beam"))
             {
                 tx.Start();
                 try

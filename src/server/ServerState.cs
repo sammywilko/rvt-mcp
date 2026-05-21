@@ -1,11 +1,11 @@
-using Bimwright.Rvt.Plugin;
+using RvtMcp.Plugin;
 using Newtonsoft.Json;
 
-namespace Bimwright.Rvt.Server
+namespace RvtMcp.Server
 {
     internal static class ServerState
     {
-        public static BimwrightConfig Config { get; set; }
+        public static RvtMcpConfig Config { get; set; }
 
         public static bool IsReadOnly => Config?.ReadOnlyOrDefault ?? false;
 

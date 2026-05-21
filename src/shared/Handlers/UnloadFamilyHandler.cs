@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -8,7 +8,7 @@ using Autodesk.Revit.UI;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Bimwright.Rvt.Plugin.Handlers
+namespace RvtMcp.Plugin.Handlers
 {
     public class UnloadFamilyHandler : IRevitCommand
     {
@@ -160,7 +160,7 @@ namespace Bimwright.Rvt.Plugin.Handlers
             int actuallyRemovedTypes = typesRemoved;
             try
             {
-                using (var tx = new Transaction(doc, "Bimwright: unload family"))
+                using (var tx = new Transaction(doc, "RvtMcp: unload family"))
                 {
                     tx.Start();
 

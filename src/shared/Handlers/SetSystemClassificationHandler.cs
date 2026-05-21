@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -8,7 +8,7 @@ using Autodesk.Revit.DB.Plumbing;
 using Autodesk.Revit.UI;
 using Newtonsoft.Json.Linq;
 
-namespace Bimwright.Rvt.Plugin.Handlers
+namespace RvtMcp.Plugin.Handlers
 {
     /// <summary>
     /// set_system_classification — Add MEP elements to an existing duct/piping system,
@@ -194,7 +194,7 @@ namespace Bimwright.Rvt.Plugin.Handlers
             var alreadyMember = new List<string>();
             var failed = new List<object>();
 
-            using (var tx = new Transaction(doc, "Bimwright: set system classification"))
+            using (var tx = new Transaction(doc, "RvtMcp: set system classification"))
             {
                 tx.Start();
 

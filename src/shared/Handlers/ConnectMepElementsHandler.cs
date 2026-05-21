@@ -1,10 +1,10 @@
-using System;
+﻿using System;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Bimwright.Rvt.Plugin.Handlers
+namespace RvtMcp.Plugin.Handlers
 {
     /// <summary>
     /// connect_mep_elements — Connect the nearest open connectors of two MEP elements
@@ -135,7 +135,7 @@ namespace Bimwright.Rvt.Plugin.Handlers
                 ? (object)Math.Round(origin1.DistanceTo(origin2) * FeetToMm, 1)
                 : null;
 
-            using (var tx = new Transaction(doc, "Bimwright: connect MEP elements"))
+            using (var tx = new Transaction(doc, "RvtMcp: connect MEP elements"))
             {
                 tx.Start();
                 try

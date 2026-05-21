@@ -50,3 +50,9 @@ docs/research-archive/
 
 # MCP Registry publisher CLI (downloaded on demand)
 .mcp-publisher/
+
+# `dotnet pack` output (CI publishes nupkg from here)
+artifacts/
+
+# Local AI review sessions (prompt + output dumps)
+runs/

@@ -1,11 +1,11 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using Newtonsoft.Json.Linq;
 
-namespace Bimwright.Rvt.Plugin.Handlers
+namespace RvtMcp.Plugin.Handlers
 {
     public class DuplicateSheetHandler : IRevitCommand
     {
@@ -102,7 +102,7 @@ namespace Bimwright.Rvt.Plugin.Handlers
             FamilyInstance titleBlockInstance = null;
 
             // Atomic rollback via TransactionGroup
-            using (var txGroup = new TransactionGroup(doc, "Bimwright: duplicate sheet"))
+            using (var txGroup = new TransactionGroup(doc, "RvtMcp: duplicate sheet"))
             {
                 txGroup.Start();
                 using (var tx = new Transaction(doc, "Duplicate Sheet Internal"))

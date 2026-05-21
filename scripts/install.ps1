@@ -1,7 +1,7 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-  Install or uninstall Bimwright Revit client components.
+  Install or uninstall RvtMcp Revit client components.
 
 .DESCRIPTION
   In a client setup ZIP, this script installs:
@@ -36,9 +36,9 @@ param(
     [string]$SourceDir,
     [switch]$Uninstall,
     [int[]]$Years,
-    [ValidateSet('Auto', 'codex', 'opencode', 'claude', 'none')]
+    [ValidateSet('Auto', 'codex', 'opencode', 'kilo', 'claude', 'none')]
     [string]$Client = 'Auto',
-    [ValidateSet('opencode', 'codex')]
+    [ValidateSet('opencode', 'codex', 'kilo')]
     [string]$WireClient,
     [string]$ServerInstallRoot
 )
@@ -87,7 +87,7 @@ if (Test-Path $manifestPath) {
 }
 
 if (-not $ServerInstallRoot) {
-    $ServerInstallRoot = Join-Path $env:LOCALAPPDATA ("Bimwright\rvt\server\{0}" -f $setupVersion)
+    $ServerInstallRoot = Join-Path $env:LOCALAPPDATA ("RvtMcp\rvt\server\{0}" -f $setupVersion)
 }
 
 function Get-InstalledRevitYears {
@@ -108,14 +108,14 @@ function Get-AddinsRoot([int]$year) {
 function Find-ServerSourceExe {
     param([string]$ServerDir)
     if (-not $ServerDir) { return $null }
-    $preferred = Join-Path $ServerDir 'bimwright-rvt.exe'
+    $preferred = Join-Path $ServerDir 'rvt-mcp.exe'
     if (Test-Path $preferred) { return $preferred }
-    $fallback = Join-Path $ServerDir 'Bimwright.Rvt.Server.exe'
+    $fallback = Join-Path $ServerDir 'RvtMcp.Server.exe'
     if (Test-Path $fallback) { return $fallback }
     return $null
 }
 
-function Get-BimwrightClientTargets {
+function Get-RvtMcpClientTargets {
     param(
         [int[]]$years,
         [string]$serverCommand
@@ -126,7 +126,7 @@ function Get-BimwrightClientTargets {
     }
 
     return ,([pscustomobject]@{
-        Name      = 'bimwright-rvt'
+        Name      = 'rvt-mcp'
         ServerCmd = $serverCommand
         Args      = @()
         Years     = $supportedYears
@@ -139,9 +139,9 @@ function Write-ConfigAtomic {
         [Parameter(Mandatory = $true)][string]$Path,
         [Parameter(Mandatory = $true)][string]$Content
     )
-    $bak = "$Path.bimwright.bak"
+    $bak = "$Path.rvtmcp.bak"
     Copy-Item -Path $Path -Destination $bak -Force
-    $temp = "$Path.bimwright.tmp"
+    $temp = "$Path.rvtmcp.tmp"
     try {
         Set-Content -Path $temp -Value $Content -Encoding UTF8 -NoNewline
         [System.IO.File]::Replace($temp, $Path, [NullString]::Value)
@@ -219,7 +219,7 @@ function Remove-LegacyBimwrightEntries {
     return $keys.Count
 }
 
-function Install-BimwrightServer {
+function Install-RvtMcpServer {
     param(
         [string]$ServerDir,
         [string]$InstallRoot
@@ -228,7 +228,7 @@ function Install-BimwrightServer {
     if (-not $sourceExe) { return $null }
 
     $plannedExe = Join-Path $InstallRoot (Split-Path -Leaf $sourceExe)
-    if ($PSCmdlet.ShouldProcess($InstallRoot, 'Install self-contained Bimwright RVT server')) {
+    if ($PSCmdlet.ShouldProcess($InstallRoot, 'Install self-contained RvtMcp RVT server')) {
         if (Test-Path $InstallRoot) {
             Remove-Item -Path $InstallRoot -Recurse -Force
         }
@@ -267,11 +267,15 @@ function Add-OpencodeEntry {
     $desired = @{}
     foreach ($t in $Targets) {
         $name = $t.Name
-        $desired[$name] = [ordered]@{
+        $entry = [ordered]@{
             type    = 'local'
             command = @($t.ServerCmd) + @($t.Args)
             enabled = $true
         }
+        if ($t.PSObject.Properties.Name -contains 'Env' -and $t.Env -and $t.Env.Count -gt 0) {
+            $entry['environment'] = $t.Env
+        }
+        $desired[$name] = $entry
     }
 
     $legacyRemoved = Remove-LegacyBimwrightEntries -Map $cfg['mcp']
@@ -290,10 +294,79 @@ function Add-OpencodeEntry {
         return $true
     }
 
-    if ($PSCmdlet.ShouldProcess($ConfigPath, 'Upsert bimwright-rvt entry')) {
+    if ($PSCmdlet.ShouldProcess($ConfigPath, 'Upsert rvt-mcp entry')) {
         $content = $cfg | ConvertTo-Json -Depth 50
         $bak = Write-ConfigAtomic -Path $ConfigPath -Content $content
         Write-Host ("[opencode] wired {0} entry -> {1} (backup: {2})" -f $desired.Count, $ConfigPath, $bak)
+    }
+    return $true
+}
+
+function Add-KiloEntry {
+    [CmdletBinding(SupportsShouldProcess = $true)]
+    param(
+        [Parameter(Mandatory = $true)][string]$ConfigPath,
+        [Parameter(Mandatory = $true)][object[]]$Targets,
+        [switch]$RequireExisting
+    )
+
+    if (-not (Test-Path $ConfigPath)) {
+        # Kilo will create the config dir on first run; create the file if user opted in
+        # explicitly (-Client kilo). Auto mode still requires the file to exist.
+        if ($RequireExisting) {
+            $parent = Split-Path -Parent $ConfigPath
+            if (-not (Test-Path $parent)) { New-Item -ItemType Directory -Path $parent -Force | Out-Null }
+            Set-Content -Path $ConfigPath -Value '{}' -Encoding UTF8 -NoNewline
+        } else {
+            Write-Host "[kilo] config not found at $ConfigPath - skipping"
+            return $false
+        }
+    }
+
+    try {
+        $cfg = Read-JsonHashtable -Path $ConfigPath
+    } catch {
+        Write-Warning ("[kilo] parse failed at {0}: {1} - skipping" -f $ConfigPath, $_.Exception.Message)
+        return $false
+    }
+
+    if (-not $cfg.ContainsKey('mcp')) { $cfg['mcp'] = @{} }
+
+    $desired = @{}
+    foreach ($t in $Targets) {
+        $name = $t.Name
+        $entry = [ordered]@{
+            type    = 'local'
+            command = @($t.ServerCmd) + @($t.Args)
+            enabled = $true
+            timeout = 30000
+        }
+        if ($t.PSObject.Properties.Name -contains 'Env' -and $t.Env -and $t.Env.Count -gt 0) {
+            $entry['environment'] = $t.Env
+        }
+        $desired[$name] = $entry
+    }
+
+    $legacyRemoved = Remove-LegacyBimwrightEntries -Map $cfg['mcp']
+    $changed = $legacyRemoved -gt 0
+    foreach ($k in $desired.Keys) {
+        $existingJson = if ($cfg['mcp'].ContainsKey($k)) { ($cfg['mcp'][$k] | ConvertTo-Json -Depth 20 -Compress) } else { $null }
+        $newJson = $desired[$k] | ConvertTo-Json -Depth 20 -Compress
+        if ($existingJson -ne $newJson) {
+            $cfg['mcp'][$k] = $desired[$k]
+            $changed = $true
+        }
+    }
+
+    if (-not $changed) {
+        Write-Host ("[kilo] no changes needed at {0}" -f $ConfigPath)
+        return $true
+    }
+
+    if ($PSCmdlet.ShouldProcess($ConfigPath, 'Upsert rvt-mcp entry')) {
+        $content = $cfg | ConvertTo-Json -Depth 50
+        $bak = Write-ConfigAtomic -Path $ConfigPath -Content $content
+        Write-Host ("[kilo] wired {0} entry -> {1} (backup: {2})" -f $desired.Count, $ConfigPath, $bak)
     }
     return $true
 }
@@ -328,14 +401,21 @@ function Add-CodexEntry {
         $headerLiteral = "[mcp_servers.$name]"
         $commandValue = ConvertTo-TomlString -Value $t.ServerCmd
         $argsValue = ConvertTo-TomlStringArray -Values $t.Args
+        $envLines = ''
+        if ($t.PSObject.Properties.Name -contains 'Env' -and $t.Env -and $t.Env.Count -gt 0) {
+            $envHeader = "[mcp_servers.$name.env]"
+            $envBody = @()
+            foreach ($k in $t.Env.Keys) { $envBody += ("{0} = {1}" -f $k, (ConvertTo-TomlString -Value ([string]$t.Env[$k]))) }
+            $envLines = "`n`n" + $envHeader + "`n" + ($envBody -join "`n")
+        }
         $desiredBlock = @"
 $headerLiteral
 command = $commandValue
 args = $argsValue
-enabled = true
+enabled = true$envLines
 "@
 
-        $pattern = '(?ms)^\[mcp_servers\.' + [regex]::Escape($name) + '\].*?(?=^\[|\z)'
+        $pattern = '(?ms)^\[mcp_servers\.' + [regex]::Escape($name) + '\](?:\.env)?.*?(?=^\[mcp_servers\.(?!' + [regex]::Escape($name) + '(?:\.env)?\b)|\z)'
         $existingMatch = [regex]::Match($raw, $pattern)
         if ($existingMatch.Success) {
             $existingTrim = ($existingMatch.Value -replace '\s+$', '')
@@ -356,9 +436,9 @@ enabled = true
         return $true
     }
 
-    if ($PSCmdlet.ShouldProcess($ConfigPath, 'Upsert [mcp_servers.bimwright-rvt] block')) {
+    if ($PSCmdlet.ShouldProcess($ConfigPath, 'Upsert [mcp_servers.rvt-mcp] block')) {
         $bak = Write-ConfigAtomic -Path $ConfigPath -Content $raw
-        Write-Host ("[codex] wired bimwright-rvt block -> {0} (backup: {1})" -f $ConfigPath, $bak)
+        Write-Host ("[codex] wired rvt-mcp block -> {0} (backup: {1})" -f $ConfigPath, $bak)
     }
     return $true
 }
@@ -389,10 +469,14 @@ function Add-ClaudeEntry {
     $desired = @{}
     foreach ($t in $Targets) {
         $name = $t.Name
-        $desired[$name] = [ordered]@{
+        $entry = [ordered]@{
             command = $t.ServerCmd
             args = @($t.Args)
         }
+        if ($t.PSObject.Properties.Name -contains 'Env' -and $t.Env -and $t.Env.Count -gt 0) {
+            $entry['env'] = $t.Env
+        }
+        $desired[$name] = $entry
     }
 
     $legacyRemoved = Remove-LegacyBimwrightEntries -Map $cfg['mcpServers']
@@ -411,7 +495,7 @@ function Add-ClaudeEntry {
         return $true
     }
 
-    if ($PSCmdlet.ShouldProcess($ConfigPath, 'Upsert mcpServers.bimwright-rvt entry')) {
+    if ($PSCmdlet.ShouldProcess($ConfigPath, 'Upsert mcpServers.rvt-mcp entry')) {
         $content = $cfg | ConvertTo-Json -Depth 50
         $bak = Write-ConfigAtomic -Path $ConfigPath -Content $content
         Write-Host ("[claude] wired {0} entry -> {1} (backup: {2})" -f $desired.Count, $ConfigPath, $bak)
@@ -453,9 +537,9 @@ $previewed = @()
 
 foreach ($year in $Years) {
     $yearTwo = "{0:D2}" -f ($year - 2000)
-    $addinFile = "Bimwright.R$yearTwo.addin"
+    $addinFile = "RvtMcp.R$yearTwo.addin"
     $addinsRoot = Get-AddinsRoot $year
-    $pluginDir = Join-Path $addinsRoot 'Bimwright'
+    $pluginDir = Join-Path $addinsRoot 'RvtMcp'
     $addinPath = Join-Path $addinsRoot $addinFile
 
     if ($Uninstall) {
@@ -487,7 +571,7 @@ foreach ($year in $Years) {
         continue
     }
 
-    $zip = Join-Path $pluginSourceDir ("Bimwright.Rvt.Plugin.R{0}.zip" -f $yearTwo)
+    $zip = Join-Path $pluginSourceDir ("RvtMcp.Plugin.R{0}.zip" -f $yearTwo)
     if (-not (Test-Path $zip)) {
         Write-Warning ("[R{0}] skipped - missing zip {1}" -f $yearTwo, $zip)
         $skipped += "R$yearTwo"
@@ -543,10 +627,10 @@ foreach ($year in $Years) {
 
 $serverCommand = $null
 if (-not $Uninstall) {
-    $serverCommand = Install-BimwrightServer -ServerDir $serverSourceDir -InstallRoot $ServerInstallRoot
+    $serverCommand = Install-RvtMcpServer -ServerDir $serverSourceDir -InstallRoot $ServerInstallRoot
     if (-not $serverCommand) {
-        if (Get-Command bimwright-rvt -ErrorAction SilentlyContinue) {
-            $serverCommand = 'bimwright-rvt'
+        if (Get-Command rvt-mcp -ErrorAction SilentlyContinue) {
+            $serverCommand = 'rvt-mcp'
         }
     }
 }
@@ -556,12 +640,12 @@ if (-not $Uninstall -and $Client -ne 'none') {
     $clientWasDefaultAuto = ($Client -eq 'Auto' -and -not $WireClient)
     if (-not $serverCommand) {
         if ($clientWasDefaultAuto) {
-            Write-Host "[wire] no setup server found and bimwright-rvt is not on PATH - skipping Auto wire"
+            Write-Host "[wire] no setup server found and rvt-mcp is not on PATH - skipping Auto wire"
         } else {
-            Write-Warning "[wire] no server command available - install from setup ZIP or install Bimwright.Rvt.Server first"
+            Write-Warning "[wire] no server command available - install from setup ZIP or install RvtMcp.Server first"
         }
     } else {
-        $targets = Get-BimwrightClientTargets -years $Years -serverCommand $serverCommand
+        $targets = Get-RvtMcpClientTargets -years $Years -serverCommand $serverCommand
         if ($targets.Count -eq 0) {
             Write-Warning "[wire] no plugin-supported Revit years (2022-2027) detected - skipping wire"
         } else {
@@ -569,6 +653,10 @@ if (-not $Uninstall -and $Client -ne 'none') {
             if ($Client -eq 'Auto' -or $Client -eq 'opencode') {
                 $ok = Add-OpencodeEntry -ConfigPath (Join-Path $env:USERPROFILE '.config\opencode\opencode.json') -Targets $targets -RequireExisting:$requireExisting
                 if ($ok) { $wireStatus += 'opencode' }
+            }
+            if ($Client -eq 'Auto' -or $Client -eq 'kilo') {
+                $ok = Add-KiloEntry -ConfigPath (Join-Path $env:USERPROFILE '.config\kilo\kilo.json') -Targets $targets -RequireExisting:($Client -eq 'kilo')
+                if ($ok) { $wireStatus += 'kilo' }
             }
             if ($Client -eq 'Auto' -or $Client -eq 'codex') {
                 $ok = Add-CodexEntry -ConfigPath (Join-Path $env:USERPROFILE '.codex\config.toml') -Targets $targets -RequireExisting:$requireExisting

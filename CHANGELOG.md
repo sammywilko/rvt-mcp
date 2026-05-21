@@ -1,4 +1,61 @@
-# Changelog
+﻿# Changelog
+
+## v0.5.0 - Tool Search discoverability + multi-Revit routing (BREAKING)
+
+Two pains addressed in one release:
+
+1. **Agents couldn't find any rvt-mcp tools** even though 224 were exposed (Tool Search returned nothing because `instructions` field was empty + tool names carried no "revit" semantic signal). Failure mode warned about in `docs/mcp-config-claude-clients.md` §5.3.
+2. **Multi-Revit routing was opaque to agents** — when two Revits were open and the user said "check Revit 2024 ...", agents kept guessing `R24`/`R25` style codes, hitting the wrong instance, or routing to whichever auto-detect happened to pick first. No way to discover what was running, no clear contract on the year string format.
+
+### Breaking changes
+
+- **All 226 MCP tool names now prefixed with `revit_`.** `create_grid` → `revit_create_grid`, `analyze_structural_connections` → `revit_analyze_structural_connections`, etc. Wire-protocol command names (server↔plugin) are unchanged — only the MCP-facing names that clients/agents see. Any user scripts, slash commands, or saved permission rules that reference old tool names by literal string need updating.
+- **Discovery file format and naming changed.** Old: `portR22.txt`, `pipeR25.txt`, etc. (one file per version, multi-line text). New: `revit-2022.json` through `revit-2027.json`, one file per Revit, self-describing JSON. Plugin and server BOTH need to be on v0.5+ for connection to work — mixing v0.4 plugin with v0.5 server (or vice versa) breaks discovery. Old `port*.txt`/`pipe*.txt` files are auto-deleted by the v0.5 server on first startup.
+- **Version strings unified to 4-digit calendar years.** `--target 2024` (not `--target R24`), `revit_switch_target("2024")` (not `"R24"`). Legacy R-codes are rejected with an educational error pointing at `revit_list_available_targets`. Affects `--target` CLI flag, `BIMWRIGHT_TARGET` env var, JSON config `target` field, `revit_switch_target` tool param, plus the version string used by ToolBaker compatibility tracking.
+- `--toolsets structural` is now enabled by default. The 12 structural tools (`revit_create_structural_column`, `revit_create_rebar_set`, etc.) appear in the default surface. Use `--toolsets query,view` etc. to opt out of write-capable structural tools, or `--read-only` to strip all write toolsets including structural.
+
+### Added
+
+- **Server `instructions` field** populated at server startup (`Program.cs::ConfigureMcpServerOptions`). ~2 KB of keyword-dense text leading with "rvt-mcp — MCP gateway for Autodesk Revit 2022-2027" followed by every domain term (wall, door, MEP, duct, pipe, structural, IFC, DWG, NWC, etc.) and a per-toolset tool-name index. Includes explicit multi-Revit hint: "if >1 Revit may be open, call revit_list_available_targets THEN revit_switch_target". This is the primary signal Tool Search ranks on.
+- **Server `ServerInfo`** metadata (name, title, version, description, websiteUrl) populated for richer client UIs.
+- **2 new meta tools** for multi-Revit routing:
+  - `revit_list_available_targets` — reads `%LOCALAPPDATA%\RvtMcp\revit-*.json`, returns every running Revit with `{year, transport, port|pipe_name, pid, discovery_file, is_currently_connected}`. Agent calls this FIRST when uncertain which version is available.
+  - `revit_get_current_target` — returns `{pinned_target, currently_connected_year, discovery_dir}` so an agent can verify which Revit will receive the next command.
+- **Hard validation on `revit_switch_target`**: passing an R-code like `"R24"` returns a structured error with `recommended_next_tool: "revit_list_available_targets"` and a translation table (R22=2022 .. R27=2027). Forces the agent to read the available-targets output rather than guess.
+- **`Add-KiloEntry`** in `scripts/install.ps1` — Kilo Code CLI users are now wired automatically via `~/.config/kilo/kilo.json` (writes `type=local`, array-form `command`, `timeout=30000`, optional `environment` block).
+- **`environment` block support** in `Add-OpencodeEntry` and `Add-KiloEntry` — when a target object includes an `Env` hashtable, it is emitted under the `environment` key (closes the gap documented in `docs/mcp-config-opencode-kilo.md` §5).
+- **`env` block support** in `Add-ClaudeEntry` and `Add-CodexEntry` (Claude: `env` field per `mcp-config-claude-clients.md` §4.3; Codex: `[mcp_servers.X.env]` sub-table per `mcp-config-codex.md` §2). Parity with the JSON variants.
+- **`-Client kilo`** option in `install.ps1`. Auto mode now wires kilo alongside opencode, codex, and claude.
+
+### Fixed
+
+- `docs/mcp-config-opencode-kilo.md` §3.6 tool count corrected from 248 to 224 (the 248 figure conflated method-level `[McpServerTool]` attributes with 24 class-level `[McpServerToolType]` attributes).
+- **Claude Code `tools fetch failed`** — 4 tools (`revit_create_dimensions`, `revit_create_filled_region`, `revit_create_room_separator`, `revit_set_titleblock_parameters`) had required `object` parameters which the C# MCP SDK emitted as JSON Schema boolean shorthand `true`. Anthropic's Zod validator rejects boolean shorthand even though it is spec-compliant. Param types changed to `object[]` (arrays) and `IDictionary<string, object>` (parameters map) so the SDK emits proper `{"type":"array","items":{}}` / `{"type":"object"}` schemas. No agent-visible API change.
+- **`revit_send_code_to_revit` returned `<result_1>` placeholder instead of real data.** The plugin previously routed live wire responses through `BakeRedactor.RedactForBake(..., redactResultFields:true)` so any string in the `result` field was replaced by a generated token. The five persistence paths (`McpLogger`, `McpSessionLog`, `JournalEntry`, `AcceptBakeSuggestionHandler`, `UsageEventLogger`) each call `BakeRedactor` independently at write time, so logs/journals/bake suggestions stay redacted regardless of what the wire returns. The wire now returns the raw `output` from the user's `Run(UIApplication)` body — anonymous objects serialize as structured JSON, strings as strings, numbers as numbers, collections as arrays. Agents no longer need to dump to disk + re-read.
+
+### Migration
+
+User data (`%LOCALAPPDATA%\RvtMcp\baked\`, `journal\`, `firm-profiles\`) is unaffected.
+
+**Required steps when upgrading from v0.4:**
+
+1. Close all running Revit instances.
+2. Install v0.5 plugin into `%APPDATA%\Autodesk\Revit\Addins\<year>\RvtMcp\` (server writes `revit-YYYY.json`; v0.4 server reading `portR22.txt` won't work).
+3. Install v0.5 server via the bundled installer ZIP from the GitHub Release (`pwsh install.ps1`). A NuGet `dotnet tool` package will follow in a later patch.
+4. Restart Revit. Old `portR*.txt`/`pipeR*.txt` discovery files are deleted automatically by the v0.5 server on first startup.
+
+**Config-side changes for hand-edited setups:**
+
+| Old | New |
+|---|---|
+| `send_code_to_revit` | `revit_send_code_to_revit` |
+| `batch_execute` | `revit_batch_execute` |
+| `rvt-mcp_create_grid` (OpenCode/Kilo permission glob) | `rvt-mcp_revit_create_grid` |
+| `mcp_servers.rvt-mcp.tools.batch_execute` (Codex per-tool) | `mcp_servers.rvt-mcp.tools.revit_batch_execute` |
+| `--target R24` | `--target 2024` |
+| `BIMWRIGHT_TARGET=R24` | `BIMWRIGHT_TARGET=2024` |
+| `revit_switch_target("R24")` | `revit_switch_target("2024")` |
+| Discovery file `portR24.txt` / `pipeR26.txt` | `revit-2024.json` / `revit-2026.json` |
 
 ## v0.4.0 - Full Revit tool surface
 
@@ -17,7 +74,7 @@ Tool surface grew from 32 → **249 tools** (default) / **254 tools** (adaptive 
 - Added 8 high-value handlers extending existing toolsets:
   - **Meta (2)**: `set_project_info` (typed fields: name/number/client_name/address/status/issue_date), `purge_unused` (families-only MVP, `dry_run` defaults to true, skips in-place families and instance-referenced symbols).
   - **Lint (1)**: `get_model_warnings_summary` (groups `doc.GetWarnings()` by description, includes example failing element ids).
-  - **View (5)**: `capture_view_image` (sandboxed to `%TEMP%` or `%LOCALAPPDATA%\Bimwright\captures\`), `set_view_crop` (explicit bounds or fit-to-elements with padding), `set_view_scale`, `activate_view`, `show_element_in_view`.
+  - **View (5)**: `capture_view_image` (sandboxed to `%TEMP%` or `%LOCALAPPDATA%\RvtMcp\captures\`), `set_view_crop` (explicit bounds or fit-to-elements with padding), `set_view_scale`, `activate_view`, `show_element_in_view`.
 
 ### Changed — Wave 15 (read-only guard)
 
@@ -42,7 +99,7 @@ Tool surface grew from 32 → **249 tools** (default) / **254 tools** (adaptive 
 
 - Hardened new annotation, rooms, and links handlers around dry-run semantics, ElementId compatibility checks, destructive link scope validation, and transaction commit-status reporting.
 - Made `send_code_to_revit` part of the default ToolBaker surface, without adaptive-bake gating or per-call Revit confirmation.
-- Changed installer client wiring to a single auto-detect `bimwright-rvt` MCP entry while still deploying plugins for every detected Revit year.
+- Changed installer client wiring to a single auto-detect `rvt-mcp` MCP entry while still deploying plugins for every detected Revit year.
 - Added 15 non-schedule Revit data tools: 10 read tools for elements, parameters, groups, assemblies, and worksets, plus 5 write tools for parameters, type changes, worksets, and group creation.
 - Added 10 Revit schedule tools in a new default-on `schedule` toolset: `list_schedules`, `get_schedule_definition`, `get_schedule_data`, `get_schedule_formulas`, `get_schedulable_fields`, `find_schedule_elements`, `create_schedule`, `add_schedule_field`, `update_schedule_field`, `apply_schedule_filter_sort`.
 
@@ -57,13 +114,13 @@ Tool surface grew from 32 → **249 tools** (default) / **254 tools** (adaptive 
 - Added adaptive-bake suggestion lifecycle tools: `list_bake_suggestions`, `accept_bake_suggestion`, and `dismiss_bake_suggestion`.
 - Added accepted-tool indirection through `list_baked_tools` and `run_baked_tool`, including parameter validation and archived-tool guidance.
 - Added Revit ribbon/runtime support for accepted baked tools, backed by a plugin runtime cache.
-- Added local SQLite-backed bake storage (`bake.db`) plus local audit/usage records under `%LOCALAPPDATA%\Bimwright\`.
+- Added local SQLite-backed bake storage (`bake.db`) plus local audit/usage records under `%LOCALAPPDATA%\RvtMcp\`.
 - Added compiler policy, privacy, registry, runtime cache, usage clustering, and ToolBaker handler tests.
 
 ### Changed
 
 - Adaptive bake is opt-in and default off via `BIMWRIGHT_ENABLE_ADAPTIVE_BAKE=1` or `"enableAdaptiveBake": true`.
-- Usage data for adaptive bake is stored locally under `%LOCALAPPDATA%\Bimwright\`.
+- Usage data for adaptive bake is stored locally under `%LOCALAPPDATA%\RvtMcp\`.
 - Accepted baked tools are discovered with `list_baked_tools` and executed with `run_baked_tool name=<tool_name>`.
 - The Revit plugin reads `bake.db` and owns runtime/ribbon loading only; the server is the sole SQLite writer.
 - `send_code_to_revit` is gated behind adaptive bake and continues to require per-call Revit confirmation.
@@ -74,7 +131,7 @@ Tool surface grew from 32 → **249 tools** (default) / **254 tools** (adaptive 
 
 - Fixed baked-tool dispatch bypasses by preventing `run_baked_tool` execution through `batch_execute` and isolating baked commands from core command lookup.
 - Fixed stale cross-version compatibility metadata by refreshing baked-tool registry reads from `bake.db` before list/meta reads.
-- Fixed Revit 2026/2027 accepted-tool startup failures by copying native `e_sqlite3.dll` beside `Bimwright.Rvt.Plugin.dll` during deploy and release staging.
+- Fixed Revit 2026/2027 accepted-tool startup failures by copying native `e_sqlite3.dll` beside `RvtMcp.Plugin.dll` during deploy and release staging.
 - Fixed suggestion refresh hardening: bounded usage replay, capped/deduped suggestions, and guarded adaptive usage capture.
 
 ### Security

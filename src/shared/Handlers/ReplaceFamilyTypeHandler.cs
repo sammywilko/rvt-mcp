@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -6,7 +6,7 @@ using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using Newtonsoft.Json.Linq;
 
-namespace Bimwright.Rvt.Plugin.Handlers
+namespace RvtMcp.Plugin.Handlers
 {
     /// <summary>
     /// Replace all instances of FamilySymbol (or system ElementType) A with FamilySymbol B
@@ -147,7 +147,7 @@ namespace Bimwright.Rvt.Plugin.Handlers
             var errors = new List<object>();
             var successfullyChanged = 0;
 
-            using (var tx = new Transaction(doc, "Bimwright: replace type"))
+            using (var tx = new Transaction(doc, "RvtMcp: replace type"))
             {
                 try
                 {

@@ -1,11 +1,11 @@
 using System;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
-using Bimwright.Rvt.Plugin.ToolBaker;
+using RvtMcp.Plugin.ToolBaker;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Bimwright.Rvt.Plugin.Handlers
+namespace RvtMcp.Plugin.Handlers
 {
     public class ApplyBakeSuggestionHandler : IRevitCommand
     {

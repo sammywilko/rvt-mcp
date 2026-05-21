@@ -3,7 +3,7 @@ using Autodesk.Revit.Attributes;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 
-namespace Bimwright.Rvt.Plugin.Commands
+namespace RvtMcp.Plugin.Commands
 {
     internal static class BakedRibbonCommandRunner
     {

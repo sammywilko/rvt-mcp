@@ -1,10 +1,10 @@
-using System;
+﻿using System;
 using System.Linq;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using Newtonsoft.Json.Linq;
 
-namespace Bimwright.Rvt.Plugin.Handlers
+namespace RvtMcp.Plugin.Handlers
 {
     public class CreateSheetHandler : IRevitCommand
     {
@@ -98,7 +98,7 @@ namespace Bimwright.Rvt.Plugin.Handlers
 
             var titleBlockId = targetSymbol != null ? targetSymbol.Id : ElementId.InvalidElementId;
 
-            using (var tx = new Transaction(doc, "Bimwright: create sheet"))
+            using (var tx = new Transaction(doc, "RvtMcp: create sheet"))
             {
                 tx.Start();
                 try

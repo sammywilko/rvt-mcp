@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -7,7 +7,7 @@ using Autodesk.Revit.UI;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Bimwright.Rvt.Plugin.Handlers
+namespace RvtMcp.Plugin.Handlers
 {
     /// <summary>
     /// create_view_filter — Creates a parameter-based view filter (ParameterFilterElement)
@@ -101,7 +101,7 @@ namespace Bimwright.Rvt.Plugin.Handlers
 
             var rulesToken = request["rules"] as JArray;
 
-            using (var tx = new Transaction(doc, "Bimwright: create view filter"))
+            using (var tx = new Transaction(doc, "RvtMcp: create view filter"))
             {
                 tx.Start();
                 try

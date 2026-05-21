@@ -1,11 +1,11 @@
-using System;
+﻿using System;
 using System.Linq;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Bimwright.Rvt.Plugin.Handlers
+namespace RvtMcp.Plugin.Handlers
 {
     public class CreateTextNoteHandler : IRevitCommand
     {
@@ -110,7 +110,7 @@ namespace Bimwright.Rvt.Plugin.Handlers
                 return CommandResult.Fail("No TextNoteType found in the project.");
 
             TextNote note = null;
-            using (var tx = new Transaction(doc, "Bimwright: create text note"))
+            using (var tx = new Transaction(doc, "RvtMcp: create text note"))
             {
                 tx.Start();
                 try

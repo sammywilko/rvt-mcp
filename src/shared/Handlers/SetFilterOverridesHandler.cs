@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -7,7 +7,7 @@ using Autodesk.Revit.UI;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Bimwright.Rvt.Plugin.Handlers
+namespace RvtMcp.Plugin.Handlers
 {
     public class SetFilterOverridesHandler : IRevitCommand
     {
@@ -156,7 +156,7 @@ namespace Bimwright.Rvt.Plugin.Handlers
 
             var overridesSet = new List<string>();
 
-            using (var tx = new Transaction(doc, "Bimwright: set filter overrides"))
+            using (var tx = new Transaction(doc, "RvtMcp: set filter overrides"))
             {
                 tx.Start();
                 try

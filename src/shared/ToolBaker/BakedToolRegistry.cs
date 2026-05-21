@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -6,7 +6,7 @@ using Microsoft.Data.Sqlite;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Bimwright.Rvt.Plugin.ToolBaker
+namespace RvtMcp.Plugin.ToolBaker
 {
     public class BakedToolMeta
     {
@@ -38,7 +38,7 @@ namespace Bimwright.Rvt.Plugin.ToolBaker
         public BakedToolRegistry()
             : this(Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "Bimwright", "baked"))
+                "RvtMcp", "baked"))
         {
         }
 

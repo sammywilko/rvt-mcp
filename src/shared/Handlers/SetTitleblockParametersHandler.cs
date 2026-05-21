@@ -1,11 +1,11 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using Newtonsoft.Json.Linq;
 
-namespace Bimwright.Rvt.Plugin.Handlers
+namespace RvtMcp.Plugin.Handlers
 {
     public class SetTitleblockParametersHandler : IRevitCommand
     {
@@ -95,7 +95,7 @@ namespace Bimwright.Rvt.Plugin.Handlers
 
             var results = new Dictionary<string, object>();
 
-            using (var tx = new Transaction(doc, "Bimwright: set titleblock parameters"))
+            using (var tx = new Transaction(doc, "RvtMcp: set titleblock parameters"))
             {
                 tx.Start();
                 try

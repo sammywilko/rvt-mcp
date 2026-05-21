@@ -1,11 +1,11 @@
-using System;
+﻿using System;
 using System.Linq;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Structure;
 using Autodesk.Revit.UI;
 using Newtonsoft.Json.Linq;
 
-namespace Bimwright.Rvt.Plugin.Handlers
+namespace RvtMcp.Plugin.Handlers
 {
     public class CreateAirTerminalHandler : IRevitCommand
     {
@@ -145,7 +145,7 @@ namespace Bimwright.Rvt.Plugin.Handlers
                     return CommandResult.Fail($"Host element with ID {hostId.Value} not found.");
             }
 
-            using (var tx = new Transaction(doc, "Bimwright: create air terminal"))
+            using (var tx = new Transaction(doc, "RvtMcp: create air terminal"))
             {
                 tx.Start();
                 try

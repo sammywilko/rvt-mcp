@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -7,7 +7,7 @@ using Autodesk.Revit.UI;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Bimwright.Rvt.Plugin.Handlers
+namespace RvtMcp.Plugin.Handlers
 {
     /// <summary>
     /// set_element_phase — sets the Phase Created and/or Phase Demolished of one or more elements.
@@ -87,7 +87,7 @@ namespace Bimwright.Rvt.Plugin.Handlers
             var succeeded = 0;
             var failed = new List<object>();
 
-            using (var tx = new Transaction(doc, "Bimwright: set element phase"))
+            using (var tx = new Transaction(doc, "RvtMcp: set element phase"))
             {
                 try
                 {

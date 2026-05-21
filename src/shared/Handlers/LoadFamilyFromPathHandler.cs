@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -6,7 +6,7 @@ using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using Newtonsoft.Json.Linq;
 
-namespace Bimwright.Rvt.Plugin.Handlers
+namespace RvtMcp.Plugin.Handlers
 {
     /// <summary>
     /// Loads an .rfa family file from disk into the active Revit document.
@@ -74,9 +74,9 @@ namespace Bimwright.Rvt.Plugin.Handlers
                 });
             }
 
-            var loadOptions = new BimwrightFamilyLoadOptions(overwriteExisting, overwriteParameterValues);
+            var loadOptions = new RvtMcpFamilyLoadOptions(overwriteExisting, overwriteParameterValues);
 
-            using (var tx = new Transaction(doc, "Bimwright: load family"))
+            using (var tx = new Transaction(doc, "RvtMcp: load family"))
             {
                 try
                 {
@@ -188,14 +188,14 @@ namespace Bimwright.Rvt.Plugin.Handlers
         /// IFamilyLoadOptions implementation that controls behavior when a family
         /// or shared family with the same name is already present in the document.
         /// </summary>
-        private class BimwrightFamilyLoadOptions : IFamilyLoadOptions
+        private class RvtMcpFamilyLoadOptions : IFamilyLoadOptions
         {
             private readonly bool _overwriteExisting;
             private readonly bool _overwriteParameterValues;
 
             public bool FamilyWasFound { get; private set; }
 
-            public BimwrightFamilyLoadOptions(bool overwriteExisting, bool overwriteParameterValues)
+            public RvtMcpFamilyLoadOptions(bool overwriteExisting, bool overwriteParameterValues)
             {
                 _overwriteExisting = overwriteExisting;
                 _overwriteParameterValues = overwriteParameterValues;

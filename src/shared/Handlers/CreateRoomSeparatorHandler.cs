@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using Autodesk.Revit.DB;
@@ -6,7 +6,7 @@ using Autodesk.Revit.UI;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Bimwright.Rvt.Plugin.Handlers
+namespace RvtMcp.Plugin.Handlers
 {
     public class CreateRoomSeparatorHandler : IRevitCommand
     {
@@ -180,7 +180,7 @@ namespace Bimwright.Rvt.Plugin.Handlers
             if (curveArray.Size == 0)
                 return CommandResult.Fail("Fewer than one valid segment was produced.");
 
-            using (var tx = new Transaction(doc, "Bimwright: Create Room Separator"))
+            using (var tx = new Transaction(doc, "RvtMcp: Create Room Separator"))
             {
                 tx.Start();
                 try

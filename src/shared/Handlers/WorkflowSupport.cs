@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -8,7 +8,7 @@ using Autodesk.Revit.DB;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Bimwright.Rvt.Plugin.Handlers
+namespace RvtMcp.Plugin.Handlers
 {
     internal static class WorkflowSupport
     {
@@ -248,7 +248,7 @@ namespace Bimwright.Rvt.Plugin.Handlers
                 }
             }
 
-            var baseName = string.IsNullOrWhiteSpace(requestedBase) ? "Bimwright Workflow" : requestedBase.Trim();
+            var baseName = string.IsNullOrWhiteSpace(requestedBase) ? "RvtMcp Workflow" : requestedBase.Trim();
             var candidate = baseName;
             var index = 1;
             while (existing.Contains(candidate))

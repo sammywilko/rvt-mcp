@@ -1,11 +1,11 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using Newtonsoft.Json.Linq;
 
-namespace Bimwright.Rvt.Plugin.Handlers
+namespace RvtMcp.Plugin.Handlers
 {
     public class SetViewCropHandler : IRevitCommand
     {
@@ -33,7 +33,7 @@ namespace Bimwright.Rvt.Plugin.Handlers
             if (view == null) return CommandResult.Fail("Could not resolve view.");
             if (view.IsTemplate) return CommandResult.Fail("Cannot modify a view template.");
 
-            using (var tx = new Transaction(doc, "Bimwright: Set view crop"))
+            using (var tx = new Transaction(doc, "RvtMcp: Set view crop"))
             {
                 tx.Start();
                 try

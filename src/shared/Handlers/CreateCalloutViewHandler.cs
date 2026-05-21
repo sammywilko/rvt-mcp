@@ -1,11 +1,11 @@
-using System;
+﻿using System;
 using System.Linq;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Bimwright.Rvt.Plugin.Handlers
+namespace RvtMcp.Plugin.Handlers
 {
     public class CreateCalloutViewHandler : IRevitCommand
     {
@@ -100,7 +100,7 @@ namespace Bimwright.Rvt.Plugin.Handlers
                 return CommandResult.Fail("No compatible ViewFamilyType (Detail, Section, or Plan) found in the project.");
 
             View calloutView = null;
-            using (var tx = new Transaction(doc, "Bimwright: create callout view"))
+            using (var tx = new Transaction(doc, "RvtMcp: create callout view"))
             {
                 tx.Start();
                 try

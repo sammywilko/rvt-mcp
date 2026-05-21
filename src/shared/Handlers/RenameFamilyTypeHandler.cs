@@ -1,11 +1,11 @@
-using System;
+﻿using System;
 using System.Globalization;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Bimwright.Rvt.Plugin.Handlers
+namespace RvtMcp.Plugin.Handlers
 {
     public class RenameFamilyTypeHandler : IRevitCommand
     {
@@ -79,7 +79,7 @@ namespace Bimwright.Rvt.Plugin.Handlers
                 });
             }
 
-            using (var tx = new Transaction(doc, "Bimwright: rename type"))
+            using (var tx = new Transaction(doc, "RvtMcp: rename type"))
             {
                 TransactionStatus status;
                 try

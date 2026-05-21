@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Bimwright.Rvt.Plugin
+namespace RvtMcp.Plugin
 {
     public class TcpTransportServer : ITransportServer
     {
@@ -39,7 +39,7 @@ namespace Bimwright.Rvt.Plugin
             AuthToken.GenerateAndPersist(_port);
             if (allowLan)
             {
-                const string warn = "[Bimwright] \u26A0 LAN bind enabled. Token auth active but network exposed.";
+                const string warn = "[RvtMcp] \u26A0 LAN bind enabled. Token auth active but network exposed.";
                 try { Console.Error.WriteLine(warn); } catch { }
                 Log($"Listening on 0.0.0.0:{_port} (LAN bind, auth: enabled)");
             }
@@ -49,7 +49,7 @@ namespace Bimwright.Rvt.Plugin
             }
 
             _running = true;
-            _listenThread = new Thread(ListenLoop) { IsBackground = true, Name = "Bimwright.TcpTransportServer" };
+            _listenThread = new Thread(ListenLoop) { IsBackground = true, Name = "RvtMcp.TcpTransportServer" };
             _listenThread.Start();
         }
 
@@ -67,7 +67,7 @@ namespace Bimwright.Rvt.Plugin
         {
             _running = false;
             try { _listener?.Stop(); } catch { }
-            AuthToken.DeleteDiscoveryFile("port");
+            AuthToken.DeleteDiscoveryFile();
             Log("Stopped");
         }
 
@@ -262,7 +262,7 @@ namespace Bimwright.Rvt.Plugin
         {
             try
             {
-                var dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Bimwright");
+                var dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "RvtMcp");
                 Directory.CreateDirectory(dir);
                 var logFile = Path.Combine(dir, "revit-mcp.log");
                 File.AppendAllText(logFile, $"[{DateTime.Now:HH:mm:ss}] [TcpTransportServer] {SecretMasker.Mask(message)}\n");

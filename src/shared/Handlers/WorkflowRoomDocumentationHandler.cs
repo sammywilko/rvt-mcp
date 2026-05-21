@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -8,7 +8,7 @@ using Autodesk.Revit.UI;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Bimwright.Rvt.Plugin.Handlers
+namespace RvtMcp.Plugin.Handlers
 {
     public class WorkflowRoomDocumentationHandler : IRevitCommand
     {
@@ -111,10 +111,10 @@ namespace Bimwright.Rvt.Plugin.Handlers
             }
 
             var statusText = "succeeded";
-            using (var group = new TransactionGroup(doc, "Bimwright: workflow room documentation"))
+            using (var group = new TransactionGroup(doc, "RvtMcp: workflow room documentation"))
             {
                 group.Start();
-                using (var tx = new Transaction(doc, "Bimwright: room documentation"))
+                using (var tx = new Transaction(doc, "RvtMcp: room documentation"))
                 {
                     tx.Start();
                     try
@@ -329,7 +329,7 @@ namespace Bimwright.Rvt.Plugin.Handlers
             schedule.Name = WorkflowSupport.UniqueName(
                 doc,
                 new FilteredElementCollector(doc).OfClass(typeof(ViewSchedule)).Cast<Element>(),
-                "Bimwright Room Finish Schedule");
+                "RvtMcp Room Finish Schedule");
 
             foreach (var fieldName in new[] { "Number", "Name", "Level", "Base Finish", "Floor Finish", "Ceiling Finish", "Wall Finish" })
                 TryAddScheduleField(schedule, fieldName);

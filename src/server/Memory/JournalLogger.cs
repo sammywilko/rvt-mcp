@@ -1,8 +1,8 @@
-using System;
+﻿using System;
 using System.IO;
 using Newtonsoft.Json;
 
-namespace Bimwright.Rvt.Server.Memory
+namespace RvtMcp.Server.Memory
 {
     public class JournalLogger
     {
@@ -17,7 +17,7 @@ namespace Bimwright.Rvt.Server.Memory
         {
             _journalDir = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "Bimwright", "journal");
+                "RvtMcp", "journal");
             Directory.CreateDirectory(_journalDir);
         }
 
@@ -39,7 +39,7 @@ namespace Bimwright.Rvt.Server.Memory
                 }
                 catch (Exception ex)
                 {
-                    Console.Error.WriteLine($"[Bimwright] Journal write failed: {ex.Message}");
+                    Console.Error.WriteLine($"[RvtMcp] Journal write failed: {ex.Message}");
                 }
             }
         }

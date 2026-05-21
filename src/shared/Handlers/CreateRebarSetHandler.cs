@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using Autodesk.Revit.DB;
@@ -6,7 +6,7 @@ using Autodesk.Revit.DB.Structure;
 using Autodesk.Revit.UI;
 using Newtonsoft.Json.Linq;
 
-namespace Bimwright.Rvt.Plugin.Handlers
+namespace RvtMcp.Plugin.Handlers
 {
     public class CreateRebarSetHandler : IRevitCommand
     {
@@ -79,7 +79,7 @@ namespace Bimwright.Rvt.Plugin.Handlers
                     return CommandResult.Fail("layout_rule=MaximumSpacing requires spacing_mm > 0.");
             }
 
-            using (var tx = new Transaction(doc, "Bimwright: Create rebar set"))
+            using (var tx = new Transaction(doc, "RvtMcp: Create rebar set"))
             {
                 tx.Start();
                 try

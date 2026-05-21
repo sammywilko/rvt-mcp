@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using Autodesk.Revit.DB;
@@ -6,7 +6,7 @@ using Autodesk.Revit.UI;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Bimwright.Rvt.Plugin.Handlers
+namespace RvtMcp.Plugin.Handlers
 {
     public class TagElementsHandler : IRevitCommand
     {
@@ -118,7 +118,7 @@ namespace Bimwright.Rvt.Plugin.Handlers
             var failedElements = new JArray();
             int createdCount = 0;
 
-            using (var tx = new Transaction(doc, "Bimwright: tag elements"))
+            using (var tx = new Transaction(doc, "RvtMcp: tag elements"))
             {
                 tx.Start();
                 try

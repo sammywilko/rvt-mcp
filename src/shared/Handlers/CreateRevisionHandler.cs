@@ -1,9 +1,9 @@
-using System;
+﻿using System;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using Newtonsoft.Json.Linq;
 
-namespace Bimwright.Rvt.Plugin.Handlers
+namespace RvtMcp.Plugin.Handlers
 {
     public class CreateRevisionHandler : IRevitCommand
     {
@@ -47,7 +47,7 @@ namespace Bimwright.Rvt.Plugin.Handlers
             if (string.IsNullOrWhiteSpace(description))
                 return CommandResult.Fail("description is required and cannot be empty.");
 
-            using (var tx = new Transaction(doc, "Bimwright: create revision"))
+            using (var tx = new Transaction(doc, "RvtMcp: create revision"))
             {
                 tx.Start();
                 try

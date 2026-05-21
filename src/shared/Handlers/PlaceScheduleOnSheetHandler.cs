@@ -1,10 +1,10 @@
-using System;
+﻿using System;
 using System.Linq;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using Newtonsoft.Json.Linq;
 
-namespace Bimwright.Rvt.Plugin.Handlers
+namespace RvtMcp.Plugin.Handlers
 {
     public class PlaceScheduleOnSheetHandler : IRevitCommand
     {
@@ -119,7 +119,7 @@ namespace Bimwright.Rvt.Plugin.Handlers
 
             var point = new XYZ(xMm.Value / 304.8, yMm.Value / 304.8, 0);
 
-            using (var tx = new Transaction(doc, "Bimwright: place schedule on sheet"))
+            using (var tx = new Transaction(doc, "RvtMcp: place schedule on sheet"))
             {
                 tx.Start();
                 try

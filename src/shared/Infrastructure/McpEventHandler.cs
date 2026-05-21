@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Threading;
@@ -7,7 +7,7 @@ using Autodesk.Revit.UI;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Bimwright.Rvt.Plugin
+namespace RvtMcp.Plugin
 {
     public class PendingRequest
     {
@@ -103,6 +103,8 @@ namespace Bimwright.Rvt.Plugin
 
                     var result = command.Execute(app, request.ParamsJson);
                     sw.Stop();
+                    // responseData is the redacted view used ONLY for session log + summary.
+                    // The wire response (below) uses result.Data raw so the agent sees real values.
                     var responseData = McpResponsePrivacy.RedactDataForResponse(request.CommandName, result.Data);
 
                     string codeSnippet = null;
@@ -148,7 +150,7 @@ namespace Bimwright.Rvt.Plugin
                     {
                         id = request.Id,
                         success = result.Success,
-                        data = responseData,
+                        data = result.Data,
                         error = resultError
                     });
 
@@ -190,7 +192,7 @@ namespace Bimwright.Rvt.Plugin
             }
         }
 
-        public string GetName() => "Bimwright.McpEventHandler";
+        public string GetName() => "RvtMcp.McpEventHandler";
 
         public void CancelAll()
         {

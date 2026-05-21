@@ -1,6 +1,6 @@
 using System;
 
-namespace Bimwright.Rvt.Server.Bake
+namespace RvtMcp.Server.Bake
 {
     public sealed class UsageEvent
     {

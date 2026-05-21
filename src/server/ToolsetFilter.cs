@@ -1,12 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Bimwright.Rvt.Plugin;
+using RvtMcp.Plugin;
 
-namespace Bimwright.Rvt.Server
+namespace RvtMcp.Server
 {
     /// <summary>
-    /// A3 toolset resolver (aspect #3 §A3). Resolves <see cref="BimwrightConfig.Toolsets"/>
+    /// A3 toolset resolver (aspect #3 §A3). Resolves <see cref="RvtMcpConfig.Toolsets"/>
     /// to a concrete set of enabled toolset names, applying defaults + the <c>"all"</c>
     /// shortcut + the <c>--read-only</c> shortcut.
     /// </summary>
@@ -23,7 +23,8 @@ namespace Bimwright.Rvt.Server
         public static readonly string[] DefaultOn =
         {
             "query", "create", "view", "schedule", "families", "mep", "graphics", "export", "toolbaker", "meta", "lint",
-            "sheets", "materials", "geometry", "annotation", "rooms", "links", "parameters", "organization", "workflows"
+            "sheets", "materials", "geometry", "annotation", "rooms", "links", "parameters", "organization", "workflows",
+            "structural"
         };
 
         public static readonly string[] WriteCapable =
@@ -33,7 +34,7 @@ namespace Bimwright.Rvt.Server
             "structural"
         };
 
-        public static HashSet<string> Resolve(BimwrightConfig config)
+        public static HashSet<string> Resolve(RvtMcpConfig config)
         {
             var requested = config?.Toolsets;
             HashSet<string> set;

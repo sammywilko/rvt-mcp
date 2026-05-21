@@ -1,4 +1,4 @@
-# Architecture
+﻿# Architecture
 
 ## Two processes, one pipe
 
@@ -6,10 +6,10 @@
 MCP client (Claude Code / Cursor / …)
         │  stdio (NDJSON)
         ▼
-Bimwright.Rvt.Server  (.NET 8 console app, global tool)
+RvtMcp.Server  (.NET 8 console app, global tool)
         │  TCP (R22–R24)  OR  Named Pipe (R25–R27) — NDJSON + token auth
         ▼
-Bimwright.Rvt.Plugin  (Revit add-in DLL, one per year)
+RvtMcp.Plugin  (Revit add-in DLL, one per year)
         │  ExternalEvent.Raise()
         ▼
 Revit API  (UIApplication / Document)
@@ -21,18 +21,32 @@ Revit API  (UIApplication / Document)
 
 ## Discovery
 
-Every plugin writes a per-version discovery file to `%LOCALAPPDATA%\Bimwright\` on startup:
+Every plugin writes a per-version discovery file to `%LOCALAPPDATA%\RvtMcp\` on startup:
 
 | Revit | Discovery file | Transport |
 |-------|----------------|-----------|
-| 2022  | `portR22.txt` | TCP |
-| 2023  | `portR23.txt` | TCP |
-| 2024  | `portR24.txt` | TCP |
-| 2025  | `pipeR25.txt` | Named Pipe |
-| 2026  | `pipeR26.txt` | Named Pipe |
-| 2027  | `pipeR27.txt` | Named Pipe |
+| 2022  | `revit-2022.json` | TCP |
+| 2023  | `revit-2023.json` | TCP |
+| 2024  | `revit-2024.json` | TCP |
+| 2025  | `revit-2025.json` | Named Pipe |
+| 2026  | `revit-2026.json` | Named Pipe |
+| 2027  | `revit-2027.json` | Named Pipe |
 
-Each file has three lines: transport endpoint, auth token, owning PID. Server scans these on connect, verifies the PID is alive, and auto-deletes orphan files. Installer-generated MCP config uses one auto-detect `bimwright-rvt` entry; `switch_target` or explicit `--target R23` can pin a specific version when multiple Revits run concurrently.
+Each file is a self-describing JSON object:
+
+```json
+{
+  "schema_version": 2,
+  "revit_year": 2024,
+  "transport": "tcp",
+  "port": 49152,
+  "pipe_name": null,
+  "auth_token": "base64...",
+  "pid": 12345
+}
+```
+
+Server scans these on connect, verifies the PID is alive, and auto-deletes orphan files. Installer-generated MCP config uses one auto-detect `rvt-mcp` entry; the agent can call `revit_list_available_targets` to discover which years are running, then `revit_switch_target` (or explicit `--target 2024` at server start) to pin a specific version when multiple Revits run concurrently. **Versions are 4-digit calendar years (`2024`), not R-codes (`R24`) — v0.5+ rejects R-codes with an educational error pointing back to `revit_list_available_targets`.**
 
 ## Multi-version strategy
 
@@ -40,14 +54,14 @@ Six plugin shells share one source tree. Each csproj glob-includes `src/shared/*
 
 ```
 src/
-├── server/                # Bimwright.Rvt.Server (.NET 8)
+├── server/                # RvtMcp.Server (.NET 8)
 ├── shared/                # Handlers, CommandDispatcher, Transport, Logging, Security, ToolBaker
 │   ├── Handlers/          # 28 tool handlers
 │   ├── Infrastructure/    # CommandDispatcher, McpEventHandler, SchemaValidator, BatchExecutor
 │   ├── Transport/         # ITransportServer, TcpTransportServer, PipeTransportServer
 │   ├── Security/          # AuthToken, ErrorSanitizer, SecretMasker
 │   ├── ToolBaker/         # Roslyn self-evolution engine
-│   ├── Config/            # BimwrightConfig — 3-layer precedence
+│   ├── Config/            # RvtMcpConfig — 3-layer precedence
 │   └── Views/             # HistoryWindow
 ├── plugin-r22/            # net48, TCP
 ├── plugin-r23/            # net48, TCP
@@ -101,14 +115,14 @@ Loaded baked IRevitCommand
 run_baked_tool(name)
 ```
 
-Baked tools persist across Revit restarts in the current local user registry and are executed only through `list_baked_tools` + `run_baked_tool`; they are not exposed as native MCP tools. SQLite-backed metadata, stronger isolation, and signed-bake verification are planned adaptive-bake hardening work. `send_code_to_revit` is the unsandboxed cousin — it executes arbitrary C# against the running Revit session and is runtime-gated by plugin-visible adaptive-bake opt-in from the Revit process environment or `%LOCALAPPDATA%\Bimwright\bimwright.config.json`.
+Baked tools persist across Revit restarts in the current local user registry and are executed only through `list_baked_tools` + `run_baked_tool`; they are not exposed as native MCP tools. SQLite-backed metadata, stronger isolation, and signed-bake verification are planned adaptive-bake hardening work. `send_code_to_revit` is the unsandboxed cousin — it executes arbitrary C# against the running Revit session and is runtime-gated by plugin-visible adaptive-bake opt-in from the Revit process environment or `%LOCALAPPDATA%\RvtMcp\bimwright.config.json`.
 
 ## Config precedence (A9)
 
 ```
-BimwrightConfig.Load(args, configFilePath)
+RvtMcpConfig.Load(args, configFilePath)
    │
-   ├── Layer 1: JSON file at %LOCALAPPDATA%\Bimwright\bimwright.config.json
+   ├── Layer 1: JSON file at %LOCALAPPDATA%\RvtMcp\bimwright.config.json
    ├── Layer 2: env vars (BIMWRIGHT_TARGET, BIMWRIGHT_TOOLSETS, …)
    └── Layer 3: CLI args (--target, --toolsets, --read-only, …)
                     (later layers overwrite earlier; nulls don't override)

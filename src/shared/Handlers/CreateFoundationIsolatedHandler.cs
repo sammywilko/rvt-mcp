@@ -1,11 +1,11 @@
-using System;
+﻿using System;
 using System.Linq;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Structure;
 using Autodesk.Revit.UI;
 using Newtonsoft.Json.Linq;
 
-namespace Bimwright.Rvt.Plugin.Handlers
+namespace RvtMcp.Plugin.Handlers
 {
     public class CreateFoundationIsolatedHandler : IRevitCommand
     {
@@ -48,7 +48,7 @@ namespace Bimwright.Rvt.Plugin.Handlers
                 pt = new XYZ(xMm / 304.8, yMm / 304.8, zMm / 304.8);
             }
 
-            using (var tx = new Transaction(doc, "Bimwright: Create isolated foundation"))
+            using (var tx = new Transaction(doc, "RvtMcp: Create isolated foundation"))
             {
                 tx.Start();
                 try

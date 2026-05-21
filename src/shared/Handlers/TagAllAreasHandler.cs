@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using Autodesk.Revit.DB;
@@ -6,7 +6,7 @@ using Autodesk.Revit.UI;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Bimwright.Rvt.Plugin.Handlers
+namespace RvtMcp.Plugin.Handlers
 {
     public class TagAllAreasHandler : IRevitCommand
     {
@@ -120,7 +120,7 @@ namespace Bimwright.Rvt.Plugin.Handlers
             var createdTagIds = new List<long>();
             var itemsList = new List<object>();
 
-            using (var tx = new Transaction(doc, "Bimwright: Tag All Areas"))
+            using (var tx = new Transaction(doc, "RvtMcp: Tag All Areas"))
             {
                 tx.Start();
                 try

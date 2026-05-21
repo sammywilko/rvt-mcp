@@ -1,11 +1,11 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using Newtonsoft.Json.Linq;
 
-namespace Bimwright.Rvt.Plugin.Handlers
+namespace RvtMcp.Plugin.Handlers
 {
     public class AssignRevisionToSheetHandler : IRevitCommand
     {
@@ -107,7 +107,7 @@ namespace Bimwright.Rvt.Plugin.Handlers
             var targetRevisionId = revision.Id;
             var sheetResultDtos = new List<object>();
 
-            using (var tx = new Transaction(doc, "Bimwright: assign revision to sheet"))
+            using (var tx = new Transaction(doc, "RvtMcp: assign revision to sheet"))
             {
                 tx.Start();
                 try

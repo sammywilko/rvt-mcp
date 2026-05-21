@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using Autodesk.Revit.DB;
@@ -6,7 +6,7 @@ using Autodesk.Revit.UI;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Bimwright.Rvt.Plugin.Handlers
+namespace RvtMcp.Plugin.Handlers
 {
     public class TagAllByCategoryHandler : IRevitCommand
     {
@@ -171,7 +171,7 @@ namespace Bimwright.Rvt.Plugin.Handlers
             }
             else
             {
-                using (var tx = new Transaction(doc, "Bimwright: tag all by category"))
+                using (var tx = new Transaction(doc, "RvtMcp: tag all by category"))
                 {
                     tx.Start();
                     try

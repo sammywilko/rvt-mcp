@@ -1,10 +1,10 @@
-using System;
+﻿using System;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Bimwright.Rvt.Plugin.Handlers
+namespace RvtMcp.Plugin.Handlers
 {
     public class CreateDetailLineHandler : IRevitCommand
     {
@@ -95,7 +95,7 @@ namespace Bimwright.Rvt.Plugin.Handlers
                 return CommandResult.Fail("Detail line must have a non-zero length.");
 
             DetailCurve detailCurve = null;
-            using (var tx = new Transaction(doc, "Bimwright: create detail line"))
+            using (var tx = new Transaction(doc, "RvtMcp: create detail line"))
             {
                 tx.Start();
                 try

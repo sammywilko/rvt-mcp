@@ -1,9 +1,9 @@
 using System;
 using Autodesk.Revit.UI;
 using Autodesk.Revit.UI.Events;
-using Bimwright.Rvt.Plugin.Views;
+using RvtMcp.Plugin.Views;
 
-namespace Bimwright.Rvt.Plugin
+namespace RvtMcp.Plugin
 {
     public class App : IExternalApplication
     {
@@ -15,7 +15,7 @@ namespace Bimwright.Rvt.Plugin
         public CommandDispatcher CommandDispatcher => _dispatcher;
         public ToolBaker.BakedToolRegistry BakedToolRegistry { get; private set; }
         public ToolBaker.BakedToolRuntimeCache BakedToolRuntimeCache { get; private set; }
-        public BimwrightConfig Config { get; private set; }
+        public RvtMcpConfig Config { get; private set; }
         public McpEventHandler EventHandler => _handler;
         public ExternalEvent ExternalEvent => _externalEvent;
 
@@ -29,14 +29,15 @@ namespace Bimwright.Rvt.Plugin
 
         public Result OnStartup(UIControlledApplication application)
         {
-            AuthToken.RevitVersion = "R24";
+            AuthToken.RevitVersion = "2024";
             Instance = this;
 
             DebugLog("OnStartup: BEGIN");
 
             McpLogger.Initialize();
+            LegacyDataMigration.MigrateOnce();
             SessionLog = new McpSessionLog();
-            Config = BimwrightConfig.Load(args: null);
+            Config = RvtMcpConfig.Load(args: null);
             DebugLog("OnStartup: McpLogger + SessionLog OK");
 
             BakedToolRuntimeCache = new ToolBaker.BakedToolRuntimeCache();
@@ -165,7 +166,7 @@ namespace Bimwright.Rvt.Plugin
             {
                 var dir = System.IO.Path.Combine(
                     Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                    "Bimwright");
+                    "RvtMcp");
                 System.IO.Directory.CreateDirectory(dir);
                 var logFile = System.IO.Path.Combine(dir, "debug.log");
                 System.IO.File.AppendAllText(logFile,

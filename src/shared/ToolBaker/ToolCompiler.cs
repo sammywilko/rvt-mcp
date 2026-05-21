@@ -1,11 +1,11 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 
-namespace Bimwright.Rvt.Plugin.ToolBaker
+namespace RvtMcp.Plugin.ToolBaker
 {
     public sealed class ToolCompileResult
     {
@@ -36,7 +36,7 @@ using System.Collections.Generic;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using Newtonsoft.Json.Linq;
-using Bimwright.Rvt.Plugin;
+using RvtMcp.Plugin;
 
 public class BakedTool_{safeName} : IRevitCommand
 {{
@@ -182,7 +182,7 @@ public class BakedTool_{safeName} : IRevitCommand
 
                 var logDir = Path.Combine(
                     Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                    "Bimwright", "baked");
+                    "RvtMcp", "baked");
                 Directory.CreateDirectory(logDir);
                 var logPath = Path.Combine(logDir, "compile-refs.log");
 

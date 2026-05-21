@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using Autodesk.Revit.DB;
@@ -6,7 +6,7 @@ using Autodesk.Revit.UI;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Bimwright.Rvt.Plugin.Handlers
+namespace RvtMcp.Plugin.Handlers
 {
     public class SetMaterialAppearanceHandler : IRevitCommand
     {
@@ -199,7 +199,7 @@ namespace Bimwright.Rvt.Plugin.Handlers
 
             var changed = new Dictionary<string, string>();
 
-            using (var tx = new Transaction(doc, "Bimwright: set material appearance"))
+            using (var tx = new Transaction(doc, "RvtMcp: set material appearance"))
             {
                 tx.Start();
                 try

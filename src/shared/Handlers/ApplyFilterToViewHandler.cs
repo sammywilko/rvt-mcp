@@ -1,11 +1,11 @@
-using System;
+﻿using System;
 using System.Linq;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Bimwright.Rvt.Plugin.Handlers
+namespace RvtMcp.Plugin.Handlers
 {
     public class ApplyFilterToViewHandler : IRevitCommand
     {
@@ -70,7 +70,7 @@ namespace Bimwright.Rvt.Plugin.Handlers
                     $"View '{view.Name}' ({view.ViewType}) does not allow graphics overrides; filters cannot be applied.",
                     filterIdRaw, filter.Name, resolvedViewId, view.Name, false);
 
-            using (var tx = new Transaction(doc, "Bimwright: apply filter to view"))
+            using (var tx = new Transaction(doc, "RvtMcp: apply filter to view"))
             {
                 tx.Start();
                 try

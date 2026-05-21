@@ -1,17 +1,17 @@
 using Autodesk.Revit.UI;
 using Newtonsoft.Json.Linq;
 
-namespace Bimwright.Rvt.Plugin.Handlers
+namespace RvtMcp.Plugin.Handlers
 {
     public class ShowMessageHandler : IRevitCommand
     {
         public string Name => "show_message";
         public string Description => "Display a TaskDialog inside Revit with an optional custom message. Useful for connection testing, user notifications, and AI-to-user feedback during automation flows.";
-        public string ParametersSchema => "{ \"message\": \"string (optional, dialog body text; default 'Hello from MCP! Connection successful.')\", \"title\": \"string (optional, dialog title; default 'Bimwright')\" }";
+        public string ParametersSchema => "{ \"message\": \"string (optional, dialog body text; default 'Hello from MCP! Connection successful.')\", \"title\": \"string (optional, dialog title; default 'RvtMcp')\" }";
 
         public CommandResult Execute(UIApplication app, string paramsJson)
         {
-            var title = "Bimwright";
+            var title = "RvtMcp";
             var message = "Hello from MCP! Connection successful.";
 
             if (!string.IsNullOrWhiteSpace(paramsJson))

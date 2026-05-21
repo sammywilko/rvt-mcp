@@ -2,9 +2,9 @@ using System.Collections.Generic;
 using System.Linq;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
-using Bimwright.Rvt.Plugin.Lint;
+using RvtMcp.Plugin.Lint;
 
-namespace Bimwright.Rvt.Plugin.Handlers
+namespace RvtMcp.Plugin.Handlers
 {
     public class AnalyzeViewNamingPatternsHandler : IRevitCommand
     {

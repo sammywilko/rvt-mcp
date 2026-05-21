@@ -5,7 +5,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace Bimwright.Rvt.Plugin.ToolBaker
+namespace RvtMcp.Plugin.ToolBaker
 {
     public sealed class BakeCompilerPolicyResult
     {
@@ -78,7 +78,7 @@ namespace Bimwright.Rvt.Plugin.ToolBaker
             "System.Collections.Generic",
             "Autodesk.Revit.DB",
             "Autodesk.Revit.UI",
-            "Bimwright.Rvt.Plugin",
+            "RvtMcp.Plugin",
             "Newtonsoft.Json.Linq",
         };
 
@@ -115,8 +115,8 @@ namespace Bimwright.Rvt.Plugin.ToolBaker
 
         private static readonly string[] AllowedExactSymbolNames =
         {
-            "Bimwright.Rvt.Plugin.IRevitCommand",
-            "Bimwright.Rvt.Plugin.CommandResult",
+            "RvtMcp.Plugin.IRevitCommand",
+            "RvtMcp.Plugin.CommandResult",
         };
 
         private static readonly SymbolDisplayFormat FullNameFormat = new SymbolDisplayFormat(

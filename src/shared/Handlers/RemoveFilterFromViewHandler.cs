@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using Autodesk.Revit.DB;
@@ -6,7 +6,7 @@ using Autodesk.Revit.UI;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Bimwright.Rvt.Plugin.Handlers
+namespace RvtMcp.Plugin.Handlers
 {
     public class RemoveFilterFromViewHandler : IRevitCommand
     {
@@ -75,7 +75,7 @@ namespace Bimwright.Rvt.Plugin.Handlers
                     $"View '{view.Name}' ({view.ViewType}) does not allow graphics overrides.",
                     filterIdRaw, filterName, resolvedViewId, resolvedViewName);
 
-            using (var tx = new Transaction(doc, "Bimwright: remove filter from view"))
+            using (var tx = new Transaction(doc, "RvtMcp: remove filter from view"))
             {
                 tx.Start();
                 try

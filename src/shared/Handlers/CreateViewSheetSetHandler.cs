@@ -1,11 +1,11 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using Newtonsoft.Json.Linq;
 
-namespace Bimwright.Rvt.Plugin.Handlers
+namespace RvtMcp.Plugin.Handlers
 {
     /// <summary>
     /// Creates a named ViewSheetSet (a saved set of views/sheets) for batch printing/exporting.
@@ -111,7 +111,7 @@ namespace Bimwright.Rvt.Plugin.Handlers
             if (resolvedViews.Count == 0)
                 return CommandResult.Fail("None of the supplied view_ids resolved to a usable view or sheet.");
 
-            using (var tx = new Transaction(doc, "Bimwright: create view sheet set"))
+            using (var tx = new Transaction(doc, "RvtMcp: create view sheet set"))
             {
                 try
                 {

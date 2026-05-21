@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using Autodesk.Revit.DB;
@@ -6,7 +6,7 @@ using Autodesk.Revit.UI;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Bimwright.Rvt.Plugin.Handlers
+namespace RvtMcp.Plugin.Handlers
 {
     public class DuplicateFamilyTypeHandler : IRevitCommand
     {
@@ -109,7 +109,7 @@ namespace Bimwright.Rvt.Plugin.Handlers
             var parametersSet = new JObject();
             string txError = null;
 
-            using (var tx = new Transaction(doc, "Bimwright: duplicate type"))
+            using (var tx = new Transaction(doc, "RvtMcp: duplicate type"))
             {
                 try
                 {

@@ -3,7 +3,7 @@ using System.Collections.ObjectModel;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Bimwright.Rvt.Plugin
+namespace RvtMcp.Plugin
 {
     public class McpCallEntry
     {
@@ -25,7 +25,7 @@ namespace Bimwright.Rvt.Plugin
     public class McpSessionLog
     {
         private int _nextIndex = 1;
-        internal static Func<BimwrightConfig> ConfigLoader = () => BimwrightConfig.Load();
+        internal static Func<RvtMcpConfig> ConfigLoader = () => RvtMcpConfig.Load();
 
         public ObservableCollection<McpCallEntry> Entries { get; } = new ObservableCollection<McpCallEntry>();
 

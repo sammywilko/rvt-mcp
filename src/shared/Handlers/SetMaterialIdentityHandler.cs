@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -7,7 +7,7 @@ using Autodesk.Revit.UI;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Bimwright.Rvt.Plugin.Handlers
+namespace RvtMcp.Plugin.Handlers
 {
     public class SetMaterialIdentityHandler : IRevitCommand
     {
@@ -108,7 +108,7 @@ namespace Bimwright.Rvt.Plugin.Handlers
             var fields = new Dictionary<string, object>();
             int successCount = 0;
 
-            using (var tx = new Transaction(doc, "Bimwright: set material identity"))
+            using (var tx = new Transaction(doc, "RvtMcp: set material identity"))
             {
                 tx.Start();
                 try

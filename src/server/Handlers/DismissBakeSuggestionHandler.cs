@@ -1,9 +1,9 @@
 using System;
-using Bimwright.Rvt.Server.Bake;
+using RvtMcp.Server.Bake;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Bimwright.Rvt.Server.Handlers
+namespace RvtMcp.Server.Handlers
 {
     public static class DismissBakeSuggestionHandler
     {

@@ -1,9 +1,9 @@
 using System;
-using Bimwright.Rvt.Plugin;
+using RvtMcp.Plugin;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Bimwright.Rvt.Server.Memory
+namespace RvtMcp.Server.Memory
 {
     public class JournalEntry
     {
