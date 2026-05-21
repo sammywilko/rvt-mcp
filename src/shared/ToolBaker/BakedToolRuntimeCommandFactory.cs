@@ -4,7 +4,7 @@ using Autodesk.Revit.UI;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Bimwright.Rvt.Plugin.ToolBaker
+namespace RvtMcp.Plugin.ToolBaker
 {
     public static class BakedToolRuntimeCommandFactory
     {

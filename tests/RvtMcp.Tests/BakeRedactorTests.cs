@@ -1,13 +1,13 @@
 using System;
 using System.Diagnostics;
 using System.Linq;
-using Bimwright.Rvt.Plugin;
-using Bimwright.Rvt.Server.Memory;
+using RvtMcp.Plugin;
+using RvtMcp.Server.Memory;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Xunit;
 
-namespace Bimwright.Rvt.Tests
+namespace RvtMcp.Tests
 {
     public class BakeRedactorTests
     {

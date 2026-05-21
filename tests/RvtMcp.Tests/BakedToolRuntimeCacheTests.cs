@@ -1,10 +1,10 @@
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using Bimwright.Rvt.Plugin.ToolBaker;
+using RvtMcp.Plugin.ToolBaker;
 using Xunit;
 
-namespace Bimwright.Rvt.Tests
+namespace RvtMcp.Tests
 {
     public class BakedToolRuntimeCacheTests
     {

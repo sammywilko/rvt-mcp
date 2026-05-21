@@ -1,10 +1,10 @@
 using System;
 using System.Linq;
-using Bimwright.Rvt.Server.Bake;
+using RvtMcp.Server.Bake;
 using Newtonsoft.Json.Linq;
 using Xunit;
 
-namespace Bimwright.Rvt.Tests
+namespace RvtMcp.Tests
 {
     public class SuggestionProposerTests
     {

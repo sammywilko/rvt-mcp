@@ -1,12 +1,12 @@
 using System;
 using System.Text.Json;
-using Bimwright.Rvt.Plugin;
-using Bimwright.Rvt.Server;
+using RvtMcp.Plugin;
+using RvtMcp.Server;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Xunit;
 
-namespace Bimwright.Rvt.Tests
+namespace RvtMcp.Tests
 {
     public class ToolbakerToolsRunBakedToolTests
     {

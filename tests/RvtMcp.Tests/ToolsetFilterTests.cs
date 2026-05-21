@@ -1,10 +1,10 @@
 using System.Collections.Generic;
 using System.Linq;
-using Bimwright.Rvt.Plugin;
-using Bimwright.Rvt.Server;
+using RvtMcp.Plugin;
+using RvtMcp.Server;
 using Xunit;
 
-namespace Bimwright.Rvt.Tests
+namespace RvtMcp.Tests
 {
     public class ToolsetFilterTests
     {
@@ -22,7 +22,7 @@ namespace Bimwright.Rvt.Tests
         [Fact]
         public void Resolve_EmptyToolsets_ReturnsDefaults()
         {
-            var set = ToolsetFilter.Resolve(new BimwrightConfig { Toolsets = new List<string>() });
+            var set = ToolsetFilter.Resolve(new RvtMcpConfig { Toolsets = new List<string>() });
             Assert.Equal(
                 new[] { "annotation", "create", "export", "families", "geometry", "graphics", "links", "lint", "materials", "mep", "meta", "organization", "parameters", "query", "rooms", "schedule", "sheets", "toolbaker", "view", "workflows" },
                 set.OrderBy(s => s).ToArray());
@@ -31,14 +31,14 @@ namespace Bimwright.Rvt.Tests
         [Fact]
         public void Resolve_Defaults_MatchesDefaultOnArray()
         {
-            var set = ToolsetFilter.Resolve(new BimwrightConfig());
+            var set = ToolsetFilter.Resolve(new RvtMcpConfig());
             Assert.Equal(ToolsetFilter.DefaultOn.OrderBy(s => s), set.OrderBy(s => s));
         }
 
         [Fact]
         public void Resolve_AdaptiveBakeFlags_DoNotChangeDefaultToolsets()
         {
-            var set = ToolsetFilter.Resolve(new BimwrightConfig
+            var set = ToolsetFilter.Resolve(new RvtMcpConfig
             {
                 EnableAdaptiveBake = true,
                 CacheSendCodeBodies = true,
@@ -53,7 +53,7 @@ namespace Bimwright.Rvt.Tests
         [Fact]
         public void Resolve_ExplicitToolsets_OnlyRequested()
         {
-            var set = ToolsetFilter.Resolve(new BimwrightConfig
+            var set = ToolsetFilter.Resolve(new RvtMcpConfig
             {
                 Toolsets = new List<string> { "query" }
             });
@@ -64,7 +64,7 @@ namespace Bimwright.Rvt.Tests
         [Fact]
         public void Resolve_CaseInsensitive()
         {
-            var set = ToolsetFilter.Resolve(new BimwrightConfig
+            var set = ToolsetFilter.Resolve(new RvtMcpConfig
             {
                 Toolsets = new List<string> { "QUERY", "Create" }
             });
@@ -75,7 +75,7 @@ namespace Bimwright.Rvt.Tests
         [Fact]
         public void Resolve_UnknownToolsets_DroppedSilently()
         {
-            var set = ToolsetFilter.Resolve(new BimwrightConfig
+            var set = ToolsetFilter.Resolve(new RvtMcpConfig
             {
                 Toolsets = new List<string> { "query", "typo-toolset", "view" }
             });
@@ -87,7 +87,7 @@ namespace Bimwright.Rvt.Tests
         [Fact]
         public void Resolve_All_ExpandsToAllKnownToolsets()
         {
-            var set = ToolsetFilter.Resolve(new BimwrightConfig
+            var set = ToolsetFilter.Resolve(new RvtMcpConfig
             {
                 Toolsets = new List<string> { "all" }
             });
@@ -98,7 +98,7 @@ namespace Bimwright.Rvt.Tests
         [Fact]
         public void Resolve_AllCaseInsensitive()
         {
-            var set = ToolsetFilter.Resolve(new BimwrightConfig
+            var set = ToolsetFilter.Resolve(new RvtMcpConfig
             {
                 Toolsets = new List<string> { "ALL" }
             });
@@ -110,7 +110,7 @@ namespace Bimwright.Rvt.Tests
         [Fact]
         public void Resolve_ReadOnly_StripsCreateModifyDelete()
         {
-            var set = ToolsetFilter.Resolve(new BimwrightConfig
+            var set = ToolsetFilter.Resolve(new RvtMcpConfig
             {
                 Toolsets = new List<string> { "all" },
                 ReadOnly = true,
@@ -138,7 +138,7 @@ namespace Bimwright.Rvt.Tests
         [Fact]
         public void Resolve_ReadOnlyWithDefaults_LeavesOnlyReadSafeDefaults()
         {
-            var set = ToolsetFilter.Resolve(new BimwrightConfig { ReadOnly = true });
+            var set = ToolsetFilter.Resolve(new RvtMcpConfig { ReadOnly = true });
             // Default = query+create+view+schedule+toolbaker+meta+lint+sheets+materials+geometry. ReadOnly strips write-capable sets.
             Assert.Equal(
                 new[] { "geometry", "lint", "meta", "query", "view" },
@@ -148,7 +148,7 @@ namespace Bimwright.Rvt.Tests
         [Fact]
         public void Resolve_ReadOnlyWithQueryOnly_Unchanged()
         {
-            var set = ToolsetFilter.Resolve(new BimwrightConfig
+            var set = ToolsetFilter.Resolve(new RvtMcpConfig
             {
                 Toolsets = new List<string> { "query" },
                 ReadOnly = true,
@@ -160,7 +160,7 @@ namespace Bimwright.Rvt.Tests
         [Fact]
         public void Resolve_DisableToolbaker_RemovesToolbakerEvenWhenRequested()
         {
-            var set = ToolsetFilter.Resolve(new BimwrightConfig
+            var set = ToolsetFilter.Resolve(new RvtMcpConfig
             {
                 Toolsets = new List<string> { "toolbaker" },
                 EnableToolbaker = false,
@@ -172,7 +172,7 @@ namespace Bimwright.Rvt.Tests
         [Fact]
         public void Resolve_EnableToolbaker_KeepsToolbakerInDefaults()
         {
-            var set = ToolsetFilter.Resolve(new BimwrightConfig
+            var set = ToolsetFilter.Resolve(new RvtMcpConfig
             {
                 EnableToolbaker = true,
             });
@@ -183,7 +183,7 @@ namespace Bimwright.Rvt.Tests
         [Fact]
         public void Resolve_DisableToolbaker_RemovesToolbakerFromDefaults()
         {
-            var set = ToolsetFilter.Resolve(new BimwrightConfig
+            var set = ToolsetFilter.Resolve(new RvtMcpConfig
             {
                 EnableToolbaker = false,
             });

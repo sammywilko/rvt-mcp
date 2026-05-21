@@ -1,7 +1,7 @@
 #nullable enable
 using System.Text;
 
-namespace Bimwright.Rvt.Plugin
+namespace RvtMcp.Plugin
 {
     /// <summary>
     /// Passive observability for S4 pagination — emits a warning string when

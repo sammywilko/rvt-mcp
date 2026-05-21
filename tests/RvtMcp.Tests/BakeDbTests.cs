@@ -2,13 +2,13 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using Bimwright.Rvt.Server.Bake;
-using Bimwright.Rvt.Plugin.ToolBaker;
+using RvtMcp.Server.Bake;
+using RvtMcp.Plugin.ToolBaker;
 using Microsoft.Data.Sqlite;
 using Newtonsoft.Json.Linq;
 using Xunit;
 
-namespace Bimwright.Rvt.Tests
+namespace RvtMcp.Tests
 {
     public class BakeDbTests
     {

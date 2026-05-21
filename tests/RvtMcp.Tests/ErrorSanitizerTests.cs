@@ -1,7 +1,7 @@
-using Bimwright.Rvt.Plugin;
+using RvtMcp.Plugin;
 using Xunit;
 
-namespace Bimwright.Rvt.Tests
+namespace RvtMcp.Tests
 {
     // Path-mask regression cases:
     //   Input                                                              → Output

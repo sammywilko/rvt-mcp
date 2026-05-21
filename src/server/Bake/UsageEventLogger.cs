@@ -2,11 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Bimwright.Rvt.Plugin;
+using RvtMcp.Plugin;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Bimwright.Rvt.Server.Bake
+namespace RvtMcp.Server.Bake
 {
     public sealed class UsageEventLogger
     {
@@ -30,7 +30,7 @@ namespace Bimwright.Rvt.Server.Bake
         };
 
         private readonly BakePaths _paths;
-        private readonly BimwrightConfig _config;
+        private readonly RvtMcpConfig _config;
         private readonly ClusterEngine _clusterEngine;
         private readonly TimeSpan _analysisThrottle;
         private readonly TimeSpan _errorWarningThrottle;
@@ -44,14 +44,14 @@ namespace Bimwright.Rvt.Server.Bake
 
         public UsageEventLogger(
             BakePaths paths,
-            BimwrightConfig config,
+            RvtMcpConfig config,
             ClusterEngine clusterEngine = null,
             TimeSpan? analysisThrottle = null,
             int? replayLineLimit = null,
             TimeSpan? errorWarningThrottle = null)
         {
             _paths = paths ?? throw new ArgumentNullException(nameof(paths));
-            _config = config ?? new BimwrightConfig();
+            _config = config ?? new RvtMcpConfig();
             _clusterEngine = clusterEngine ?? new ClusterEngine();
             _analysisThrottle = analysisThrottle ?? DefaultAnalysisThrottle;
             _replayLineLimit = Math.Max(1, replayLineLimit ?? DefaultReplayLineLimit);

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json;
 
-namespace Bimwright.Rvt.Server.Memory
+namespace RvtMcp.Server.Memory
 {
     public class SessionContext
     {

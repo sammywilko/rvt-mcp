@@ -8,7 +8,7 @@ using System.Windows.Data;
 using System.Windows.Media;
 using Newtonsoft.Json.Linq;
 
-namespace Bimwright.Rvt.Plugin.Views
+namespace RvtMcp.Plugin.Views
 {
     public class HistoryWindow : Window
     {

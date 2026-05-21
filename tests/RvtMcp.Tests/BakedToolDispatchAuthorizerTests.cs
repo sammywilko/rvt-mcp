@@ -1,9 +1,9 @@
 using System;
 using System.IO;
-using Bimwright.Rvt.Plugin.ToolBaker;
+using RvtMcp.Plugin.ToolBaker;
 using Xunit;
 
-namespace Bimwright.Rvt.Tests
+namespace RvtMcp.Tests
 {
     public class BakedToolDispatchAuthorizerTests
     {

@@ -1,8 +1,8 @@
 using System.IO;
-using Bimwright.Rvt.Plugin.Lint;
+using RvtMcp.Plugin.Lint;
 using Xunit;
 
-namespace Bimwright.Rvt.Tests.Lint
+namespace RvtMcp.Tests.Lint
 {
     public class FirmProfileLibraryTests
     {

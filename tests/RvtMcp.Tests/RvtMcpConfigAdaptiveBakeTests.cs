@@ -2,13 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
-using Bimwright.Rvt.Plugin;
-using Bimwright.Rvt.Server;
+using RvtMcp.Plugin;
+using RvtMcp.Server;
 using Xunit;
 
-namespace Bimwright.Rvt.Tests
+namespace RvtMcp.Tests
 {
-    public class BimwrightConfigAdaptiveBakeTests
+    public class RvtMcpConfigAdaptiveBakeTests
     {
         private static Func<string, string> EnvLookup(Dictionary<string, string> map) =>
             name => map.TryGetValue(name, out var v) ? v : null;
@@ -16,9 +16,9 @@ namespace Bimwright.Rvt.Tests
         [Fact]
         public void Defaults_AdaptiveBakeFlagsOffAndToolbakerOn()
         {
-            var config = new BimwrightConfig();
-            Assert.Equal("BIMWRIGHT_ENABLE_ADAPTIVE_BAKE", BimwrightConfig.EnvEnableAdaptiveBake);
-            Assert.Equal("BIMWRIGHT_CACHE_SEND_CODE_BODIES", BimwrightConfig.EnvCacheSendCodeBodies);
+            var config = new RvtMcpConfig();
+            Assert.Equal("BIMWRIGHT_ENABLE_ADAPTIVE_BAKE", RvtMcpConfig.EnvEnableAdaptiveBake);
+            Assert.Equal("BIMWRIGHT_CACHE_SEND_CODE_BODIES", RvtMcpConfig.EnvCacheSendCodeBodies);
             Assert.False(config.EnableAdaptiveBakeOrDefault);
             Assert.False(config.CacheSendCodeBodiesOrDefault);
             Assert.True(config.EnableToolbakerOrDefault);
@@ -33,10 +33,10 @@ namespace Bimwright.Rvt.Tests
                 File.WriteAllText(path, @"{""enableAdaptiveBake"":false}");
                 var env = EnvLookup(new Dictionary<string, string>
                 {
-                    [BimwrightConfig.EnvEnableAdaptiveBake] = "true",
+                    [RvtMcpConfig.EnvEnableAdaptiveBake] = "true",
                 });
 
-                var config = BimwrightConfig.Load(Array.Empty<string>(), path, env);
+                var config = RvtMcpConfig.Load(Array.Empty<string>(), path, env);
 
                 Assert.True(config.EnableAdaptiveBake);
             }
@@ -52,10 +52,10 @@ namespace Bimwright.Rvt.Tests
                 File.WriteAllText(path, @"{""enableAdaptiveBake"":false}");
                 var env = EnvLookup(new Dictionary<string, string>
                 {
-                    [BimwrightConfig.EnvEnableAdaptiveBake] = "true",
+                    [RvtMcpConfig.EnvEnableAdaptiveBake] = "true",
                 });
 
-                var config = BimwrightConfig.Load(new[] { "--disable-adaptive-bake" }, path, env);
+                var config = RvtMcpConfig.Load(new[] { "--disable-adaptive-bake" }, path, env);
 
                 Assert.False(config.EnableAdaptiveBake);
             }
@@ -71,10 +71,10 @@ namespace Bimwright.Rvt.Tests
                 File.WriteAllText(path, @"{""cacheSendCodeBodies"":false}");
                 var env = EnvLookup(new Dictionary<string, string>
                 {
-                    [BimwrightConfig.EnvCacheSendCodeBodies] = "yes",
+                    [RvtMcpConfig.EnvCacheSendCodeBodies] = "yes",
                 });
 
-                var config = BimwrightConfig.Load(Array.Empty<string>(), path, env);
+                var config = RvtMcpConfig.Load(Array.Empty<string>(), path, env);
 
                 Assert.True(config.CacheSendCodeBodies);
             }
@@ -90,10 +90,10 @@ namespace Bimwright.Rvt.Tests
                 File.WriteAllText(path, @"{""cacheSendCodeBodies"":false}");
                 var env = EnvLookup(new Dictionary<string, string>
                 {
-                    [BimwrightConfig.EnvCacheSendCodeBodies] = "true",
+                    [RvtMcpConfig.EnvCacheSendCodeBodies] = "true",
                 });
 
-                var config = BimwrightConfig.Load(new[] { "--no-cache-send-code-bodies" }, path, env);
+                var config = RvtMcpConfig.Load(new[] { "--no-cache-send-code-bodies" }, path, env);
 
                 Assert.False(config.CacheSendCodeBodies);
             }
@@ -109,8 +109,8 @@ namespace Bimwright.Rvt.Tests
             Assert.Contains("--disable-adaptive-bake", help);
             Assert.Contains("--cache-send-code-bodies", help);
             Assert.Contains("--no-cache-send-code-bodies", help);
-            Assert.Contains(BimwrightConfig.EnvEnableAdaptiveBake, help);
-            Assert.Contains(BimwrightConfig.EnvCacheSendCodeBodies, help);
+            Assert.Contains(RvtMcpConfig.EnvEnableAdaptiveBake, help);
+            Assert.Contains(RvtMcpConfig.EnvCacheSendCodeBodies, help);
         }
 
         private static string CaptureProgramHelp()

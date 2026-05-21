@@ -4,13 +4,13 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using Bimwright.Rvt.Plugin;
-using Bimwright.Rvt.Plugin.ToolBaker;
-using Bimwright.Rvt.Server.Bake;
+using RvtMcp.Plugin;
+using RvtMcp.Plugin.ToolBaker;
+using RvtMcp.Server.Bake;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Bimwright.Rvt.Server.Handlers
+namespace RvtMcp.Server.Handlers
 {
     public static class AcceptBakeSuggestionHandler
     {

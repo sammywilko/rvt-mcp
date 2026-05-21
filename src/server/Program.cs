@@ -1,6 +1,6 @@
 // Usage:
-//   stdio (default):  Bimwright.Rvt.Server.exe              — spawned by Claude/GPT/Cursor
-//   HTTP SSE:          Bimwright.Rvt.Server.exe --http 8200  — for Ollama/LM Studio/custom
+//   stdio (default):  RvtMcp.Server.exe              — spawned by Claude/GPT/Cursor
+//   HTTP SSE:          RvtMcp.Server.exe --http 8200  — for Ollama/LM Studio/custom
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -12,9 +12,9 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using Bimwright.Rvt.Plugin; // BimwrightConfig
-using Bimwright.Rvt.Server.Bake;
-using Bimwright.Rvt.Server.Handlers;
+using RvtMcp.Plugin; // RvtMcpConfig
+using RvtMcp.Server.Bake;
+using RvtMcp.Server.Handlers;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -25,7 +25,7 @@ using ModelContextProtocol.Server;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Bimwright.Rvt.Server
+namespace RvtMcp.Server
 {
     class Program
     {
@@ -39,8 +39,8 @@ namespace Bimwright.Rvt.Server
 
             // A9 3-layer config precedence (JSON < env < CLI). AuthToken.Target + transport
             // mode (--http) stay as separate CLI parses for now; A3 toolsets gating uses
-            // BimwrightConfig.
-            var config = BimwrightConfig.Load(args);
+            // RvtMcpConfig.
+            var config = RvtMcpConfig.Load(args);
             ServerState.Config = config;
             if (!string.IsNullOrWhiteSpace(config.Target))
             {
@@ -111,7 +111,7 @@ namespace Bimwright.Rvt.Server
             }
         }
 
-        private static async Task RunStdio(BimwrightConfig config)
+        private static async Task RunStdio(RvtMcpConfig config)
         {
             var enabled = ToolsetFilter.Resolve(config);
             var builder = Host.CreateApplicationBuilder();
@@ -130,7 +130,7 @@ namespace Bimwright.Rvt.Server
             await app.RunAsync();
         }
 
-        private static async Task RunHttpSse(BimwrightConfig config, int port)
+        private static async Task RunHttpSse(RvtMcpConfig config, int port)
         {
             var enabled = ToolsetFilter.Resolve(config);
             var builder = WebApplication.CreateBuilder();
@@ -215,7 +215,7 @@ namespace Bimwright.Rvt.Server
             Console.WriteLine(usage);
         }
 
-        private static IMcpServerBuilder RegisterToolsets(IMcpServerBuilder mcp, HashSet<string> enabled, BimwrightConfig config)
+        private static IMcpServerBuilder RegisterToolsets(IMcpServerBuilder mcp, HashSet<string> enabled, RvtMcpConfig config)
         {
             if (enabled.Contains("query"))      mcp = mcp.WithTools<QueryTools>();
             if (enabled.Contains("create"))     mcp = mcp.WithTools<CreateTools>();
@@ -245,7 +245,7 @@ namespace Bimwright.Rvt.Server
             return mcp;
         }
 
-        private static Type[] ResolveRegisteredToolTypes(HashSet<string> enabled, BimwrightConfig config)
+        private static Type[] ResolveRegisteredToolTypes(HashSet<string> enabled, RvtMcpConfig config)
         {
             var types = new List<Type>();
             if (enabled.Contains("query"))      types.Add(typeof(QueryTools));

@@ -1,8 +1,8 @@
-using Bimwright.Rvt.Plugin;
+using RvtMcp.Plugin;
 using Newtonsoft.Json;
 using Xunit;
 
-namespace Bimwright.Rvt.Tests
+namespace RvtMcp.Tests
 {
     public class McpResponsePrivacyTests
     {

@@ -3,12 +3,12 @@ using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using Bimwright.Rvt.Plugin;
-using Bimwright.Rvt.Tests.Helpers;
+using RvtMcp.Plugin;
+using RvtMcp.Tests.Helpers;
 using ModelContextProtocol.Server;
 using Xunit;
 
-namespace Bimwright.Rvt.Tests
+namespace RvtMcp.Tests
 {
     public class ToolsListSnapshotTests
     {
@@ -52,7 +52,7 @@ namespace Bimwright.Rvt.Tests
         [Fact]
         public void Adaptive_bake_tools_list_matches_golden_snapshot()
         {
-            var captured = CaptureToolsList(new BimwrightConfig
+            var captured = CaptureToolsList(new RvtMcpConfig
             {
                 EnableAdaptiveBake = true,
                 Toolsets = new System.Collections.Generic.List<string> { "all" }
@@ -81,7 +81,7 @@ namespace Bimwright.Rvt.Tests
         [Fact]
         public void Structural_toolset_matches_golden_snapshot()
         {
-            var captured = CaptureToolsList(new BimwrightConfig
+            var captured = CaptureToolsList(new RvtMcpConfig
             {
                 Toolsets = new System.Collections.Generic.List<string> { "structural" }
             });
@@ -119,7 +119,7 @@ namespace Bimwright.Rvt.Tests
         [Fact]
         public void Default_toolsets_expose_send_code_without_adaptive_bake()
         {
-            var captured = CaptureToolsList(new BimwrightConfig());
+            var captured = CaptureToolsList(new RvtMcpConfig());
 
             Assert.Contains("\"name\": \"send_code_to_revit\"", captured);
             Assert.Contains("\"name\": \"list_baked_tools\"", captured);
@@ -132,7 +132,7 @@ namespace Bimwright.Rvt.Tests
         [Fact]
         public void Adaptive_bake_snapshot_exposes_exactly_three_suggestion_handlers()
         {
-            var captured = CaptureToolsList(new BimwrightConfig
+            var captured = CaptureToolsList(new RvtMcpConfig
             {
                 EnableAdaptiveBake = true,
                 Toolsets = new System.Collections.Generic.List<string> { "all" }
@@ -158,14 +158,14 @@ namespace Bimwright.Rvt.Tests
             Assert.DoesNotContain("\"name\": \"bake_tool\"", captured);
         }
 
-        private static string CaptureToolsList(BimwrightConfig config)
+        private static string CaptureToolsList(RvtMcpConfig config)
         {
             // ToolsetFilter is a public type in Server — gives a stable handle to the
             // Server assembly without forcing `Program` to become public.
-            var serverAssembly = typeof(Bimwright.Rvt.Server.ToolsetFilter).Assembly;
-            var programType = serverAssembly.GetType("Bimwright.Rvt.Server.Program")!;
+            var serverAssembly = typeof(RvtMcp.Server.ToolsetFilter).Assembly;
+            var programType = serverAssembly.GetType("RvtMcp.Server.Program")!;
             var resolveToolTypes = programType.GetMethod("ResolveRegisteredToolTypes", BindingFlags.NonPublic | BindingFlags.Static)!;
-            var enabled = Bimwright.Rvt.Server.ToolsetFilter.Resolve(config);
+            var enabled = RvtMcp.Server.ToolsetFilter.Resolve(config);
 
             var toolClasses = ((Type[])resolveToolTypes.Invoke(null, new object[] { enabled, config })!)
                 .OrderBy(t => t.Name, StringComparer.Ordinal)
@@ -180,9 +180,9 @@ namespace Bimwright.Rvt.Tests
             return SnapshotSerializer.Serialize(tools.Length, tools);
         }
 
-        private static BimwrightConfig AllToolsetsConfig(bool enableAdaptiveBake)
+        private static RvtMcpConfig AllToolsetsConfig(bool enableAdaptiveBake)
         {
-            return new BimwrightConfig
+            return new RvtMcpConfig
             {
                 EnableAdaptiveBake = enableAdaptiveBake,
                 Toolsets = new System.Collections.Generic.List<string> { "all" }

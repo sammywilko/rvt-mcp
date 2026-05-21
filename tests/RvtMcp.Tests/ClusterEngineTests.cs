@@ -3,11 +3,11 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using Bimwright.Rvt.Server.Bake;
+using RvtMcp.Server.Bake;
 using Newtonsoft.Json;
 using Xunit;
 
-namespace Bimwright.Rvt.Tests
+namespace RvtMcp.Tests
 {
     public class ClusterEngineTests
     {

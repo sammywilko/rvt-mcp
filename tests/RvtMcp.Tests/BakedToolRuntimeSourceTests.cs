@@ -1,9 +1,9 @@
 using System.Linq;
-using Bimwright.Rvt.Plugin.ToolBaker;
+using RvtMcp.Plugin.ToolBaker;
 using Newtonsoft.Json.Linq;
 using Xunit;
 
-namespace Bimwright.Rvt.Tests
+namespace RvtMcp.Tests
 {
     public class BakedToolRuntimeSourceTests
     {

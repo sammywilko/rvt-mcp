@@ -2,13 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Bimwright.Rvt.Plugin;
-using Bimwright.Rvt.Server.Bake;
+using RvtMcp.Plugin;
+using RvtMcp.Server.Bake;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Xunit;
 
-namespace Bimwright.Rvt.Tests
+namespace RvtMcp.Tests
 {
     public class UsageEventLoggerTests
     {
@@ -17,7 +17,7 @@ namespace Bimwright.Rvt.Tests
         {
             using var sandbox = new TempDir();
             var paths = new BakePaths(sandbox.Path);
-            var logger = new UsageEventLogger(paths, new BimwrightConfig { EnableAdaptiveBake = false });
+            var logger = new UsageEventLogger(paths, new RvtMcpConfig { EnableAdaptiveBake = false });
 
             logger.RecordToolCall("get_current_view_info", null, success: true);
 
@@ -29,7 +29,7 @@ namespace Bimwright.Rvt.Tests
         {
             using var sandbox = new TempDir();
             var paths = new BakePaths(sandbox.Path);
-            var logger = new UsageEventLogger(paths, new BimwrightConfig
+            var logger = new UsageEventLogger(paths, new RvtMcpConfig
             {
                 EnableAdaptiveBake = true,
                 CacheSendCodeBodies = false
@@ -57,7 +57,7 @@ namespace Bimwright.Rvt.Tests
         {
             using var sandbox = new TempDir();
             var paths = new BakePaths(sandbox.Path);
-            var logger = new UsageEventLogger(paths, new BimwrightConfig
+            var logger = new UsageEventLogger(paths, new RvtMcpConfig
             {
                 EnableAdaptiveBake = true,
                 CacheSendCodeBodies = true
@@ -83,7 +83,7 @@ namespace Bimwright.Rvt.Tests
         {
             using var sandbox = new TempDir();
             var paths = new BakePaths(sandbox.Path);
-            var logger = new UsageEventLogger(paths, new BimwrightConfig { EnableAdaptiveBake = true });
+            var logger = new UsageEventLogger(paths, new RvtMcpConfig { EnableAdaptiveBake = true });
 
             logger.RecordToolCall(
                 "place_view_on_sheet",
@@ -111,7 +111,7 @@ namespace Bimwright.Rvt.Tests
         {
             using var sandbox = new TempDir();
             var paths = new BakePaths(sandbox.Path);
-            var logger = new UsageEventLogger(paths, new BimwrightConfig { EnableAdaptiveBake = true });
+            var logger = new UsageEventLogger(paths, new RvtMcpConfig { EnableAdaptiveBake = true });
 
             logger.RecordToolCall(
                 "create_grid",
@@ -136,7 +136,7 @@ namespace Bimwright.Rvt.Tests
         {
             using var sandbox = new TempDir();
             var paths = new BakePaths(sandbox.Path);
-            var logger = new UsageEventLogger(paths, new BimwrightConfig { EnableAdaptiveBake = true });
+            var logger = new UsageEventLogger(paths, new RvtMcpConfig { EnableAdaptiveBake = true });
 
             logger.RecordToolCall("create_level", @"{""elevation"":3000,""name"":""Level 02""}", success: true);
             logger.RecordToolCall("create_grid", @"{""startX"":0,""startY"":0,""endX"":5000,""endY"":0,""name"":""A""}", success: true);
@@ -157,7 +157,7 @@ namespace Bimwright.Rvt.Tests
             var paths = new BakePaths(sandbox.Path);
             var logger = new UsageEventLogger(
                 paths,
-                new BimwrightConfig { EnableAdaptiveBake = true },
+                new RvtMcpConfig { EnableAdaptiveBake = true },
                 analysisThrottle: TimeSpan.Zero);
 
             for (var i = 0; i < 15; i++)
@@ -177,7 +177,7 @@ namespace Bimwright.Rvt.Tests
             var paths = new BakePaths(sandbox.Path);
             Directory.CreateDirectory(Path.GetDirectoryName(paths.UsageJsonl));
             File.WriteAllLines(paths.UsageJsonl, PresetThresholdEvents());
-            var logger = new UsageEventLogger(paths, new BimwrightConfig { EnableAdaptiveBake = true });
+            var logger = new UsageEventLogger(paths, new RvtMcpConfig { EnableAdaptiveBake = true });
 
             var candidates = logger.RefreshCandidates(DateTimeOffset.Parse("2026-04-27T00:00:00Z"));
 
@@ -193,7 +193,7 @@ namespace Bimwright.Rvt.Tests
             var paths = new BakePaths(sandbox.Path);
             Directory.CreateDirectory(Path.GetDirectoryName(paths.UsageJsonl));
             File.WriteAllLines(paths.UsageJsonl, PresetThresholdEvents());
-            var logger = new UsageEventLogger(paths, new BimwrightConfig { EnableAdaptiveBake = false });
+            var logger = new UsageEventLogger(paths, new RvtMcpConfig { EnableAdaptiveBake = false });
 
             var candidates = logger.RefreshCandidates(DateTimeOffset.Parse("2026-04-27T00:00:00Z"));
             logger.RecordToolCall("create_level", @"{""elevation"":3000,""name"":""Level 02""}", success: true);
@@ -214,7 +214,7 @@ namespace Bimwright.Rvt.Tests
                     .Concat(PresetThresholdEvents()));
             var logger = new UsageEventLogger(
                 paths,
-                new BimwrightConfig { EnableAdaptiveBake = true },
+                new RvtMcpConfig { EnableAdaptiveBake = true },
                 replayLineLimit: 15);
 
             var candidates = logger.RefreshCandidates(DateTimeOffset.Parse("2026-04-27T00:00:00Z"));
@@ -232,7 +232,7 @@ namespace Bimwright.Rvt.Tests
             File.WriteAllLines(paths.UsageJsonl,
                 PresetThresholdEvents("stale", "create_level", "preset:create_level:elevation,name", DateTimeOffset.Parse("2026-03-01T00:00:00Z"), @"{""parameter_kinds"":{""elevation"":""number"",""name"":""string""}}")
                     .Concat(PresetThresholdEvents()));
-            var logger = new UsageEventLogger(paths, new BimwrightConfig { EnableAdaptiveBake = true });
+            var logger = new UsageEventLogger(paths, new RvtMcpConfig { EnableAdaptiveBake = true });
 
             var candidates = logger.RefreshCandidates(DateTimeOffset.Parse("2026-04-27T00:00:00Z"));
 
@@ -249,7 +249,7 @@ namespace Bimwright.Rvt.Tests
             File.WriteAllText(blockedLocalAppData, "not a directory");
             var logger = new UsageEventLogger(
                 new BakePaths(blockedLocalAppData),
-                new BimwrightConfig { EnableAdaptiveBake = true },
+                new RvtMcpConfig { EnableAdaptiveBake = true },
                 analysisThrottle: TimeSpan.Zero);
             var originalError = Console.Error;
             using var error = new StringWriter();

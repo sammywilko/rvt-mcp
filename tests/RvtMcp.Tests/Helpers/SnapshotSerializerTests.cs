@@ -2,7 +2,7 @@ using System.Linq;
 using Newtonsoft.Json.Linq;
 using Xunit;
 
-namespace Bimwright.Rvt.Tests.Helpers
+namespace RvtMcp.Tests.Helpers
 {
     public class SnapshotSerializerTests
     {

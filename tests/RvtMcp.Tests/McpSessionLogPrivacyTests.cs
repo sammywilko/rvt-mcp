@@ -1,7 +1,7 @@
-using Bimwright.Rvt.Plugin;
+using RvtMcp.Plugin;
 using Xunit;
 
-namespace Bimwright.Rvt.Tests
+namespace RvtMcp.Tests
 {
     public class McpSessionLogPrivacyTests
     {
@@ -9,7 +9,7 @@ namespace Bimwright.Rvt.Tests
         public void Add_RedactsSendCodeBodyWhenBodyCacheDisabled()
         {
             var log = new McpSessionLog();
-            McpSessionLog.ConfigLoader = () => new BimwrightConfig { CacheSendCodeBodies = false };
+            McpSessionLog.ConfigLoader = () => new RvtMcpConfig { CacheSendCodeBodies = false };
             try
             {
                 log.Add(new McpCallEntry
@@ -33,7 +33,7 @@ namespace Bimwright.Rvt.Tests
             }
             finally
             {
-                McpSessionLog.ConfigLoader = () => BimwrightConfig.Load();
+                McpSessionLog.ConfigLoader = () => RvtMcpConfig.Load();
             }
         }
 
@@ -41,7 +41,7 @@ namespace Bimwright.Rvt.Tests
         public void Add_KeepsSendCodeBodyWhenBodyCacheEnabled()
         {
             var log = new McpSessionLog();
-            McpSessionLog.ConfigLoader = () => new BimwrightConfig { CacheSendCodeBodies = true };
+            McpSessionLog.ConfigLoader = () => new RvtMcpConfig { CacheSendCodeBodies = true };
             try
             {
                 log.Add(new McpCallEntry
@@ -60,7 +60,7 @@ namespace Bimwright.Rvt.Tests
             }
             finally
             {
-                McpSessionLog.ConfigLoader = () => BimwrightConfig.Load();
+                McpSessionLog.ConfigLoader = () => RvtMcpConfig.Load();
             }
         }
     }

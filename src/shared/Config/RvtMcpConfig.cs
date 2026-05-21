@@ -4,7 +4,7 @@ using System.IO;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Bimwright.Rvt.Plugin
+namespace RvtMcp.Plugin
 {
     /// <summary>
     /// A9 3-layer config (aspect #3 §A9). Single POCO read by both processes:
@@ -17,7 +17,7 @@ namespace Bimwright.Rvt.Plugin
     /// Fields stay nullable so "not set" is distinguishable from "explicitly default-valued";
     /// resolved defaults are exposed via the *OrDefault accessors.
     /// </summary>
-    public class BimwrightConfig
+    public class RvtMcpConfig
     {
         public const string EnvTarget              = "BIMWRIGHT_TARGET";
         public const string EnvToolsets            = "BIMWRIGHT_TOOLSETS";
@@ -71,21 +71,21 @@ namespace Bimwright.Rvt.Plugin
         /// for args to skip the CLI layer (plugin-process callers do this since Revit
         /// does not propagate Server args).
         /// </summary>
-        public static BimwrightConfig Load(string[] args = null, string configFilePath = null)
+        public static RvtMcpConfig Load(string[] args = null, string configFilePath = null)
         {
             return Load(args, configFilePath, envLookup: null);
         }
 
-        internal static BimwrightConfig Load(string[] args, string configFilePath, Func<string, string> envLookup)
+        internal static RvtMcpConfig Load(string[] args, string configFilePath, Func<string, string> envLookup)
         {
             var config = LoadFromJsonFile(configFilePath ?? DefaultConfigFilePath)
-                         ?? new BimwrightConfig();
+                         ?? new RvtMcpConfig();
             ApplyEnvVars(config, envLookup);
             if (args != null) ApplyCliArgs(config, args);
             return config;
         }
 
-        internal static BimwrightConfig LoadFromJsonFile(string path)
+        internal static RvtMcpConfig LoadFromJsonFile(string path)
         {
             if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
                 return null;
@@ -93,7 +93,7 @@ namespace Bimwright.Rvt.Plugin
             {
                 var text = File.ReadAllText(path);
                 if (string.IsNullOrWhiteSpace(text)) return null;
-                return JsonConvert.DeserializeObject<BimwrightConfig>(text);
+                return JsonConvert.DeserializeObject<RvtMcpConfig>(text);
             }
             catch
             {
@@ -103,7 +103,7 @@ namespace Bimwright.Rvt.Plugin
             }
         }
 
-        internal static void ApplyEnvVars(BimwrightConfig config, Func<string, string> lookup = null)
+        internal static void ApplyEnvVars(RvtMcpConfig config, Func<string, string> lookup = null)
         {
             lookup = lookup ?? Environment.GetEnvironmentVariable;
 
@@ -129,7 +129,7 @@ namespace Bimwright.Rvt.Plugin
             if (cacheBodies.HasValue) config.CacheSendCodeBodies = cacheBodies;
         }
 
-        internal static void ApplyCliArgs(BimwrightConfig config, string[] args)
+        internal static void ApplyCliArgs(RvtMcpConfig config, string[] args)
         {
             if (args == null) return;
             for (var i = 0; i < args.Length; i++)

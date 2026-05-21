@@ -1,11 +1,11 @@
 using System.Collections.Generic;
 using System.IO;
-using Bimwright.Rvt.Plugin;
+using RvtMcp.Plugin;
 using Xunit;
 
-namespace Bimwright.Rvt.Tests
+namespace RvtMcp.Tests
 {
-    public class BimwrightConfigTests
+    public class RvtMcpConfigTests
     {
         private static System.Func<string, string> EnvLookup(Dictionary<string, string> map) =>
             name => map.TryGetValue(name, out var v) ? v : null;
@@ -23,7 +23,7 @@ namespace Bimwright.Rvt.Tests
         [InlineData("no", false)]
         public void ParseBool_RecognizedValues_ReturnExpected(string input, bool expected)
         {
-            Assert.Equal(expected, BimwrightConfig.ParseBool(input));
+            Assert.Equal(expected, RvtMcpConfig.ParseBool(input));
         }
 
         [Theory]
@@ -34,7 +34,7 @@ namespace Bimwright.Rvt.Tests
         [InlineData("2")]
         public void ParseBool_UnrecognizedValues_ReturnNull(string input)
         {
-            Assert.Null(BimwrightConfig.ParseBool(input));
+            Assert.Null(RvtMcpConfig.ParseBool(input));
         }
 
         // --- ParseCsv ------------------------------------------------------
@@ -42,14 +42,14 @@ namespace Bimwright.Rvt.Tests
         [Fact]
         public void ParseCsv_SimpleList_Split()
         {
-            var result = BimwrightConfig.ParseCsv("query,create,view");
+            var result = RvtMcpConfig.ParseCsv("query,create,view");
             Assert.Equal(new[] { "query", "create", "view" }, result);
         }
 
         [Fact]
         public void ParseCsv_TrimsWhitespaceAndDropsEmpties()
         {
-            var result = BimwrightConfig.ParseCsv(" query ,, view ,");
+            var result = RvtMcpConfig.ParseCsv(" query ,, view ,");
             Assert.Equal(new[] { "query", "view" }, result);
         }
 
@@ -58,24 +58,24 @@ namespace Bimwright.Rvt.Tests
         [Fact]
         public void ApplyCliArgs_StringArgConsumesNext()
         {
-            var config = new BimwrightConfig();
-            BimwrightConfig.ApplyCliArgs(config, new[] { "--target", "R25" });
+            var config = new RvtMcpConfig();
+            RvtMcpConfig.ApplyCliArgs(config, new[] { "--target", "R25" });
             Assert.Equal("R25", config.Target);
         }
 
         [Fact]
         public void ApplyCliArgs_ToolsetsParsedAsCsv()
         {
-            var config = new BimwrightConfig();
-            BimwrightConfig.ApplyCliArgs(config, new[] { "--toolsets", "query,view" });
+            var config = new RvtMcpConfig();
+            RvtMcpConfig.ApplyCliArgs(config, new[] { "--toolsets", "query,view" });
             Assert.Equal(new[] { "query", "view" }, config.Toolsets);
         }
 
         [Fact]
         public void ApplyCliArgs_BooleanFlagsSetTrue()
         {
-            var config = new BimwrightConfig();
-            BimwrightConfig.ApplyCliArgs(config,
+            var config = new RvtMcpConfig();
+            RvtMcpConfig.ApplyCliArgs(config,
                 new[]
                 {
                     "--read-only",
@@ -94,20 +94,20 @@ namespace Bimwright.Rvt.Tests
         [Fact]
         public void ApplyCliArgs_DisableToolbakerSetsFalse()
         {
-            var config = new BimwrightConfig();
-            BimwrightConfig.ApplyCliArgs(config, new[] { "--disable-toolbaker" });
+            var config = new RvtMcpConfig();
+            RvtMcpConfig.ApplyCliArgs(config, new[] { "--disable-toolbaker" });
             Assert.False(config.EnableToolbaker);
         }
 
         [Fact]
         public void ApplyCliArgs_AdaptiveBakeDisableFlagsSetFalse()
         {
-            var config = new BimwrightConfig
+            var config = new RvtMcpConfig
             {
                 EnableAdaptiveBake = true,
                 CacheSendCodeBodies = true,
             };
-            BimwrightConfig.ApplyCliArgs(config, new[] { "--disable-adaptive-bake", "--no-cache-send-code-bodies" });
+            RvtMcpConfig.ApplyCliArgs(config, new[] { "--disable-adaptive-bake", "--no-cache-send-code-bodies" });
             Assert.False(config.EnableAdaptiveBake);
             Assert.False(config.CacheSendCodeBodies);
         }
@@ -115,8 +115,8 @@ namespace Bimwright.Rvt.Tests
         [Fact]
         public void ApplyCliArgs_UnknownFlagsIgnored()
         {
-            var config = new BimwrightConfig();
-            BimwrightConfig.ApplyCliArgs(config, new[] { "--weird-flag", "positional" });
+            var config = new RvtMcpConfig();
+            RvtMcpConfig.ApplyCliArgs(config, new[] { "--weird-flag", "positional" });
             Assert.Null(config.Target);
             Assert.Null(config.ReadOnly);
         }
@@ -126,16 +126,16 @@ namespace Bimwright.Rvt.Tests
         [Fact]
         public void ApplyEnvVars_AllFieldsPopulated()
         {
-            var config = new BimwrightConfig();
-            BimwrightConfig.ApplyEnvVars(config, EnvLookup(new Dictionary<string, string>
+            var config = new RvtMcpConfig();
+            RvtMcpConfig.ApplyEnvVars(config, EnvLookup(new Dictionary<string, string>
             {
-                [BimwrightConfig.EnvTarget] = "R27",
-                [BimwrightConfig.EnvToolsets] = "query,create",
-                [BimwrightConfig.EnvReadOnly] = "true",
-                [BimwrightConfig.EnvAllowLanBind] = "1",
-                [BimwrightConfig.EnvEnableToolbaker] = "false",
-                [BimwrightConfig.EnvEnableAdaptiveBake] = "true",
-                [BimwrightConfig.EnvCacheSendCodeBodies] = "1",
+                [RvtMcpConfig.EnvTarget] = "R27",
+                [RvtMcpConfig.EnvToolsets] = "query,create",
+                [RvtMcpConfig.EnvReadOnly] = "true",
+                [RvtMcpConfig.EnvAllowLanBind] = "1",
+                [RvtMcpConfig.EnvEnableToolbaker] = "false",
+                [RvtMcpConfig.EnvEnableAdaptiveBake] = "true",
+                [RvtMcpConfig.EnvCacheSendCodeBodies] = "1",
             }));
             Assert.Equal("R27", config.Target);
             Assert.Equal(new[] { "query", "create" }, config.Toolsets);
@@ -149,8 +149,8 @@ namespace Bimwright.Rvt.Tests
         [Fact]
         public void ApplyEnvVars_UnsetVarsLeaveFieldUnchanged()
         {
-            var config = new BimwrightConfig { Target = "R23" };
-            BimwrightConfig.ApplyEnvVars(config, EnvLookup(new Dictionary<string, string>()));
+            var config = new RvtMcpConfig { Target = "R23" };
+            RvtMcpConfig.ApplyEnvVars(config, EnvLookup(new Dictionary<string, string>()));
             Assert.Equal("R23", config.Target);
             Assert.Null(config.ReadOnly);
         }
@@ -160,7 +160,7 @@ namespace Bimwright.Rvt.Tests
         [Fact]
         public void LoadFromJsonFile_MissingFile_ReturnsNull()
         {
-            var result = BimwrightConfig.LoadFromJsonFile(Path.Combine(Path.GetTempPath(), "definitely-missing.json"));
+            var result = RvtMcpConfig.LoadFromJsonFile(Path.Combine(Path.GetTempPath(), "definitely-missing.json"));
             Assert.Null(result);
         }
 
@@ -171,7 +171,7 @@ namespace Bimwright.Rvt.Tests
             try
             {
                 File.WriteAllText(path, "{not-valid-json");
-                Assert.Null(BimwrightConfig.LoadFromJsonFile(path));
+                Assert.Null(RvtMcpConfig.LoadFromJsonFile(path));
             }
             finally { File.Delete(path); }
         }
@@ -190,7 +190,7 @@ namespace Bimwright.Rvt.Tests
                     ""enableAdaptiveBake"":true,
                     ""cacheSendCodeBodies"":true
                 }");
-                var config = BimwrightConfig.LoadFromJsonFile(path);
+                var config = RvtMcpConfig.LoadFromJsonFile(path);
                 Assert.NotNull(config);
                 Assert.Equal("R24", config.Target);
                 Assert.Equal(new[] { "query", "view" }, config.Toolsets);
@@ -215,13 +215,13 @@ namespace Bimwright.Rvt.Tests
 
                 var env = EnvLookup(new Dictionary<string, string>
                 {
-                    [BimwrightConfig.EnvTarget]    = "R25",
-                    [BimwrightConfig.EnvReadOnly]  = "true",
+                    [RvtMcpConfig.EnvTarget]    = "R25",
+                    [RvtMcpConfig.EnvReadOnly]  = "true",
                 });
 
                 var cli = new[] { "--target", "R27" }; // CLI only overrides target
 
-                var config = BimwrightConfig.Load(cli, path, env);
+                var config = RvtMcpConfig.Load(cli, path, env);
 
                 Assert.Equal("R27", config.Target);   // CLI wins
                 Assert.True(config.ReadOnly);          // env wins (CLI didn't set)
@@ -236,7 +236,7 @@ namespace Bimwright.Rvt.Tests
             try
             {
                 File.WriteAllText(path, @"{""target"":""R24""}");
-                var config = BimwrightConfig.Load(args: null, configFilePath: path, envLookup: EnvLookup(new Dictionary<string, string>()));
+                var config = RvtMcpConfig.Load(args: null, configFilePath: path, envLookup: EnvLookup(new Dictionary<string, string>()));
                 Assert.Equal("R24", config.Target);
             }
             finally { File.Delete(path); }
@@ -245,7 +245,7 @@ namespace Bimwright.Rvt.Tests
         [Fact]
         public void Load_NoSourcesAtAll_ReturnsDefaults()
         {
-            var config = BimwrightConfig.Load(
+            var config = RvtMcpConfig.Load(
                 args: System.Array.Empty<string>(),
                 configFilePath: Path.Combine(Path.GetTempPath(), "never-exists.json"),
                 envLookup: EnvLookup(new Dictionary<string, string>()));
@@ -263,7 +263,7 @@ namespace Bimwright.Rvt.Tests
         [Fact]
         public void OrDefault_UnsetFieldsFallToCodeDefaults()
         {
-            var config = new BimwrightConfig();
+            var config = new RvtMcpConfig();
             Assert.False(config.ReadOnlyOrDefault);
             Assert.False(config.AllowLanBindOrDefault);
             Assert.True(config.EnableToolbakerOrDefault);
@@ -274,7 +274,7 @@ namespace Bimwright.Rvt.Tests
         [Fact]
         public void OrDefault_ExplicitValuesWinOverDefaults()
         {
-            var config = new BimwrightConfig
+            var config = new RvtMcpConfig
             {
                 ReadOnly = true,
                 AllowLanBind = true,

@@ -6,7 +6,7 @@ using System.Text;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Bimwright.Rvt.Tests.Helpers
+namespace RvtMcp.Tests.Helpers
 {
     public static class SnapshotSerializer
     {

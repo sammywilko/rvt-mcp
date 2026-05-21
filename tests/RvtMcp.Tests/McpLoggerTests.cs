@@ -1,11 +1,11 @@
-using Bimwright.Rvt.Plugin;
+using RvtMcp.Plugin;
 using System;
 using System.IO;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Xunit;
 
-namespace Bimwright.Rvt.Tests
+namespace RvtMcp.Tests
 {
     public class McpLoggerTests
     {

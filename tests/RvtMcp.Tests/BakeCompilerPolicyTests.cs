@@ -1,11 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Bimwright.Rvt.Plugin.ToolBaker;
+using RvtMcp.Plugin.ToolBaker;
 using Microsoft.CodeAnalysis;
 using Xunit;
 
-namespace Bimwright.Rvt.Tests
+namespace RvtMcp.Tests
 {
     public class BakeCompilerPolicyTests
     {
@@ -87,7 +87,7 @@ public class BakedTool_net
         public void Validate_RejectsToolBakerRegistryEscape()
         {
             var result = ValidateSource(@"
-using Bimwright.Rvt.Plugin.ToolBaker;
+using RvtMcp.Plugin.ToolBaker;
 public class BakedTool_registry_escape
 {
     public object Run()
@@ -97,20 +97,20 @@ public class BakedTool_registry_escape
     }
 }");
 
-            AssertDenied(result, "Bimwright.Rvt.Plugin.ToolBaker");
+            AssertDenied(result, "RvtMcp.Plugin.ToolBaker");
         }
 
         [Fact]
         public void Validate_RejectsHandlerNamespaceEscape()
         {
             var result = ValidateSource(@"
-using Bimwright.Rvt.Plugin.Handlers;
+using RvtMcp.Plugin.Handlers;
 public class BakedTool_handler_escape
 {
     public object Run() { return null; }
 }");
 
-            AssertDenied(result, "Bimwright.Rvt.Plugin.Handlers");
+            AssertDenied(result, "RvtMcp.Plugin.Handlers");
         }
 
         [Theory]
@@ -140,7 +140,7 @@ using System.Collections.Generic;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using Newtonsoft.Json.Linq;
-using Bimwright.Rvt.Plugin;
+using RvtMcp.Plugin;
 
 public class BakedTool_allowed : IRevitCommand
 {
@@ -192,7 +192,7 @@ namespace Autodesk.Revit.UI
     }
 }
 
-namespace Bimwright.Rvt.Plugin
+namespace RvtMcp.Plugin
 {
     public interface IRevitCommand
     {

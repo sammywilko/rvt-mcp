@@ -4,7 +4,7 @@ using System.Linq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Bimwright.Rvt.Server.Bake
+namespace RvtMcp.Server.Bake
 {
     public sealed class ClusterEngine
     {

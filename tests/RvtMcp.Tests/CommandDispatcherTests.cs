@@ -3,7 +3,7 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using Xunit;
 
-namespace Bimwright.Rvt.Tests
+namespace RvtMcp.Tests
 {
     public class CommandDispatcherTests
     {

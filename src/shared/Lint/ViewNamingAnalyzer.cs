@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace Bimwright.Rvt.Plugin.Lint
+namespace RvtMcp.Plugin.Lint
 {
     public static class ViewNamingAnalyzer
     {

@@ -1,9 +1,9 @@
 using System;
 using Autodesk.Revit.UI;
 using Autodesk.Revit.UI.Events;
-using Bimwright.Rvt.Plugin.Views;
+using RvtMcp.Plugin.Views;
 
-namespace Bimwright.Rvt.Plugin
+namespace RvtMcp.Plugin
 {
     public class App : IExternalApplication
     {
@@ -15,7 +15,7 @@ namespace Bimwright.Rvt.Plugin
         public CommandDispatcher CommandDispatcher => _dispatcher;
         public ToolBaker.BakedToolRegistry BakedToolRegistry { get; private set; }
         public ToolBaker.BakedToolRuntimeCache BakedToolRuntimeCache { get; private set; }
-        public BimwrightConfig Config { get; private set; }
+        public RvtMcpConfig Config { get; private set; }
         public McpEventHandler EventHandler => _handler;
         public ExternalEvent ExternalEvent => _externalEvent;
 
@@ -36,7 +36,7 @@ namespace Bimwright.Rvt.Plugin
 
             McpLogger.Initialize();
             SessionLog = new McpSessionLog();
-            Config = BimwrightConfig.Load(args: null);
+            Config = RvtMcpConfig.Load(args: null);
             DebugLog("OnStartup: McpLogger + SessionLog OK");
 
             BakedToolRuntimeCache = new ToolBaker.BakedToolRuntimeCache();

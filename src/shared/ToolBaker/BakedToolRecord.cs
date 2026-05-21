@@ -1,4 +1,4 @@
-namespace Bimwright.Rvt.Plugin.ToolBaker
+namespace RvtMcp.Plugin.ToolBaker
 {
     public sealed class BakedToolRecord
     {

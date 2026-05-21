@@ -2,7 +2,7 @@ using System;
 using System.IO;
 using Newtonsoft.Json;
 
-namespace Bimwright.Rvt.Server.Memory
+namespace RvtMcp.Server.Memory
 {
     public class JournalLogger
     {

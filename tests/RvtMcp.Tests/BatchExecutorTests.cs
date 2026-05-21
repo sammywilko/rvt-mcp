@@ -1,10 +1,10 @@
 using System;
 using System.Collections.Generic;
-using Bimwright.Rvt.Plugin.Handlers;
+using RvtMcp.Plugin.Handlers;
 using Newtonsoft.Json.Linq;
 using Xunit;
 
-namespace Bimwright.Rvt.Tests
+namespace RvtMcp.Tests
 {
     public class BatchExecutorTests
     {

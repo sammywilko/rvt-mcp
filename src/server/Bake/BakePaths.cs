@@ -1,7 +1,7 @@
 using System;
 using System.IO;
 
-namespace Bimwright.Rvt.Server.Bake
+namespace RvtMcp.Server.Bake
 {
     public sealed class BakePaths
     {

@@ -2,14 +2,14 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using Bimwright.Rvt.Plugin;
-using Bimwright.Rvt.Plugin.ToolBaker;
-using Bimwright.Rvt.Server.Bake;
-using Bimwright.Rvt.Server.Handlers;
+using RvtMcp.Plugin;
+using RvtMcp.Plugin.ToolBaker;
+using RvtMcp.Server.Bake;
+using RvtMcp.Server.Handlers;
 using Newtonsoft.Json.Linq;
 using Xunit;
 
-namespace Bimwright.Rvt.Tests
+namespace RvtMcp.Tests
 {
     public class ToolBakerHandlersTests
     {
@@ -368,7 +368,7 @@ namespace Bimwright.Rvt.Tests
             using var db = NewDb(sandbox);
             var logger = new UsageEventLogger(
                 paths,
-                new BimwrightConfig
+                new RvtMcpConfig
                 {
                     EnableAdaptiveBake = true,
                     CacheSendCodeBodies = true
@@ -411,14 +411,14 @@ namespace Bimwright.Rvt.Tests
             using var db = NewDb(sandbox);
             var writer = new UsageEventLogger(
                 paths,
-                new BimwrightConfig { EnableAdaptiveBake = true },
+                new RvtMcpConfig { EnableAdaptiveBake = true },
                 analysisThrottle: TimeSpan.Zero);
             for (var i = 0; i < 15; i++)
             {
                 writer.RecordToolCall("create_level", @"{""elevation"":3000,""name"":""Level 02""}", success: true);
             }
 
-            var restartedLogger = new UsageEventLogger(paths, new BimwrightConfig { EnableAdaptiveBake = true });
+            var restartedLogger = new UsageEventLogger(paths, new RvtMcpConfig { EnableAdaptiveBake = true });
 
             var json = ListBakeSuggestionsHandler.Handle(
                 db,
