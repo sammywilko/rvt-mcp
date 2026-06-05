@@ -474,6 +474,18 @@ pwsh scripts/stage-plugin-zip.ps1 -Config Release
 
 ---
 
+## bimwright 家族
+
+为 AEC 工具链亲手打造的 MCP gateway —— 同一套架构，predictable / auditable / reversible：
+
+- [**rvt-mcp**](https://github.com/bimwright/rvt-mcp) —— Autodesk® Revit®
+- [**dwg-mcp**](https://github.com/bimwright/dwg-mcp) —— Autodesk® AutoCAD®
+- [**nwd-mcp**](https://github.com/bimwright/nwd-mcp) —— Autodesk® Navisworks®
+- [**ipt-mcp**](https://github.com/bimwright/ipt-mcp) —— Autodesk® Inventor®
+- [**bim-wiki**](https://github.com/bimwright/bim-wiki) —— 越南语优先的 BIM 知识库
+
+---
+
 ## License
 
 Apache-2.0。见 [LICENSE](LICENSE)。

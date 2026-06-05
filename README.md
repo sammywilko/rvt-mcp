@@ -497,6 +497,18 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for test strategy, tool-surface snapshot 
 
 ---
 
+## The bimwright family
+
+Hand-forged MCP gateways for the AEC toolchain — one architecture, predictable / auditable / reversible:
+
+- [**rvt-mcp**](https://github.com/bimwright/rvt-mcp) — Autodesk® Revit®
+- [**dwg-mcp**](https://github.com/bimwright/dwg-mcp) — Autodesk® AutoCAD®
+- [**nwd-mcp**](https://github.com/bimwright/nwd-mcp) — Autodesk® Navisworks®
+- [**ipt-mcp**](https://github.com/bimwright/ipt-mcp) — Autodesk® Inventor®
+- [**bim-wiki**](https://github.com/bimwright/bim-wiki) — Vietnamese-first BIM knowledge base
+
+---
+
 ## License
 
 Apache-2.0. See [LICENSE](LICENSE).
