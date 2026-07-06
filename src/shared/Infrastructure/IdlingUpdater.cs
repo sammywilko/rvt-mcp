@@ -9,13 +9,14 @@ namespace RvtMcp.Plugin
         private DateTime _lastUpdate = DateTime.MinValue;
         private bool _lastRunning;
         private int _lastCount;
+        private bool _lastToastEnabled;
 
         public IdlingUpdater(RibbonResult ribbon)
         {
             _ribbon = ribbon;
         }
 
-        public void Update(bool isRunning, ITransportServer transport, McpSessionLog sessionLog)
+        public void Update(bool isRunning, ITransportServer transport, McpSessionLog sessionLog, bool toastEnabled)
         {
             if (_ribbon == null) return;
 
@@ -68,6 +69,25 @@ namespace RvtMcp.Plugin
             {
                 _lastCount = count;
                 _ribbon.HistoryButton.ItemText = $"History ({count})";
+            }
+
+            if (_ribbon.ToastButton != null && toastEnabled != _lastToastEnabled)
+            {
+                _lastToastEnabled = toastEnabled;
+                if (toastEnabled)
+                {
+                    _ribbon.ToastButton.ItemText = "Toast: ON";
+                    _ribbon.ToastButton.LargeImage = IconGenerator.ToastOn32;
+                    _ribbon.ToastButton.Image = IconGenerator.ToastOn16;
+                    _ribbon.ToastButton.ToolTip = "MCP activity toasts enabled\nShows top-left notifications when AI tools run\nClick to disable";
+                }
+                else
+                {
+                    _ribbon.ToastButton.ItemText = "Toast: OFF";
+                    _ribbon.ToastButton.LargeImage = IconGenerator.ToastOff32;
+                    _ribbon.ToastButton.Image = IconGenerator.ToastOff16;
+                    _ribbon.ToastButton.ToolTip = "MCP activity toasts disabled\nClick to enable top-left AI activity notifications";
+                }
             }
         }
     }

@@ -29,6 +29,8 @@ namespace RvtMcp.Plugin
 
         public ObservableCollection<McpCallEntry> Entries { get; } = new ObservableCollection<McpCallEntry>();
 
+        public event Action<McpCallEntry> EntryAdded;
+
         public void Add(McpCallEntry entry)
         {
             ApplyPrivacyPolicy(entry);
@@ -36,6 +38,7 @@ namespace RvtMcp.Plugin
             if (entry.Timestamp == default)
                 entry.Timestamp = DateTime.Now;
             Entries.Add(entry);
+            EntryAdded?.Invoke(entry);
         }
 
         // Legacy overload — kept for backward compatibility until all callers migrate

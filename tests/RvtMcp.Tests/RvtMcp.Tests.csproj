@@ -21,6 +21,11 @@
     <Compile Include="..\..\src\shared\Security\McpResponsePrivacy.cs" Link="Shared\McpResponsePrivacy.cs" />
     <Compile Include="..\..\src\shared\Logging\McpLogger.cs" Link="Shared\McpLogger.cs" />
     <Compile Include="..\..\src\shared\Logging\McpSessionLog.cs" Link="Shared\McpSessionLog.cs" />
+    <Compile Include="..\..\src\shared\Views\Toast\ToolActivityClassifier.cs" Link="Shared\ToolActivityClassifier.cs" />
+    <Compile Include="..\..\src\shared\Views\Toast\ToolNameFormatter.cs" Link="Shared\ToolNameFormatter.cs" />
+    <Compile Include="..\..\src\shared\Views\Toast\ToastContentBuilder.cs" Link="Shared\ToastContentBuilder.cs" />
+    <Compile Include="..\..\src\shared\Views\Toast\McpToastViewModel.cs" Link="Shared\McpToastViewModel.cs" />
+    <Compile Include="..\..\src\shared\Infrastructure\CaptureOutputResolver.cs" Link="Shared\CaptureOutputResolver.cs" />
     <Compile Include="..\..\src\shared\Infrastructure\SchemaValidator.cs" Link="Shared\SchemaValidator.cs" />
     <Compile Include="..\..\src\shared\Infrastructure\ResponseSizeGuard.cs" Link="Shared\ResponseSizeGuard.cs" />
     <Compile Include="..\..\src\shared\Handlers\BatchExecutor.cs" Link="Shared\BatchExecutor.cs" />
@@ -35,7 +40,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\server\RvtMcp.Server.csproj" />
+    <ProjectReference Include="..\..\src\server\RvtMcp.Server.csproj">
+      <AdditionalProperties>UseAppHost=false;OutputPath=$(MSBuildThisFileDirectory)..\server-staging\</AdditionalProperties>
+    </ProjectReference>
   </ItemGroup>
 
   <ItemGroup>

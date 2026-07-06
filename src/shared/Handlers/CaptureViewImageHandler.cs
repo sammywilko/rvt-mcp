@@ -56,23 +56,31 @@ namespace RvtMcp.Plugin.Handlers
             };
             options.SetViewsAndSheets(new List<ElementId> { view.Id });
 
+            string exportError = null;
             try
             {
                 doc.ExportImage(options);
-                var actualPath = FindActualOutput(outputPath, imageFormat);
-
-                return CommandResult.Ok(new
-                {
-                    view_id = RevitCompat.GetId(view.Id),
-                    saved_path = actualPath ?? outputPath,
-                    pixel_size = pixelSize,
-                    image_format = imageFormat
-                });
             }
             catch (Exception ex)
             {
-                return CommandResult.Fail($"ExportImage failed: {ex.Message}");
+                exportError = ex.Message;
             }
+
+            var actualPath = CaptureOutputResolver.FindActualOutput(outputPath, imageFormat);
+            if (actualPath == null)
+            {
+                if (!string.IsNullOrEmpty(exportError))
+                    return CommandResult.Fail($"ExportImage failed: {exportError}");
+                return CommandResult.Fail("ExportImage completed but output file was not found.");
+            }
+
+            return CommandResult.Ok(new
+            {
+                view_id = RevitCompat.GetId(view.Id),
+                saved_path = actualPath,
+                pixel_size = pixelSize,
+                image_format = imageFormat
+            });
         }
 
         private static string ValidateOutputPath(string path)
@@ -101,17 +109,6 @@ namespace RvtMcp.Plugin.Handlers
             {
                 return $"Invalid output_path: {ex.Message}";
             }
-        }
-
-        private static string FindActualOutput(string requestedPath, string format)
-        {
-            var directory = Path.GetDirectoryName(requestedPath);
-            if (string.IsNullOrWhiteSpace(directory) || !Directory.Exists(directory)) return null;
-
-            var baseName = Path.GetFileNameWithoutExtension(requestedPath);
-            var extension = format == "jpeg" ? "jpg" : format;
-            var candidates = Directory.GetFiles(directory, baseName + "*." + extension);
-            return candidates.Length > 0 ? candidates[0] : null;
         }
     }
 }

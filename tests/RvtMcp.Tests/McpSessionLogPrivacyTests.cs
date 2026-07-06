@@ -3,6 +3,9 @@ using Xunit;
 
 namespace RvtMcp.Tests
 {
+    // Shares the mutable static McpSessionLog.ConfigLoader with McpSessionLogEventTests;
+    // same collection => xUnit runs them sequentially, preventing a cross-class race.
+    [Collection("McpSessionLogConfig")]
     public class McpSessionLogPrivacyTests
     {
         [Fact]

@@ -136,6 +136,7 @@ namespace RvtMcp.Tests
                 [RvtMcpConfig.EnvEnableToolbaker] = "false",
                 [RvtMcpConfig.EnvEnableAdaptiveBake] = "true",
                 [RvtMcpConfig.EnvCacheSendCodeBodies] = "1",
+                [RvtMcpConfig.EnvEnableToast] = "true",
             }));
             Assert.Equal("2027", config.Target);
             Assert.Equal(new[] { "query", "create" }, config.Toolsets);
@@ -144,6 +145,7 @@ namespace RvtMcp.Tests
             Assert.False(config.EnableToolbaker);
             Assert.True(config.EnableAdaptiveBake);
             Assert.True(config.CacheSendCodeBodies);
+            Assert.True(config.EnableToast);
         }
 
         [Fact]
@@ -256,6 +258,7 @@ namespace RvtMcp.Tests
             Assert.True(config.EnableToolbakerOrDefault); // default ON per aspect #5
             Assert.False(config.EnableAdaptiveBakeOrDefault);
             Assert.False(config.CacheSendCodeBodiesOrDefault);
+            Assert.False(config.EnableToastOrDefault);
         }
 
         // --- OrDefault accessors ------------------------------------------
@@ -269,6 +272,7 @@ namespace RvtMcp.Tests
             Assert.True(config.EnableToolbakerOrDefault);
             Assert.False(config.EnableAdaptiveBakeOrDefault);
             Assert.False(config.CacheSendCodeBodiesOrDefault);
+            Assert.False(config.EnableToastOrDefault);
         }
 
         [Fact]
@@ -281,12 +285,14 @@ namespace RvtMcp.Tests
                 EnableToolbaker = false,
                 EnableAdaptiveBake = true,
                 CacheSendCodeBodies = true,
+                EnableToast = true,
             };
             Assert.True(config.ReadOnlyOrDefault);
             Assert.True(config.AllowLanBindOrDefault);
             Assert.False(config.EnableToolbakerOrDefault);
             Assert.True(config.EnableAdaptiveBakeOrDefault);
             Assert.True(config.CacheSendCodeBodiesOrDefault);
+            Assert.True(config.EnableToastOrDefault);
         }
     }
 }

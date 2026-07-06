@@ -2,6 +2,7 @@ using System;
 using Autodesk.Revit.UI;
 using Autodesk.Revit.UI.Events;
 using RvtMcp.Plugin.Views;
+using RvtMcp.Plugin.Views.Toast;
 
 namespace RvtMcp.Plugin
 {
@@ -18,6 +19,8 @@ namespace RvtMcp.Plugin
         public RvtMcpConfig Config { get; private set; }
         public McpEventHandler EventHandler => _handler;
         public ExternalEvent ExternalEvent => _externalEvent;
+        public bool ToastEnabled { get; set; }
+        public McpToastNotifier ToastNotifier { get; private set; }
 
         private McpEventHandler _handler;
         private ExternalEvent _externalEvent;
@@ -37,6 +40,7 @@ namespace RvtMcp.Plugin
             LegacyDataMigration.MigrateOnce();
             SessionLog = new McpSessionLog();
             Config = RvtMcpConfig.Load(args: null);
+            ToastEnabled = Config.EnableToastOrDefault;
             DebugLog("OnStartup: McpLogger + SessionLog OK");
 
             BakedToolRuntimeCache = new ToolBaker.BakedToolRuntimeCache();
@@ -44,7 +48,9 @@ namespace RvtMcp.Plugin
             BakedToolRegistry = new ToolBaker.BakedToolRegistry();
             _dispatcher.LoadBakedTools(BakedToolRegistry);
             DebugLog("OnStartup: BakedToolRegistry loaded");
-            _handler = new McpEventHandler(_dispatcher, SessionLog);
+            var toastHost = new McpToastHost();
+            ToastNotifier = new McpToastNotifier(toastHost, () => ToastEnabled);
+            _handler = new McpEventHandler(_dispatcher, SessionLog, ToastNotifier);
             _externalEvent = ExternalEvent.Create(_handler);
             DebugLog("OnStartup: Dispatcher + EventHandler + ExternalEvent OK");
 
@@ -69,6 +75,7 @@ namespace RvtMcp.Plugin
 
             StopTransport();
             _handler?.CancelAll();
+            ToastNotifier?.Shutdown();
             _externalEvent?.Dispose();
 
             Instance = null;
@@ -136,6 +143,20 @@ namespace RvtMcp.Plugin
             _bakeInboxWindow.ShowOrFocus();
         }
 
+        public void CaptureMainWindowHandle(IntPtr hwnd)
+        {
+            if (hwnd == IntPtr.Zero)
+                return;
+            ToastNotifier?.SetOwnerHandle(hwnd);
+            try
+            {
+                var dispatcher = System.Windows.Application.Current?.Dispatcher
+                    ?? System.Windows.Threading.Dispatcher.CurrentDispatcher;
+                ToastNotifier?.SetHostDispatcher(dispatcher);
+            }
+            catch { }
+        }
+
         public void RefreshBakedRibbonButtons()
         {
             if (Config?.EnableAdaptiveBakeOrDefault == true && _ribbonApplication != null)
@@ -144,7 +165,7 @@ namespace RvtMcp.Plugin
 
         private void OnIdling(object sender, IdlingEventArgs e)
         {
-            _idlingUpdater?.Update(IsTransportRunning, Transport, SessionLog);
+            _idlingUpdater?.Update(IsTransportRunning, Transport, SessionLog, ToastEnabled);
         }
 
         internal static void DebugLog(string message)

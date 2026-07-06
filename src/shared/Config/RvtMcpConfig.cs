@@ -26,12 +26,14 @@ namespace RvtMcp.Plugin
         public const string EnvEnableToolbaker     = "BIMWRIGHT_ENABLE_TOOLBAKER";
         public const string EnvEnableAdaptiveBake  = "BIMWRIGHT_ENABLE_ADAPTIVE_BAKE";
         public const string EnvCacheSendCodeBodies = "BIMWRIGHT_CACHE_SEND_CODE_BODIES";
+        public const string EnvEnableToast         = "BIMWRIGHT_ENABLE_TOAST";
 
         public const bool DefaultReadOnly            = false;
         public const bool DefaultAllowLanBind        = false;
         public const bool DefaultEnableToolbaker     = true;
         public const bool DefaultEnableAdaptiveBake  = false;
         public const bool DefaultCacheSendCodeBodies = false;
+        public const bool DefaultEnableToast         = false;
 
         [JsonProperty("target")]
         public string Target { get; set; }
@@ -54,11 +56,15 @@ namespace RvtMcp.Plugin
         [JsonProperty("cacheSendCodeBodies")]
         public bool? CacheSendCodeBodies { get; set; }
 
+        [JsonProperty("enableToast")]
+        public bool? EnableToast { get; set; }
+
         public bool ReadOnlyOrDefault              => ReadOnly           ?? DefaultReadOnly;
         public bool AllowLanBindOrDefault          => AllowLanBind       ?? DefaultAllowLanBind;
         public bool EnableToolbakerOrDefault       => EnableToolbaker    ?? DefaultEnableToolbaker;
         public bool EnableAdaptiveBakeOrDefault    => EnableAdaptiveBake ?? DefaultEnableAdaptiveBake;
         public bool CacheSendCodeBodiesOrDefault  => CacheSendCodeBodies ?? DefaultCacheSendCodeBodies;
+        public bool EnableToastOrDefault          => EnableToast       ?? DefaultEnableToast;
 
         public static string DefaultConfigFilePath =>
             Path.Combine(
@@ -127,6 +133,9 @@ namespace RvtMcp.Plugin
 
             var cacheBodies = ParseBool(lookup(EnvCacheSendCodeBodies));
             if (cacheBodies.HasValue) config.CacheSendCodeBodies = cacheBodies;
+
+            var enableToast = ParseBool(lookup(EnvEnableToast));
+            if (enableToast.HasValue) config.EnableToast = enableToast;
         }
 
         internal static void ApplyCliArgs(RvtMcpConfig config, string[] args)

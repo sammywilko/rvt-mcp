@@ -7,6 +7,8 @@ using Autodesk.Revit.UI;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
+using RvtMcp.Plugin.Views.Toast;
+
 namespace RvtMcp.Plugin
 {
     public class PendingRequest
@@ -22,11 +24,13 @@ namespace RvtMcp.Plugin
         private readonly ConcurrentQueue<PendingRequest> _queue = new ConcurrentQueue<PendingRequest>();
         private readonly CommandDispatcher _dispatcher;
         private readonly McpSessionLog _sessionLog;
+        private readonly McpToastNotifier _toastNotifier;
 
-        public McpEventHandler(CommandDispatcher dispatcher, McpSessionLog sessionLog)
+        public McpEventHandler(CommandDispatcher dispatcher, McpSessionLog sessionLog, McpToastNotifier toastNotifier = null)
         {
             _dispatcher = dispatcher;
             _sessionLog = sessionLog;
+            _toastNotifier = toastNotifier;
         }
 
         public void Enqueue(PendingRequest request)
@@ -36,6 +40,8 @@ namespace RvtMcp.Plugin
 
         public void Execute(UIApplication app)
         {
+            App.Instance?.CaptureMainWindowHandle(app.MainWindowHandle);
+
             while (_queue.TryDequeue(out var request))
             {
                 // Stale command guard: skip if TCS already completed (timeout/cancel)
@@ -68,6 +74,21 @@ namespace RvtMcp.Plugin
                             error = unknownError
                         });
                         request.Tcs.TrySetResult(errorResponse);
+                        try
+                        {
+                            _toastNotifier?.OnCompleted(
+                                request.CommandName,
+                                request.ParamsJson,
+                                null,
+                                false,
+                                unknownError,
+                                sw.ElapsedMilliseconds,
+                                null);
+                        }
+                        catch (Exception toastEx)
+                        {
+                            App.DebugLog("McpToastNotifier.OnCompleted failed (unknown command): " + toastEx.Message);
+                        }
                         continue;
                     }
 
@@ -98,6 +119,21 @@ namespace RvtMcp.Plugin
                             hint = validation.Hint
                         });
                         request.Tcs.TrySetResult(validationResponse);
+                        try
+                        {
+                            _toastNotifier?.OnCompleted(
+                                request.CommandName,
+                                request.ParamsJson,
+                                null,
+                                false,
+                                validationError,
+                                sw.ElapsedMilliseconds,
+                                command.Description);
+                        }
+                        catch (Exception toastEx)
+                        {
+                            App.DebugLog("McpToastNotifier.OnCompleted failed (validation): " + toastEx.Message);
+                        }
                         continue;
                     }
 
@@ -164,6 +200,21 @@ namespace RvtMcp.Plugin
                     }
 
                     request.Tcs.TrySetResult(response);
+                    try
+                    {
+                        _toastNotifier?.OnCompleted(
+                            request.CommandName,
+                            request.ParamsJson,
+                            resultJson,
+                            result.Success,
+                            resultError,
+                            sw.ElapsedMilliseconds,
+                            command.Description);
+                    }
+                    catch (Exception toastEx)
+                    {
+                        App.DebugLog("McpToastNotifier.OnCompleted failed (success path): " + toastEx.Message);
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -188,6 +239,21 @@ namespace RvtMcp.Plugin
                         error = exError
                     });
                     request.Tcs.TrySetResult(errorResponse);
+                    try
+                    {
+                        _toastNotifier?.OnCompleted(
+                            request.CommandName,
+                            request.ParamsJson,
+                            null,
+                            false,
+                            exError,
+                            sw.ElapsedMilliseconds,
+                            null);
+                    }
+                    catch (Exception toastEx)
+                    {
+                        App.DebugLog("McpToastNotifier.OnCompleted failed (exception path): " + toastEx.Message);
+                    }
                 }
             }
         }
