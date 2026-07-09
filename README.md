@@ -465,8 +465,10 @@ Three layers, later wins: JSON file, then env vars, then CLI args.
 | Allow ToolBaker tools | `--enable-toolbaker` / `--disable-toolbaker` | `BIMWRIGHT_ENABLE_TOOLBAKER` | `enableToolbaker` |
 | Enable adaptive bake suggestions | `--enable-adaptive-bake` / `--disable-adaptive-bake` | `BIMWRIGHT_ENABLE_ADAPTIVE_BAKE=1` | `enableAdaptiveBake` |
 | Cache send-code bodies | `--cache-send-code-bodies` / `--no-cache-send-code-bodies` | `BIMWRIGHT_CACHE_SEND_CODE_BODIES=1` | `cacheSendCodeBodies` |
+| Persist send-code bodies | `--persist-send-code-bodies` / `--no-persist-send-code-bodies` | `BIMWRIGHT_PERSIST_SEND_CODE_BODIES=1` | `persistSendCodeBodies` |
+| Persist send-code bodies TTL | `--persist-send-code-bodies-for <ttl>` | `BIMWRIGHT_PERSIST_SEND_CODE_BODIES_TTL` | `persistSendCodeBodiesUntil` |
 
-JSON file path: `%LOCALAPPDATA%\RvtMcp\bimwright.config.json`.
+JSON file path: `%LOCALAPPDATA%\RvtMcp\rvtmcp.config.json`.
 
 ---
 

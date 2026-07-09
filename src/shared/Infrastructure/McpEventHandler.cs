@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Threading;
@@ -168,6 +168,8 @@ namespace RvtMcp.Plugin
                     McpLogger.Log(request.CommandName, request.ParamsJson, result.Success,
                                   sw.ElapsedMilliseconds, resultError, codeSnippet, resultJson);
 
+                    SendCodeJournalGate.OnSendCodeLogged(request.CommandName, request.ParamsJson, codeSnippet, result.Success, sw.ElapsedMilliseconds, resultError, resultJson);
+
                     _sessionLog?.Add(new McpCallEntry
                     {
                         ToolName = request.CommandName,
@@ -202,10 +204,11 @@ namespace RvtMcp.Plugin
                     request.Tcs.TrySetResult(response);
                     try
                     {
+                        // Use redacted payload (same policy as session log) — never raw result.Data.
                         _toastNotifier?.OnCompleted(
                             request.CommandName,
                             request.ParamsJson,
-                            resultJson,
+                            responseResultJson,
                             result.Success,
                             resultError,
                             sw.ElapsedMilliseconds,
@@ -222,6 +225,15 @@ namespace RvtMcp.Plugin
                     var exError = McpResponsePrivacy.RedactErrorForResponse(ex.Message);
                     McpLogger.Log(request.CommandName, request.ParamsJson, false,
                                   sw.ElapsedMilliseconds, exError);
+
+                    string codeSnippetEx = null;
+                    if (request.CommandName == "send_code_to_revit")
+                    {
+                        try { codeSnippetEx = JObject.Parse(request.ParamsJson)?.Value<string>("code"); }
+                        catch { }
+                    }
+                    SendCodeJournalGate.OnSendCodeLogged(request.CommandName, request.ParamsJson, codeSnippetEx, false, sw.ElapsedMilliseconds, exError, null);
+
                     _sessionLog?.Add(new McpCallEntry
                     {
                         ToolName = request.CommandName,

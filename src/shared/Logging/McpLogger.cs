@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -9,6 +9,7 @@ namespace RvtMcp.Plugin
     {
         private static string _logPath;
         private static string _sessionId;
+        public static string CurrentSessionId => _sessionId;
         private const int LogVersion = 5;
         private const long MaxFileSize = 5 * 1024 * 1024; // 5MB
         internal static string LocalAppDataOverride { get; set; }

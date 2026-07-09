@@ -1,4 +1,4 @@
-﻿# Adaptive Bake
+# Adaptive Bake
 
 Adaptive bake turns repeated local Revit workflows into personal tools only after explicit opt-in and acceptance. It is off by default.
 
@@ -19,7 +19,7 @@ Or set JSON config:
 }
 ```
 
-Config path: `%LOCALAPPDATA%\RvtMcp\bimwright.config.json`.
+Config path: `%LOCALAPPDATA%\RvtMcp\rvtmcp.config.json`.
 
 `BIMWRIGHT_ENABLE_ADAPTIVE_BAKE=1` takes effect at the next MCP server start. If you change the flag while a Claude Code session is active, restart the MCP connection with disconnect -> reconnect via `/mcp` so `list_bake_suggestions`, `accept_bake_suggestion`, and `dismiss_bake_suggestion` appear.
 
@@ -44,6 +44,31 @@ Or set JSON config:
 ```
 
 Even with code caching enabled, long-lived journals and usage logs store redacted or hashed content. Code samples used for cluster-A condensation are redacted before any naming or condensation step.
+
+## Optional send_code body journal (TTL)
+
+For local improvement and troubleshooting, you can opt-in to logging raw `send_code_to_revit` bodies into a TTL-bounded journal. This is independent of `cacheSendCodeBodies`.
+
+Enable this by setting JSON config fields:
+```json
+{
+  "persistSendCodeBodies": true,
+  "persistSendCodeBodiesUntil": "2026-07-09T18:00:00Z"
+}
+```
+Or via CLI:
+```powershell
+rvt-mcp --persist-send-code-bodies
+rvt-mcp --persist-send-code-bodies-for 4h
+```
+
+**Key Policies:**
+- **Default Privacy:** No journal writes occur unless `persistSendCodeBodies` is `true` AND `persistSendCodeBodiesUntil` is a valid UTC date in the future.
+- **TTL bounds:** Min 1 hour, default 4 hours, max 2 days. The CLI/Env clamps values automatically.
+- **Journal file:** written to `%LOCALAPPDATA%\RvtMcp\send-code-journal.jsonl`.
+- **Rotation:** rotates at ~5MB.
+- **Retention:** deleted automatically 7 days after the persist window expires or is disabled.
+- **Redaction:** `BakeRedactor.RedactForBake` (redacts local paths, UNC paths, and sensitive tokens) is applied to the persisted code.
 
 ## Local Storage
 

@@ -7,6 +7,7 @@ using Xunit;
 
 namespace RvtMcp.Tests
 {
+    [Collection("Sequential")]
     public class McpLoggerTests
     {
         [Fact]

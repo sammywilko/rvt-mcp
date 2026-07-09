@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using Newtonsoft.Json;
@@ -19,21 +19,24 @@ namespace RvtMcp.Plugin
     /// </summary>
     public class RvtMcpConfig
     {
-        public const string EnvTarget              = "BIMWRIGHT_TARGET";
-        public const string EnvToolsets            = "BIMWRIGHT_TOOLSETS";
-        public const string EnvReadOnly            = "BIMWRIGHT_READ_ONLY";
-        public const string EnvAllowLanBind        = "BIMWRIGHT_ALLOW_LAN_BIND";
-        public const string EnvEnableToolbaker     = "BIMWRIGHT_ENABLE_TOOLBAKER";
-        public const string EnvEnableAdaptiveBake  = "BIMWRIGHT_ENABLE_ADAPTIVE_BAKE";
-        public const string EnvCacheSendCodeBodies = "BIMWRIGHT_CACHE_SEND_CODE_BODIES";
-        public const string EnvEnableToast         = "BIMWRIGHT_ENABLE_TOAST";
+        public const string EnvTarget                    = "BIMWRIGHT_TARGET";
+        public const string EnvToolsets                  = "BIMWRIGHT_TOOLSETS";
+        public const string EnvReadOnly                  = "BIMWRIGHT_READ_ONLY";
+        public const string EnvAllowLanBind              = "BIMWRIGHT_ALLOW_LAN_BIND";
+        public const string EnvEnableToolbaker           = "BIMWRIGHT_ENABLE_TOOLBAKER";
+        public const string EnvEnableAdaptiveBake        = "BIMWRIGHT_ENABLE_ADAPTIVE_BAKE";
+        public const string EnvCacheSendCodeBodies       = "BIMWRIGHT_CACHE_SEND_CODE_BODIES";
+        public const string EnvEnableToast               = "BIMWRIGHT_ENABLE_TOAST";
+        public const string EnvPersistSendCodeBodies     = "BIMWRIGHT_PERSIST_SEND_CODE_BODIES";
+        public const string EnvPersistSendCodeBodiesTtl  = "BIMWRIGHT_PERSIST_SEND_CODE_BODIES_TTL";
 
-        public const bool DefaultReadOnly            = false;
-        public const bool DefaultAllowLanBind        = false;
-        public const bool DefaultEnableToolbaker     = true;
-        public const bool DefaultEnableAdaptiveBake  = false;
-        public const bool DefaultCacheSendCodeBodies = false;
-        public const bool DefaultEnableToast         = false;
+        public const bool DefaultReadOnly                  = false;
+        public const bool DefaultAllowLanBind              = false;
+        public const bool DefaultEnableToolbaker           = true;
+        public const bool DefaultEnableAdaptiveBake        = false;
+        public const bool DefaultCacheSendCodeBodies       = false;
+        public const bool DefaultEnableToast               = false;
+        public const bool DefaultPersistSendCodeBodies     = false;
 
         [JsonProperty("target")]
         public string Target { get; set; }
@@ -59,12 +62,26 @@ namespace RvtMcp.Plugin
         [JsonProperty("enableToast")]
         public bool? EnableToast { get; set; }
 
+        [JsonProperty("persistSendCodeBodies")]
+        public bool? PersistSendCodeBodies { get; set; }
+
+        [JsonProperty("persistSendCodeBodiesUntil")]
+        public string PersistSendCodeBodiesUntil { get; set; }
+
         public bool ReadOnlyOrDefault              => ReadOnly           ?? DefaultReadOnly;
         public bool AllowLanBindOrDefault          => AllowLanBind       ?? DefaultAllowLanBind;
         public bool EnableToolbakerOrDefault       => EnableToolbaker    ?? DefaultEnableToolbaker;
         public bool EnableAdaptiveBakeOrDefault    => EnableAdaptiveBake ?? DefaultEnableAdaptiveBake;
         public bool CacheSendCodeBodiesOrDefault  => CacheSendCodeBodies ?? DefaultCacheSendCodeBodies;
         public bool EnableToastOrDefault          => EnableToast       ?? DefaultEnableToast;
+
+        public bool IsPersistSendCodeBodiesActive(DateTimeOffset? now = null)
+        {
+            if (PersistSendCodeBodies != true) return false;
+            if (!DateTimeOffset.TryParse(PersistSendCodeBodiesUntil, out var until)) return false;
+            until = until.ToUniversalTime();
+            return (now ?? DateTimeOffset.UtcNow) < until;
+        }
 
         public static string DefaultConfigFilePath =>
             Path.Combine(
@@ -84,10 +101,26 @@ namespace RvtMcp.Plugin
 
         internal static RvtMcpConfig Load(string[] args, string configFilePath, Func<string, string> envLookup)
         {
-            var config = LoadFromJsonFile(configFilePath ?? DefaultConfigFilePath)
+            var path = configFilePath ?? DefaultConfigFilePath;
+            var config = LoadFromJsonFile(path)
                          ?? new RvtMcpConfig();
-            ApplyEnvVars(config, envLookup);
-            if (args != null) ApplyCliArgs(config, args);
+
+            // Check expiry on Load
+            if (config.PersistSendCodeBodies == true)
+            {
+                var utcNow = DateTimeOffset.UtcNow;
+                if (string.IsNullOrEmpty(config.PersistSendCodeBodiesUntil)
+                    || !DateTimeOffset.TryParse(config.PersistSendCodeBodiesUntil, out var until)
+                    || utcNow >= until.ToUniversalTime())
+                {
+                    config.PersistSendCodeBodies = null;
+                    config.PersistSendCodeBodiesUntil = null;
+                    ClearPersistSendCodeBodies(path);
+                }
+            }
+
+            ApplyEnvVars(config, envLookup, path);
+            if (args != null) ApplyCliArgs(config, args, path);
             return config;
         }
 
@@ -110,6 +143,11 @@ namespace RvtMcp.Plugin
         }
 
         internal static void ApplyEnvVars(RvtMcpConfig config, Func<string, string> lookup = null)
+        {
+            ApplyEnvVars(config, lookup, null);
+        }
+
+        internal static void ApplyEnvVars(RvtMcpConfig config, Func<string, string> lookup, string configFilePath)
         {
             lookup = lookup ?? Environment.GetEnvironmentVariable;
 
@@ -136,9 +174,39 @@ namespace RvtMcp.Plugin
 
             var enableToast = ParseBool(lookup(EnvEnableToast));
             if (enableToast.HasValue) config.EnableToast = enableToast;
+
+            var persistEnv = lookup(EnvPersistSendCodeBodies);
+            if (!string.IsNullOrWhiteSpace(persistEnv))
+            {
+                var val = ParseBool(persistEnv);
+                if (val == true)
+                {
+                    var ttlStr = lookup(EnvPersistSendCodeBodiesTtl);
+                    var ttl = PersistSendCodeTtl.Default;
+                    if (!string.IsNullOrWhiteSpace(ttlStr) && PersistSendCodeTtl.TryParse(ttlStr, out var parsedTtl))
+                    {
+                        ttl = PersistSendCodeTtl.Clamp(parsedTtl);
+                    }
+                    var until = DateTimeOffset.UtcNow.Add(ttl);
+                    config.PersistSendCodeBodies = true;
+                    config.PersistSendCodeBodiesUntil = PersistSendCodeTtl.FormatIsoUntil(until);
+                    SavePersistSendCodeBodies(true, until, configFilePath);
+                }
+                else if (val == false)
+                {
+                    config.PersistSendCodeBodies = false;
+                    config.PersistSendCodeBodiesUntil = null;
+                    ClearPersistSendCodeBodies(configFilePath);
+                }
+            }
         }
 
         internal static void ApplyCliArgs(RvtMcpConfig config, string[] args)
+        {
+            ApplyCliArgs(config, args, null);
+        }
+
+        internal static void ApplyCliArgs(RvtMcpConfig config, string[] args, string configFilePath)
         {
             if (args == null) return;
             for (var i = 0; i < args.Length; i++)
@@ -176,6 +244,35 @@ namespace RvtMcp.Plugin
                     case "--no-cache-send-code-bodies":
                         config.CacheSendCodeBodies = false;
                         break;
+                    case "--persist-send-code-bodies":
+                        {
+                            var ttl = PersistSendCodeTtl.Default;
+                            var until = DateTimeOffset.UtcNow.Add(ttl);
+                            config.PersistSendCodeBodies = true;
+                            config.PersistSendCodeBodiesUntil = PersistSendCodeTtl.FormatIsoUntil(until);
+                            SavePersistSendCodeBodies(true, until, configFilePath);
+                        }
+                        break;
+                    case "--persist-send-code-bodies-for":
+                        if (i + 1 < args.Length)
+                        {
+                            var ttlStr = args[++i];
+                            var ttl = PersistSendCodeTtl.Default;
+                            if (PersistSendCodeTtl.TryParse(ttlStr, out var parsedTtl))
+                            {
+                                ttl = PersistSendCodeTtl.Clamp(parsedTtl);
+                            }
+                            var until = DateTimeOffset.UtcNow.Add(ttl);
+                            config.PersistSendCodeBodies = true;
+                            config.PersistSendCodeBodiesUntil = PersistSendCodeTtl.FormatIsoUntil(until);
+                            SavePersistSendCodeBodies(true, until, configFilePath);
+                        }
+                        break;
+                    case "--no-persist-send-code-bodies":
+                        config.PersistSendCodeBodies = false;
+                        config.PersistSendCodeBodiesUntil = null;
+                        ClearPersistSendCodeBodies(configFilePath);
+                        break;
                 }
             }
         }
@@ -208,6 +305,115 @@ namespace RvtMcp.Plugin
                 if (trimmed.Length > 0) result.Add(trimmed);
             }
             return result;
+        }
+
+        /// <summary>
+        /// Persist only <c>enableToast</c> into the JSON config file, preserving other keys.
+        /// Used by the ribbon toggle so the preference survives Revit restarts.
+        /// </summary>
+        public static void SaveEnableToast(bool enabled, string configFilePath = null)
+        {
+            var path = string.IsNullOrWhiteSpace(configFilePath) ? DefaultConfigFilePath : configFilePath;
+            try
+            {
+                var dir = Path.GetDirectoryName(path);
+                if (!string.IsNullOrEmpty(dir))
+                    Directory.CreateDirectory(dir);
+
+                JObject root;
+                if (File.Exists(path))
+                {
+                    try
+                    {
+                        root = JObject.Parse(File.ReadAllText(path)) ?? new JObject();
+                    }
+                    catch
+                    {
+                        root = new JObject();
+                    }
+                }
+                else
+                {
+                    root = new JObject();
+                }
+
+                root["enableToast"] = enabled;
+                File.WriteAllText(path, root.ToString(Formatting.Indented));
+            }
+            catch
+            {
+                // Best-effort — toggle still works in-memory for this session.
+            }
+        }
+
+        public static void SavePersistSendCodeBodies(bool enabled, DateTimeOffset? untilUtc, string configFilePath = null)
+        {
+            var path = string.IsNullOrWhiteSpace(configFilePath) ? DefaultConfigFilePath : configFilePath;
+            try
+            {
+                var dir = Path.GetDirectoryName(path);
+                if (!string.IsNullOrEmpty(dir))
+                    Directory.CreateDirectory(dir);
+
+                JObject root;
+                if (File.Exists(path))
+                {
+                    try
+                    {
+                        root = JObject.Parse(File.ReadAllText(path)) ?? new JObject();
+                    }
+                    catch
+                    {
+                        root = new JObject();
+                    }
+                }
+                else
+                {
+                    root = new JObject();
+                }
+
+                root["persistSendCodeBodies"] = enabled;
+                if (enabled && untilUtc.HasValue)
+                {
+                    root["persistSendCodeBodiesUntil"] = PersistSendCodeTtl.FormatIsoUntil(untilUtc.Value);
+                }
+                else
+                {
+                    root.Remove("persistSendCodeBodiesUntil");
+                }
+                File.WriteAllText(path, root.ToString(Formatting.Indented));
+            }
+            catch
+            {
+                // Best-effort
+            }
+        }
+
+        public static void ClearPersistSendCodeBodies(string configFilePath = null)
+        {
+            var path = string.IsNullOrWhiteSpace(configFilePath) ? DefaultConfigFilePath : configFilePath;
+            try
+            {
+                if (!File.Exists(path)) return;
+
+                JObject root;
+                try
+                {
+                    root = JObject.Parse(File.ReadAllText(path)) ?? new JObject();
+                }
+                catch
+                {
+                    root = new JObject();
+                }
+
+                root.Remove("persistSendCodeBodies");
+                root.Remove("persistSendCodeBodiesUntil");
+                File.WriteAllText(path, root.ToString(Formatting.Indented));
+            }
+            catch
+            {
+                // Best-effort
+            }
         }
     }
 }
