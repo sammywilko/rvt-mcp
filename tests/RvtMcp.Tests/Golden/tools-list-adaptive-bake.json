@@ -618,7 +618,7 @@
     },
     {
       "name": "revit_capture_view_image",
-      "description_hash": "sha256:f8f7f0eb8598142ac61435c7ee61f5f6feba5291dc4079efc01f0faac29e94e3",
+      "description_hash": "sha256:73d7afb52be35c8648fe58c865fc7e658ca4b0c42ac87274c227cc8b5b29ded3",
       "inputSchema": {
         "properties": {
           "image_format": {
@@ -638,9 +638,7 @@
             "type": "Nullable`1"
           }
         },
-        "required": [
-          "output_path"
-        ],
+        "required": [],
         "type": "object"
       }
     },

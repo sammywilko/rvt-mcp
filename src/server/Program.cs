@@ -1178,9 +1178,9 @@ Tools (prefix revit_<verb>_<noun>, lengths in mm):
             catch (Exception ex) { return $"Error: {ex.Message}"; }
         }
 
-        [McpServerTool(Name = "revit_capture_view_image"), System.ComponentModel.Description("Export a view to a raster image. output_path must be absolute and inside %TEMP% or %LOCALAPPDATA%\\RvtMcp\\captures\\. Params: view_id (optional, default active), output_path (required), pixel_size (default 1600), image_format ('png'|'jpeg', default 'png').")]
+        [McpServerTool(Name = "revit_capture_view_image"), System.ComponentModel.Description("Export a view to a raster image. output_path is optional; if provided it must be absolute and inside %TEMP% or %LOCALAPPDATA%\\RvtMcp\\captures\\. Params: view_id (optional, default active), output_path (optional, defaults under captures), pixel_size (default 1600), image_format ('png'|'jpeg', default 'png').")]
         public static async Task<string> CaptureViewImage(
-            string output_path,
+            string output_path = null,
             long? view_id = null, int pixel_size = 1600, string image_format = "png")
         {
             var blocked = ServerState.BlockIfReadOnly("capture_view_image");

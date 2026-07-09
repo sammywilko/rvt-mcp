@@ -29,6 +29,7 @@
     <Compile Include="..\..\src\shared\Views\Toast\ToastContentBuilder.cs" Link="Shared\ToastContentBuilder.cs" />
     <Compile Include="..\..\src\shared\Views\Toast\McpToastViewModel.cs" Link="Shared\McpToastViewModel.cs" />
     <Compile Include="..\..\src\shared\Infrastructure\CaptureOutputResolver.cs" Link="Shared\CaptureOutputResolver.cs" />
+    <Compile Include="..\..\src\shared\Infrastructure\CaptureOutputPath.cs" Link="Shared\CaptureOutputPath.cs" />
     <Compile Include="..\..\src\shared\Infrastructure\SchemaValidator.cs" Link="Shared\SchemaValidator.cs" />
     <Compile Include="..\..\src\shared\Infrastructure\ResponseSizeGuard.cs" Link="Shared\ResponseSizeGuard.cs" />
     <Compile Include="..\..\src\shared\Handlers\BatchExecutor.cs" Link="Shared\BatchExecutor.cs" />

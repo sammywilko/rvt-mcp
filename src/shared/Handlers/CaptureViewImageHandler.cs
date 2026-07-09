@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using Autodesk.Revit.DB;
@@ -10,8 +10,8 @@ namespace RvtMcp.Plugin.Handlers
     public class CaptureViewImageHandler : IRevitCommand
     {
         public string Name => "capture_view_image";
-        public string Description => "Export a view to a raster image (png/jpeg). output_path must be absolute and inside %TEMP% or %LOCALAPPDATA%\\RvtMcp\\captures\\. Returns saved path + pixel size.";
-        public string ParametersSchema => @"{""type"":""object"",""properties"":{""view_id"":{""type"":""integer""},""output_path"":{""type"":""string""},""pixel_size"":{""type"":""integer"",""default"":1600},""image_format"":{""type"":""string"",""enum"":[""png"",""jpeg""],""default"":""png""}},""required"":[""output_path""]}";
+        public string Description => "Export a view to a raster image (png/jpeg). output_path is optional; if provided it must be absolute and inside %TEMP% or %LOCALAPPDATA%\\RvtMcp\\captures\\. Returns saved path + pixel size.";
+        public string ParametersSchema => @"{""type"":""object"",""properties"":{""view_id"":{""type"":""integer""},""output_path"":{""type"":""string"",""description"":""Optional absolute path inside %TEMP% or %LOCALAPPDATA%\\RvtMcp\\captures\\. Defaults to a generated name under captures.""},""pixel_size"":{""type"":""integer"",""default"":1600},""image_format"":{""type"":""string"",""enum"":[""png"",""jpeg""],""default"":""png""}},""required"":[]}";
 
         public CommandResult Execute(UIApplication app, string paramsJson)
         {
@@ -21,16 +21,15 @@ namespace RvtMcp.Plugin.Handlers
 
             var req = JObject.Parse(paramsJson ?? "{}");
             var viewIdParam = req.Value<long?>("view_id");
-            var outputPath = req.Value<string>("output_path");
+            var rawOutputPath = req.Value<string>("output_path");
             var pixelSize = req.Value<int?>("pixel_size") ?? 1600;
             var imageFormat = (req.Value<string>("image_format") ?? "png").ToLowerInvariant();
 
-            if (string.IsNullOrWhiteSpace(outputPath))
-                return CommandResult.Fail("output_path is required.");
             if (imageFormat != "png" && imageFormat != "jpeg")
                 return CommandResult.Fail("image_format must be 'png' or 'jpeg'.");
 
-            var pathError = ValidateOutputPath(outputPath);
+            var outputPath = CaptureOutputPath.NormalizeOrDefault(rawOutputPath, imageFormat);
+            var pathError = CaptureOutputPath.Validate(outputPath);
             if (pathError != null) return CommandResult.Fail(pathError);
 
             var view = viewIdParam.HasValue
@@ -81,34 +80,6 @@ namespace RvtMcp.Plugin.Handlers
                 pixel_size = pixelSize,
                 image_format = imageFormat
             });
-        }
-
-        private static string ValidateOutputPath(string path)
-        {
-            if (path.StartsWith(@"\\", StringComparison.Ordinal)) return "UNC paths are not allowed.";
-            if (path.Contains("..")) return "output_path cannot contain '..'.";
-
-            try
-            {
-                var full = Path.GetFullPath(path);
-                if (!string.Equals(full, path, StringComparison.OrdinalIgnoreCase))
-                    return $"output_path must be canonical. Did you mean: {full}";
-
-                var temp = Path.GetFullPath(Path.GetTempPath());
-                var captures = Path.GetFullPath(Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                    "RvtMcp",
-                    "captures"));
-
-                if (full.StartsWith(temp, StringComparison.OrdinalIgnoreCase)) return null;
-                if (full.StartsWith(captures, StringComparison.OrdinalIgnoreCase)) return null;
-
-                return $"output_path must be inside %TEMP% ({temp}) or %LOCALAPPDATA%\\RvtMcp\\captures\\ ({captures}).";
-            }
-            catch (Exception ex)
-            {
-                return $"Invalid output_path: {ex.Message}";
-            }
         }
     }
 }
