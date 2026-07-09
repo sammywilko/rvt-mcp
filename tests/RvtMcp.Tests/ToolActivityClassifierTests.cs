@@ -21,6 +21,7 @@ namespace RvtMcp.Tests
         [InlineData("batch_execute", ToolActivityKind.Write)]
         [InlineData("run_baked_tool", ToolActivityKind.Write)]
         [InlineData("workflow_model_audit", ToolActivityKind.Write)]
+        [InlineData("change_element_type", ToolActivityKind.Write)]
         [InlineData("select_elements", ToolActivityKind.Read)]
         public void Classify_KnownCommands_ReturnExpected(string commandName, ToolActivityKind expected)
         {

@@ -306,14 +306,22 @@ namespace RvtMcp.Plugin.Views.Toast
                 return;
             }
 
+            var bytes = ToastThumbnailLoader.TryLoadBytes(path, 8 * 1024 * 1024);
+            if (bytes == null)
+            {
+                _thumbnailHost.Visibility = Visibility.Collapsed;
+                _thumbnailImage.Source = null;
+                return;
+            }
+
             try
             {
-                var bytes = File.ReadAllBytes(path);
                 using (var stream = new MemoryStream(bytes))
                 {
                     var bitmap = new BitmapImage();
                     bitmap.BeginInit();
                     bitmap.CacheOption = BitmapCacheOption.OnLoad;
+                    bitmap.DecodePixelWidth = 300;
                     bitmap.StreamSource = stream;
                     bitmap.EndInit();
                     bitmap.Freeze();

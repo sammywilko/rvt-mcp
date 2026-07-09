@@ -25,6 +25,7 @@ namespace RvtMcp.Plugin.Views.Toast
             "set_",
             "add_",
             "update_",
+            "change_",
             "apply_",
             "assign_",
             "tag_",

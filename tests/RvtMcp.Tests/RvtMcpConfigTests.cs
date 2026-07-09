@@ -294,5 +294,31 @@ namespace RvtMcp.Tests
             Assert.True(config.CacheSendCodeBodiesOrDefault);
             Assert.True(config.EnableToastOrDefault);
         }
+
+        [Fact]
+        public void SaveEnableToast_PreservesOtherKeysAndSetsFlag()
+        {
+            var path = Path.Combine(Path.GetTempPath(), "rvtmcp-toast-save-" + Path.GetRandomFileName() + ".json");
+            try
+            {
+                File.WriteAllText(path, @"{""target"":""2026"",""readOnly"":true}");
+                RvtMcpConfig.SaveEnableToast(true, path);
+
+                var reloaded = RvtMcpConfig.LoadFromJsonFile(path);
+                Assert.NotNull(reloaded);
+                Assert.Equal("2026", reloaded.Target);
+                Assert.True(reloaded.ReadOnly);
+                Assert.True(reloaded.EnableToast);
+
+                RvtMcpConfig.SaveEnableToast(false, path);
+                reloaded = RvtMcpConfig.LoadFromJsonFile(path);
+                Assert.False(reloaded.EnableToast);
+                Assert.Equal("2026", reloaded.Target);
+            }
+            finally
+            {
+                if (File.Exists(path)) File.Delete(path);
+            }
+        }
     }
 }

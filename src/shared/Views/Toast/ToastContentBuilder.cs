@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using Newtonsoft.Json.Linq;
+using RvtMcp.Plugin;
 
 namespace RvtMcp.Plugin.Views.Toast
 {
@@ -290,14 +291,7 @@ namespace RvtMcp.Plugin.Views.Toast
                 if (ext != ".png" && ext != ".jpg" && ext != ".jpeg")
                     return false;
 
-                var temp = Path.GetFullPath(Path.GetTempPath());
-                var captures = Path.GetFullPath(Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                    "RvtMcp",
-                    "captures"));
-
-                return full.StartsWith(temp, StringComparison.OrdinalIgnoreCase)
-                    || full.StartsWith(captures, StringComparison.OrdinalIgnoreCase);
+                return PathAllowlist.IsUnderTempOrCaptures(full);
             }
             catch
             {

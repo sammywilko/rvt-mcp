@@ -138,8 +138,51 @@ namespace RvtMcp.Plugin.Views.Toast
             dispatcher.BeginInvoke(action);
         }
 
+        /// <summary>
+        /// Dismiss all toasts. Prefer synchronous invoke during shutdown so Topmost
+        /// windows are closed before Revit tears down the dispatcher.
+        /// </summary>
+        public void DismissAll(bool synchronous = false)
+        {
+            if (_shutdownRequested && !synchronous)
+                return;
+
+            EnsureStarted();
+            var dispatcher = _dispatcher;
+            var manager = _manager;
+            if (dispatcher == null || manager == null || dispatcher.HasShutdownStarted)
+                return;
+
+            void Run()
+            {
+                try { manager.DismissAllImmediate(); }
+                catch (Exception ex) { App.DebugLog("McpToastHost dismiss failed: " + ex); }
+            }
+
+            if (synchronous)
+            {
+                try
+                {
+                    if (dispatcher.CheckAccess())
+                        Run();
+                    else
+                        dispatcher.Invoke(Run, DispatcherPriority.Send, CancellationToken.None, TimeSpan.FromSeconds(2));
+                }
+                catch (Exception ex)
+                {
+                    App.DebugLog("McpToastHost sync dismiss failed: " + ex.Message);
+                }
+                return;
+            }
+
+            PostToManager(m => m.DismissAllImmediate());
+        }
+
         public void Shutdown()
         {
+            // Close windows before flipping the shutdown flag so DismissAll can still run.
+            DismissAll(synchronous: true);
+
             lock (_lock)
             {
                 _shutdownRequested = true;
@@ -154,7 +197,6 @@ namespace RvtMcp.Plugin.Views.Toast
 
             try
             {
-                dispatcher.BeginInvoke(new Action(() => _manager?.DismissAllImmediate()));
                 dispatcher.InvokeShutdown();
             }
             catch

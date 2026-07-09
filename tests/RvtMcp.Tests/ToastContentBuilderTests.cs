@@ -161,5 +161,43 @@ namespace RvtMcp.Tests
         {
             Assert.False(ToastContentBuilder.IsSafeImagePath(path));
         }
+
+        [Fact]
+        public void IsSafeImagePath_rejects_sibling_of_captures_directory()
+        {
+            var localAppData = System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData);
+            var siblingDir = System.IO.Path.Combine(localAppData, "RvtMcp", "capturesEvil");
+            System.IO.Directory.CreateDirectory(siblingDir);
+            var path = System.IO.Path.Combine(siblingDir, "evil.png");
+            System.IO.File.WriteAllBytes(path, new byte[] { 0x89, 0x50, 0x4E, 0x47 });
+
+            try
+            {
+                Assert.False(ToastContentBuilder.IsSafeImagePath(path));
+            }
+            finally
+            {
+                if (System.IO.File.Exists(path))
+                    System.IO.File.Delete(path);
+                try { System.IO.Directory.Delete(siblingDir); } catch { }
+            }
+        }
+
+        [Fact]
+        public void BuildCompleted_send_code_shows_result_line()
+        {
+            var vm = ToastContentBuilder.BuildCompleted(
+                toolName: "send_code_to_revit",
+                paramsJson: null,
+                resultJson: "{\"result\":\"Hello from script\\nsecond line\"}",
+                success: true,
+                errorMessage: null,
+                durationMs: 10,
+                toolDescription: null
+            );
+
+            Assert.Equal("MCP · Script", vm.CategoryLabel);
+            Assert.Equal("Hello from script", vm.Summary);
+        }
     }
 }

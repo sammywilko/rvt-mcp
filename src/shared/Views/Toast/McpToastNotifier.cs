@@ -44,12 +44,11 @@ namespace RvtMcp.Plugin.Views.Toast
 
         public void DismissAll()
         {
-            _host.Post(manager => manager.DismissAllImmediate());
+            _host.DismissAll(synchronous: false);
         }
 
         public void Shutdown()
         {
-            DismissAll();
             _host.Shutdown();
         }
     }

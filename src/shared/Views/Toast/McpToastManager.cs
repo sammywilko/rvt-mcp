@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Windows;
+using System.Windows.Interop;
 using System.Windows.Threading;
 
 namespace RvtMcp.Plugin.Views.Toast
@@ -11,7 +13,6 @@ namespace RvtMcp.Plugin.Views.Toast
         private const int MaxToasts = 4;
         private const double Gap = 8;
         private const double EdgeMargin = 16;
-
         private readonly Dispatcher _dispatcher;
         private readonly List<McpToastWindow> _active = new List<McpToastWindow>();
         private IntPtr _ownerHandle;
@@ -33,6 +34,7 @@ namespace RvtMcp.Plugin.Views.Toast
 
             EnforceCapBeforeAdd();
             var window = new McpToastWindow(vm, OnToastClosed);
+            AttachOwner(window);
             _active.Insert(0, window);
             window.Show();
             window.PlayEnterAnimation();
@@ -66,6 +68,22 @@ namespace RvtMcp.Plugin.Views.Toast
                 ReflowAll(animate: true);
         }
 
+        private void AttachOwner(McpToastWindow window)
+        {
+            var owner = GetValidOwnerHandle();
+            if (owner == IntPtr.Zero)
+                return;
+
+            try
+            {
+                new WindowInteropHelper(window).Owner = owner;
+            }
+            catch
+            {
+                // Best-effort — positioning still works without WPF ownership.
+            }
+        }
+
         private void ReflowAll(bool animate)
         {
             var owner = GetValidOwnerHandle();
@@ -74,7 +92,7 @@ namespace RvtMcp.Plugin.Views.Toast
 
             if (owner != IntPtr.Zero && GetWindowRect(owner, out var rect))
             {
-                GetDpiScale(out var dpiX, out var dpiY);
+                GetOwnerDpiScale(owner, out var dpiX, out var dpiY);
                 startLeft = rect.Left * dpiX + EdgeMargin;
                 startTop = rect.Top * dpiY + EdgeMargin;
             }
@@ -98,21 +116,48 @@ namespace RvtMcp.Plugin.Views.Toast
 
         private IntPtr GetValidOwnerHandle()
         {
-            if (_ownerHandle == IntPtr.Zero || !IsWindow(_ownerHandle))
-                _ownerHandle = System.Diagnostics.Process.GetCurrentProcess().MainWindowHandle;
+            if (_ownerHandle != IntPtr.Zero && IsWindow(_ownerHandle))
+                return _ownerHandle;
+
+            // Prefer keeping last known good owner over Process.MainWindowHandle
+            // (which can point at a splash/dialog). Clear only when truly invalid.
+            if (_ownerHandle != IntPtr.Zero && !IsWindow(_ownerHandle))
+                _ownerHandle = IntPtr.Zero;
+
             return _ownerHandle;
         }
 
-        private void GetDpiScale(out double dpiX, out double dpiY)
+        private void GetOwnerDpiScale(IntPtr hwnd, out double dpiX, out double dpiY)
         {
+            // Default: 96 DPI → 1 DIP per physical pixel.
             dpiX = 1.0;
             dpiY = 1.0;
+
+            try
+            {
+                // Windows 10 1607+: per-monitor DPI for the owner HWND.
+                var dpi = GetDpiForWindow(hwnd);
+                if (dpi > 0)
+                {
+                    dpiX = 96.0 / dpi;
+                    dpiY = dpiX;
+                    return;
+                }
+            }
+            catch (EntryPointNotFoundException)
+            {
+                // Older OS — fall through to PresentationSource / default.
+            }
+            catch
+            {
+                // Ignore and fall through.
+            }
 
             var first = _active.FirstOrDefault();
             if (first == null)
                 return;
 
-            var source = System.Windows.PresentationSource.FromVisual(first);
+            var source = PresentationSource.FromVisual(first);
             if (source?.CompositionTarget != null)
             {
                 var transform = source.CompositionTarget.TransformFromDevice;
@@ -132,6 +177,9 @@ namespace RvtMcp.Plugin.Views.Toast
 
         [DllImport("user32.dll")]
         private static extern bool IsWindow(IntPtr hWnd);
+
+        [DllImport("user32.dll")]
+        private static extern uint GetDpiForWindow(IntPtr hwnd);
 
         [StructLayout(LayoutKind.Sequential)]
         private struct RECT
