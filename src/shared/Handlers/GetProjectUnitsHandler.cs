@@ -28,8 +28,7 @@ namespace RvtMcp.Plugin.Handlers
                 lengthUnit == UnitTypeId.Centimeters ||
                 lengthUnit == UnitTypeId.Decimeters ||
                 lengthUnit == UnitTypeId.Meters ||
-                lengthUnit == UnitTypeId.MetersCentimeters ||
-                lengthUnit == UnitTypeId.Kilometers;
+                lengthUnit == UnitTypeId.MetersCentimeters;
 
             return CommandResult.Ok(new
             {
