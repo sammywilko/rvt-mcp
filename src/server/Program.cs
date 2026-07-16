@@ -738,6 +738,74 @@ Tools (prefix revit_<verb>_<noun>, lengths in mm):
             }
             catch (Exception ex) { return $"Error: {ex.Message}"; }
         }
+
+        // --- SLS A3 read connector (PRD §12.7 read gaps) ---
+
+        [McpServerTool(Name = "revit_list_levels", ReadOnly = true, Idempotent = true), System.ComponentModel.Description("List all levels ordered by elevation. Returns id, name, elevation (mm and feet), and is_building_storey. Use for a storey-aware model before creating level-hosted elements.")]
+        public static async Task<string> ListLevels()
+        {
+            try
+            {
+                var result = await ToolGateway.SendToRevit("list_levels");
+                return JsonConvert.SerializeObject(result, Formatting.Indented);
+            }
+            catch (Exception ex) { return $"Error: {ex.Message}"; }
+        }
+
+        [McpServerTool(Name = "revit_get_project_units", ReadOnly = true, Idempotent = true), System.ComponentModel.Description("Report the project's display units for length, area, volume and angle, plus is_metric. Call before reasoning about dimensions on an unfamiliar model.")]
+        public static async Task<string> GetProjectUnits()
+        {
+            try
+            {
+                var result = await ToolGateway.SendToRevit("get_project_units");
+                return JsonConvert.SerializeObject(result, Formatting.Indented);
+            }
+            catch (Exception ex) { return $"Error: {ex.Message}"; }
+        }
+
+        [McpServerTool(Name = "revit_list_grids", ReadOnly = true, Idempotent = true), System.ComponentModel.Description("List all grids. Returns id, name, is_curved, and start/end points (mm) for straight grids.")]
+        public static async Task<string> ListGrids()
+        {
+            try
+            {
+                var result = await ToolGateway.SendToRevit("list_grids");
+                return JsonConvert.SerializeObject(result, Formatting.Indented);
+            }
+            catch (Exception ex) { return $"Error: {ex.Message}"; }
+        }
+
+        [McpServerTool(Name = "revit_list_views", ReadOnly = true, Idempotent = true), System.ComponentModel.Description("List views. Returns id, name, view_type, scale, is_template, and associated level. Excludes view templates unless include_templates is true.")]
+        public static async Task<string> ListViews(bool includeTemplates = false)
+        {
+            try
+            {
+                var result = await ToolGateway.SendToRevit("list_views", new { include_templates = includeTemplates });
+                return JsonConvert.SerializeObject(result, Formatting.Indented);
+            }
+            catch (Exception ex) { return $"Error: {ex.Message}"; }
+        }
+
+        [McpServerTool(Name = "revit_get_model_bounds", ReadOnly = true, Idempotent = true), System.ComponentModel.Description("Overall model extents (mm) as a union of every model element's bounding box. Returns min, max, size and the element count considered; null bounds for an empty model. Use for camera framing and sanity checks.")]
+        public static async Task<string> GetModelBounds()
+        {
+            try
+            {
+                var result = await ToolGateway.SendToRevit("get_model_bounds");
+                return JsonConvert.SerializeObject(result, Formatting.Indented);
+            }
+            catch (Exception ex) { return $"Error: {ex.Message}"; }
+        }
+
+        [McpServerTool(Name = "revit_get_project_info", ReadOnly = true, Idempotent = true), System.ComponentModel.Description("Project information (name, number, client, building, organization, address, author) plus the running Revit version number, name and build.")]
+        public static async Task<string> GetProjectInfo()
+        {
+            try
+            {
+                var result = await ToolGateway.SendToRevit("get_project_info");
+                return JsonConvert.SerializeObject(result, Formatting.Indented);
+            }
+            catch (Exception ex) { return $"Error: {ex.Message}"; }
+        }
     }
 
     [McpServerToolType, Toolset("schedule")]
