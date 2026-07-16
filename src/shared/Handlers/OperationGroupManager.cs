@@ -40,6 +40,14 @@ namespace RvtMcp.Plugin.Handlers
     {
         public static readonly TimeSpan StaleAfter = TimeSpan.FromMinutes(10);
 
+        /// <summary>
+        /// Max staged (ledgered) element ids per group (Codex r3 finding 5): rollback
+        /// probe-deletes and then really deletes the whole set synchronously on the
+        /// UI thread, so the ledger must be bounded. Includes the full creation
+        /// closure (scaffolding ids), hence roomy.
+        /// </summary>
+        public const int MaxStagedElements = 2000;
+
         private static readonly object Gate = new object();
         private static string _groupId;
         private static string _name;
@@ -75,10 +83,21 @@ namespace RvtMcp.Plugin.Handlers
                            "write would silently land outside it. Commit or roll back the group, or switch " +
                            "back to its document, then retry.";
 
-                if (!string.IsNullOrWhiteSpace(requestedGroupId) &&
-                    !string.Equals(requestedGroupId.Trim(), _groupId, StringComparison.Ordinal))
+                // While a group is open the token is REQUIRED (Codex r3 finding 2):
+                // otherwise a later/other client's write would be silently captured
+                // into a group it knows nothing about — and deleted by its rollback.
+                if (string.IsNullOrWhiteSpace(requestedGroupId))
+                    return "An operation group ('" + _name + "') is open: pass its operationGroupId to " +
+                           "stage this write in it, or commit/rollback the group first. Nothing was written.";
+
+                if (!string.Equals(requestedGroupId.Trim(), _groupId, StringComparison.Ordinal))
                     return "operationGroupId does not match the open operation group ('" + _name + "'). " +
                            "Nothing was written.";
+
+                if (_createdIds.Count >= MaxStagedElements)
+                    return "The operation group ('" + _name + "') has reached its staged-element budget (" +
+                           MaxStagedElements + " ids incl. creation closure). Commit or roll it back " +
+                           "before further writes.";
 
                 return null;
             }
@@ -130,11 +149,11 @@ namespace RvtMcp.Plugin.Handlers
                     group_id = _groupId,
                     name = _name,
                     stale_after_seconds = StaleAfter.TotalSeconds,
-                    note = "Created elements from subsequent SLS writes are staged in this group. " +
-                           "commit_operation_group keeps them and closes the group; " +
-                           "rollback_operation_group deletes them. Pass group_id to both. " +
-                           "After " + (int)StaleAfter.TotalMinutes + " min without writes the group " +
-                           "auto-closes KEEPING its elements. Manual edits are never captured."
+                    note = "Pass this group_id as operationGroupId on EVERY SLS write you want staged — " +
+                           "while the group is open, writes without it are refused (nothing is captured " +
+                           "silently). commit_operation_group keeps the staged elements; " +
+                           "rollback_operation_group deletes them. After " + (int)StaleAfter.TotalMinutes +
+                           " min without writes the group auto-closes KEEPING its elements."
                 });
             }
         }
@@ -333,9 +352,13 @@ namespace RvtMcp.Plugin.Handlers
         /// </summary>
         private static bool IsUserMeaningful(Element element)
         {
-            // Internal scaffolding that cascades with sketched elements.
+            // Internal scaffolding that cascades with sketched elements. Opening is
+            // NOT exempt — users create openings via NewOpening, so deleting one is
+            // data loss (Codex r3 finding 3). With the full creation closure now
+            // ledgered by RunWrite, our own transactions' scaffolding is matched by
+            // id and this classifier only judges genuinely foreign dependents.
             if (element is Sketch || element is SketchPlane || element is CurveElement ||
-                element is Opening || element.Category == null)
+                element.Category == null)
                 return false;
             return element is FamilyInstance || element is Dimension || element is IndependentTag ||
                    element is TextNote || element is Wall || element is Floor || element is Ceiling ||

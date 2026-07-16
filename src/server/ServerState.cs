@@ -38,6 +38,22 @@ namespace RvtMcp.Server
         public const int MaxBatchCommands = 100;
 
         /// <summary>
+        /// Bare wire names audited to keep all side effects inside Revit transactions —
+        /// the only commands a batch rollback can truly undo. Mirrors
+        /// BatchExecutor.BatchSafeCommands in the plugin (not referencable from this
+        /// assembly) — keep the two in sync.
+        /// </summary>
+        public static readonly HashSet<string> BatchSafeChildren = new HashSet<string>(StringComparer.Ordinal)
+        {
+            "create_level", "create_grid", "create_room", "create_room_separator",
+            "auto_create_rooms_from_walls", "create_group_from_elements",
+            "create_wall", "create_wall_loop", "create_floor", "place_door", "place_window",
+            "create_basic_roof",
+            "create_line_based_element", "create_point_based_element", "create_surface_based_element",
+            "set_element_parameter_values", "set_type_parameter_values", "change_element_type"
+        };
+
+        /// <summary>
         /// Authorize every batch child command as if it were a direct MCP call: its
         /// revit_-prefixed name must be part of the enabled tool surface and must not
         /// be denied; operation-group lifecycle commands are refused (their ledger
@@ -106,6 +122,16 @@ namespace RvtMcp.Server
                         tool = mcpName,
                         message = $"'{bare}' is not part of this server's enabled tool surface, so it " +
                                   "cannot be invoked through batch_execute."
+                    }, Formatting.Indented);
+
+                if (!BatchSafeChildren.Contains(bare))
+                    return JsonConvert.SerializeObject(new
+                    {
+                        error = "batch_unsafe_command",
+                        tool = mcpName,
+                        message = $"'{bare}' is not audited as batch-safe: its side effects (exports, " +
+                                  "file I/O, UI, target switching, …) could survive a batch rollback, " +
+                                  "making the atomicity promise false. Call it directly."
                     }, Formatting.Indented);
             }
 

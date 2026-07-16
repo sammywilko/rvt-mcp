@@ -86,6 +86,15 @@ namespace RvtMcp.Plugin.Handlers
             var typeName = request.Value<string>("typeName");
             var family = request.Value<string>("family");
 
+            if (typeId.HasValue && (!string.IsNullOrWhiteSpace(typeName) || !string.IsNullOrWhiteSpace(family)))
+            {
+                // A stale id silently winning over a freshly stated name is the
+                // invisible-default class again (Codex r3 finding 7) — refuse mixed input.
+                error = "Pass EITHER typeId OR typeName (+ optional family), not both — a stale typeId " +
+                        "would silently override the requested name.";
+                return null;
+            }
+
             if (typeId.HasValue)
             {
                 var byId = doc.GetElement(RevitCompat.ToElementId(typeId.Value)) as T;
@@ -309,6 +318,22 @@ namespace RvtMcp.Plugin.Handlers
 
                 object payload;
                 TransactionStatus commitStatus;
+                // Ledger the FULL creation closure, not just the top-level ids
+                // (Codex r3 finding 3): DocumentChanged reports every element the
+                // commit added (sketches, planes, auto-created dependents), so a later
+                // rollback can compare the deletion closure against exactly what this
+                // group created instead of guessing ownership from element classes.
+                var addedIds = new List<long>();
+                EventHandler<Autodesk.Revit.DB.Events.DocumentChangedEventArgs> onChanged =
+                    (sender, e) =>
+                    {
+                        try
+                        {
+                            if (!e.GetDocument().Equals(doc)) return;
+                            addedIds.AddRange(e.GetAddedElementIds().Select(RevitCompat.GetId));
+                        }
+                        catch { /* capture must never break the write */ }
+                    };
                 using (var tx = new Transaction(doc, "SLS: " + opName))
                 {
                     if (tx.Start() != TransactionStatus.Started)
@@ -324,7 +349,15 @@ namespace RvtMcp.Plugin.Handlers
                         if (!tx.HasEnded()) tx.RollBack();
                         return Failure(opName + " failed: " + ex.Message, scope);
                     }
-                    commitStatus = tx.Commit();
+                    doc.Application.DocumentChanged += onChanged;
+                    try
+                    {
+                        commitStatus = tx.Commit();
+                    }
+                    finally
+                    {
+                        doc.Application.DocumentChanged -= onChanged;
+                    }
                 }
 
                 if (commitStatus != TransactionStatus.Committed)
@@ -332,19 +365,29 @@ namespace RvtMcp.Plugin.Handlers
 
                 if (dryRunGroup != null)
                 {
-                    dryRunGroup.RollBack();
+                    // A dry-run that cannot PROVE the rollback happened must never
+                    // claim "no model change" (Codex r3 finding 6).
+                    var rollbackStatus = dryRunGroup.RollBack();
                     dryRunGroup.Dispose();
                     dryRunGroup = null;
+                    if (rollbackStatus != TransactionStatus.RolledBack)
+                        return CommandResult.Fail(
+                            opName + " dry-run: the rollback returned " + rollbackStatus +
+                            " — model state is UNCERTAIN; the dry-run changes may have persisted. " +
+                            "Inspect the model before continuing.");
                 }
 
                 var result = BuildResult(payload, scope, dryRun);
                 var recorded = false;
                 if (!dryRun)
                 {
-                    // Stage this write's created elements in the open operation group.
+                    // Stage the full creation closure in the open operation group.
                     var ids = result["element_ids"] as JArray;
+                    var ledger = new HashSet<long>(addedIds);
                     if (ids != null)
-                        recorded = OperationGroupManager.RecordWrite(doc, ids.Select(t => (long)t));
+                        foreach (var t in ids) ledger.Add((long)t);
+                    if (ledger.Count > 0)
+                        recorded = OperationGroupManager.RecordWrite(doc, ledger);
                 }
                 result["operation_group_active"] = OperationGroupManager.IsActive;
                 result["operation_group_recorded"] = recorded;

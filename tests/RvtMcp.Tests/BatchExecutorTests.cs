@@ -283,6 +283,49 @@ namespace RvtMcp.Tests
             Assert.Equal(BatchExecutor.OperationGroupCommandNotSupportedMessage(bareName), result.Value<string>("error"));
         }
 
+        // --- SLS A4 r3: fail-closed batch-safe allowlist ---------------------
+        // A batch rollback can only undo effects inside Revit transactions; commands
+        // with external side effects (exports, file I/O, UI, …) are refused.
+
+        [Theory]
+        [InlineData("export_pdf")]
+        [InlineData("activate_view")]
+        [InlineData("revit_export_image")]
+        public void Run_BatchUnsafeCommands_RejectedWhenListEnforced(string command)
+        {
+            var invoked = false;
+            var cmds = Cmds((command, new { }));
+
+            var outcome = BatchExecutor.Run(
+                cmds,
+                continueOnError: false,
+                (_, __) => { invoked = true; return BatchExecutor.InvokeResult.Ok(null); },
+                isBakedCommand: null,
+                enforceBatchSafeList: true);
+
+            Assert.True(outcome.AnyFailed);
+            Assert.False(invoked);
+            var result = JObject.FromObject(outcome.Results[0]);
+            Assert.Contains("not audited as batch-safe", result.Value<string>("error"));
+        }
+
+        [Fact]
+        public void Run_BatchSafeCommand_PassesWhenListEnforced()
+        {
+            var invoked = false;
+            var cmds = Cmds(("create_wall", new { startX = 0 }));
+
+            var outcome = BatchExecutor.Run(
+                cmds,
+                continueOnError: false,
+                (_, __) => { invoked = true; return BatchExecutor.InvokeResult.Ok(null); },
+                isBakedCommand: null,
+                enforceBatchSafeList: true);
+
+            Assert.False(outcome.AnyFailed);
+            Assert.True(invoked);
+        }
+
         [Fact]
         public void Run_HandlerThrows_CapturedAsFailure()
         {

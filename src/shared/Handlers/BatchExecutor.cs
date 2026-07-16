@@ -19,6 +19,24 @@ namespace RvtMcp.Plugin.Handlers
         /// </summary>
         public const int MaxCommands = 100;
 
+        /// <summary>
+        /// Commands audited to keep ALL side effects inside the current document's
+        /// Revit transactions — the only ones whose effects a batch TransactionGroup
+        /// rollback can actually undo (Codex r3 finding 4). Fail-closed: anything not
+        /// listed (exports, file I/O, UI, selection, target switching, …) is refused
+        /// as a batch child. Mirrored in ServerState.BatchSafeChildren (server
+        /// assembly cannot reference this type) — keep the two in sync.
+        /// </summary>
+        public static readonly HashSet<string> BatchSafeCommands = new HashSet<string>(StringComparer.Ordinal)
+        {
+            "create_level", "create_grid", "create_room", "create_room_separator",
+            "auto_create_rooms_from_walls", "create_group_from_elements",
+            "create_wall", "create_wall_loop", "create_floor", "place_door", "place_window",
+            "create_basic_roof",
+            "create_line_based_element", "create_point_based_element", "create_surface_based_element",
+            "set_element_parameter_values", "set_type_parameter_values", "change_element_type"
+        };
+
         public class Outcome
         {
             public List<object> Results { get; set; } = new List<object>();
@@ -40,7 +58,8 @@ namespace RvtMcp.Plugin.Handlers
             JArray commandsArr,
             bool continueOnError,
             Func<string, string, InvokeResult> invoke,
-            Func<string, bool> isBakedCommand = null)
+            Func<string, bool> isBakedCommand = null,
+            bool enforceBatchSafeList = false)
         {
             if (commandsArr == null) throw new ArgumentNullException(nameof(commandsArr));
             if (invoke == null) throw new ArgumentNullException(nameof(invoke));
@@ -116,6 +135,17 @@ namespace RvtMcp.Plugin.Handlers
                     continue;
                 }
 
+                // SLS A4 (Codex r3 finding 4): a batch's rollback can only undo effects
+                // inside Revit transactions — commands with external side effects
+                // (exports, file I/O, UI, …) would make "rolledBack: true" a lie.
+                if (enforceBatchSafeList && !BatchSafeCommands.Contains(bareName))
+                {
+                    outcome.Results.Add(new { index = i, ok = false, error = BatchUnsafeCommandMessage(bareName) });
+                    outcome.AnyFailed = true;
+                    if (!continueOnError) return outcome;
+                    continue;
+                }
+
                 var subParams = cmd["params"]?.ToString() ?? "{}";
                 InvokeResult r;
                 try
@@ -175,6 +205,10 @@ namespace RvtMcp.Plugin.Handlers
 
         public static string EvalCommandNotSupportedMessage(string name) =>
             $"'{name}' cannot run inside batch_execute; call it directly (if it is enabled on this server).";
+
+        public static string BatchUnsafeCommandMessage(string name) =>
+            $"'{name}' is not audited as batch-safe: its side effects could survive a batch rollback, " +
+            "making the atomicity promise false. Call it directly.";
 
         public static string OperationGroupCommandNotSupportedMessage(string name) =>
             $"'{name}' cannot run inside batch_execute: operation-group state lives outside the batch's " +

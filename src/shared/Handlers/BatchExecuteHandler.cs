@@ -33,6 +33,16 @@ namespace RvtMcp.Plugin.Handlers
             var doc = app.ActiveUIDocument?.Document;
             if (doc == null) return CommandResult.Fail("No document is open.");
 
+            // SLS A4 (Codex r3 finding 1): an SLS write inside a batch records into the
+            // operation-group ledger when its inner transaction commits — but a later
+            // batch failure rolls the MODEL back and not the ledger, splitting the two.
+            // Batches and operation groups are therefore mutually exclusive.
+            if (OperationGroupManager.IsActive)
+                return CommandResult.Fail(
+                    "batch_execute is unavailable while an operation group is open — a failed batch " +
+                    "would roll the model back but not the group's ledger. Commit or roll back the " +
+                    "operation group first.");
+
             var request = JObject.Parse(paramsJson);
             var commandsArr = request["commands"] as JArray;
             if (commandsArr == null || commandsArr.Count == 0)
@@ -66,12 +76,20 @@ namespace RvtMcp.Plugin.Handlers
                     return r.Success
                         ? BatchExecutor.InvokeResult.Ok(r.Data)
                         : BatchExecutor.InvokeResult.Fail(r.Error);
-                }, _dispatcher.IsBakedCommand);
+                }, _dispatcher.IsBakedCommand, enforceBatchSafeList: true);
 
                 bool rolledBack;
                 if (outcome.AnyFailed && !continueOnError)
                 {
-                    rolledBack = tg.RollBack() == TransactionStatus.RolledBack;
+                    // The contract says a failed batch is rolled back — anything else
+                    // must surface as failure, not a calm envelope (Codex r3 finding 6).
+                    var status = tg.RollBack();
+                    if (status != TransactionStatus.RolledBack)
+                        return CommandResult.Fail(
+                            "batch_execute: a child failed and the rollback returned " + status +
+                            " — model state is UNCERTAIN. Results so far: " +
+                            Newtonsoft.Json.JsonConvert.SerializeObject(outcome.Results));
+                    rolledBack = true;
                 }
                 else
                 {

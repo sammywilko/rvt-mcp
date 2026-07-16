@@ -118,6 +118,19 @@ namespace RvtMcp.Tests
         }
 
         [Fact]
+        public void EnabledButBatchUnsafeChild_IsRefused()
+        {
+            ServerState.Config = new RvtMcpConfig();
+            ServerState.EnabledToolNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+                { "revit_export_pdf" };
+
+            var error = ServerState.ValidateBatchChildren(Batch("export_pdf"));
+
+            Assert.NotNull(error);
+            Assert.Contains("batch_unsafe_command", error);
+        }
+
+        [Fact]
         public void OversizedBatch_IsRefused()
         {
             ServerState.Config = new RvtMcpConfig();
