@@ -1,6 +1,6 @@
 {
   "generated_by": "ToolsListSnapshotTests",
-  "tool_count": 226,
+  "tool_count": 232,
   "tools": [
     {
       "name": "revit_accept_bake_suggestion",
@@ -3449,6 +3449,15 @@
       }
     },
     {
+      "name": "revit_get_model_bounds",
+      "description_hash": "sha256:cd180e58d38223d735b7afc9b630862068beb9f6b98ed29fd1c46ed7be35e56b",
+      "inputSchema": {
+        "properties": {},
+        "required": [],
+        "type": "object"
+      }
+    },
+    {
       "name": "revit_get_model_warnings_summary",
       "description_hash": "sha256:2fb8d32241ad9d7099d1afbf8bc14a4e5c4ae16e8b2178027116f6575fb9aadb",
       "inputSchema": {
@@ -3487,6 +3496,24 @@
     {
       "name": "revit_get_print_settings",
       "description_hash": "sha256:2daf3b694422776b85d0e72079de384fdb10bdd6ecb12fc94bcc6bd336aef7cf",
+      "inputSchema": {
+        "properties": {},
+        "required": [],
+        "type": "object"
+      }
+    },
+    {
+      "name": "revit_get_project_info",
+      "description_hash": "sha256:f8ad44629b82962ae9bfafbea94387083231dbfe328960f28599324d799d5b1c",
+      "inputSchema": {
+        "properties": {},
+        "required": [],
+        "type": "object"
+      }
+    },
+    {
+      "name": "revit_get_project_units",
+      "description_hash": "sha256:384b70878f707998ed9bd0911f6c110b762c28ad814ce6f590fd1bcb3119142e",
       "inputSchema": {
         "properties": {},
         "required": [],
@@ -3919,6 +3946,15 @@
       }
     },
     {
+      "name": "revit_list_grids",
+      "description_hash": "sha256:06dc7f6f43b7cc412e1884a7a522b680fba4facb8be31c538e20aea93e2a116a",
+      "inputSchema": {
+        "properties": {},
+        "required": [],
+        "type": "object"
+      }
+    },
+    {
       "name": "revit_list_groups",
       "description_hash": "sha256:b3038b22bda6463192402c78de7c90747ebd8834f1b43d34d5358bfce2027232",
       "inputSchema": {
@@ -3954,6 +3990,15 @@
             "type": "String"
           }
         },
+        "required": [],
+        "type": "object"
+      }
+    },
+    {
+      "name": "revit_list_levels",
+      "description_hash": "sha256:0e8dfc9981c2bff029245491d90fe8687b1e35f29e25e152ceabeac6b0150757",
+      "inputSchema": {
+        "properties": {},
         "required": [],
         "type": "object"
       }
@@ -4359,6 +4404,20 @@
           "viewType": {
             "description": "",
             "type": "String"
+          }
+        },
+        "required": [],
+        "type": "object"
+      }
+    },
+    {
+      "name": "revit_list_views",
+      "description_hash": "sha256:b5355e3f6f236ea3118993e58eaa23218955b9ebc47d11c9d00b8736ef761fb4",
+      "inputSchema": {
+        "properties": {
+          "includeTemplates": {
+            "description": "",
+            "type": "Boolean"
           }
         },
         "required": [],

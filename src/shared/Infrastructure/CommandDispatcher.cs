@@ -268,6 +268,14 @@ namespace RvtMcp.Plugin
             Register(new Handlers.ActivateViewHandler());
             Register(new Handlers.ShowElementInViewHandler());
 
+            // SLS A3 read connector (PRD §12.7 read gaps)
+            Register(new Handlers.ListLevelsHandler());
+            Register(new Handlers.GetProjectUnitsHandler());
+            Register(new Handlers.ListGridsHandler());
+            Register(new Handlers.ListViewsHandler());
+            Register(new Handlers.GetModelBoundsHandler());
+            Register(new Handlers.GetProjectInfoHandler());
+
             // A6 batch execution — needs dispatcher ref to look up sub-commands
             Register(new Handlers.BatchExecuteHandler(this));
             // ToolBaker runtime access.
