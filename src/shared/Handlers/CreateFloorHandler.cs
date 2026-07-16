@@ -35,6 +35,7 @@ namespace RvtMcp.Plugin.Handlers
     ""family"": { ""type"": ""string"", ""description"": ""Floor family name, e.g. 'Floor' (disambiguates typeName)"" },
     ""typeName"": { ""type"": ""string"", ""description"": ""Floor type name, e.g. 'Concrete 150mm'"" },
     ""allowFoundationSlab"": { ""type"": ""boolean"", ""description"": ""Permit a foundation-slab floor type (default false)"" },
+    ""operationGroupId"": { ""type"": ""string"", ""description"": ""Optional: the open operation group id — must match or the write is refused"" },
     ""dryRun"": { ""type"": ""boolean"", ""description"": ""Build + capture warnings, then roll back (default false)"" }
   }
 }";
@@ -67,7 +68,7 @@ namespace RvtMcp.Plugin.Handlers
                     "Pick a Floors-category type (revit_get_available_family_types category='Floors'), or pass " +
                     "allowFoundationSlab=true if a foundation slab is genuinely intended.");
 
-            return SlsWriteSupport.RunWrite(doc, "create_floor", dryRun, scope =>
+            return SlsWriteSupport.RunWrite(doc, "create_floor", dryRun, request.Value<string>("operationGroupId"), scope =>
             {
                 var curveLoop = new CurveLoop();
                 for (var i = 0; i < loop.Count; i++)

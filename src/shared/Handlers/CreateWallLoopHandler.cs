@@ -33,6 +33,7 @@ namespace RvtMcp.Plugin.Handlers
     ""family"": { ""type"": ""string"", ""description"": ""Wall family name (disambiguates typeName)"" },
     ""typeName"": { ""type"": ""string"", ""description"": ""Wall type name"" },
     ""structural"": { ""type"": ""boolean"", ""description"": ""Structural usage (default false)"" },
+    ""operationGroupId"": { ""type"": ""string"", ""description"": ""Optional: the open operation group id — must match or the write is refused"" },
     ""dryRun"": { ""type"": ""boolean"", ""description"": ""Build + capture warnings, then roll back (default false)"" }
   }
 }";
@@ -63,7 +64,7 @@ namespace RvtMcp.Plugin.Handlers
             var wallType = SlsWriteSupport.ResolveTypeStrict<WallType>(doc, request, "wall type", null, out error);
             if (wallType == null) return CommandResult.Fail(error);
 
-            return SlsWriteSupport.RunWrite(doc, "create_wall_loop", dryRun, scope =>
+            return SlsWriteSupport.RunWrite(doc, "create_wall_loop", dryRun, request.Value<string>("operationGroupId"), scope =>
             {
                 var walls = new List<object>();
                 var ids = new List<long>();

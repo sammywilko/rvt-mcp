@@ -54,16 +54,51 @@ namespace RvtMcp.Plugin.Handlers
             get { lock (Gate) { ExpireIfStaleLocked(); return _groupId != null; } }
         }
 
-        /// <summary>Record a successful (non-dry-run) SLS write's created elements.</summary>
-        public static void RecordWrite(Document doc, IEnumerable<long> createdElementIds)
+        /// <summary>
+        /// Fail-closed pre-check for every SLS write (Codex round 2, finding 2): a
+        /// write must never silently commit OUTSIDE an open group the caller thinks
+        /// it is inside. Returns an error string (the write must not run) or null.
+        /// </summary>
+        public static string ValidateForWrite(Document doc, string requestedGroupId)
+        {
+            lock (Gate)
+            {
+                ExpireIfStaleLocked();
+                if (_groupId == null)
+                    return string.IsNullOrWhiteSpace(requestedGroupId)
+                        ? null
+                        : "operationGroupId was passed but no operation group is open " +
+                          "(it may have auto-closed). Call begin_operation_group first, or omit operationGroupId.";
+
+                if (!ReferenceEquals(doc, _doc))
+                    return "An operation group ('" + _name + "') is open on a DIFFERENT document — this " +
+                           "write would silently land outside it. Commit or roll back the group, or switch " +
+                           "back to its document, then retry.";
+
+                if (!string.IsNullOrWhiteSpace(requestedGroupId) &&
+                    !string.Equals(requestedGroupId.Trim(), _groupId, StringComparison.Ordinal))
+                    return "operationGroupId does not match the open operation group ('" + _name + "'). " +
+                           "Nothing was written.";
+
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Record a successful (non-dry-run) SLS write's created elements. Returns
+        /// true when the ids were staged in an open group (callers surface this as
+        /// operation_group_recorded — never claim staging that didn't happen).
+        /// </summary>
+        public static bool RecordWrite(Document doc, IEnumerable<long> createdElementIds)
         {
             lock (Gate)
             {
                 ExpireIfStaleLocked();
                 if (_groupId == null || !ReferenceEquals(doc, _doc) || createdElementIds == null)
-                    return;
+                    return false;
                 _createdIds.AddRange(createdElementIds);
                 _lastTouchedUtc = DateTime.UtcNow;
+                return true;
             }
         }
 
@@ -156,6 +191,57 @@ namespace RvtMcp.Plugin.Handlers
                 var deleted = new List<long>();
                 if (alive.Count > 0)
                 {
+                    // Probe pass (Codex round 2, finding 1): Document.Delete cascades to
+                    // dependents — e.g. a door the USER hosted on a staged wall after we
+                    // created it. Deleting that would be data loss, not rollback. Run the
+                    // delete in a transaction that is ALWAYS rolled back, inspect the
+                    // closure, and refuse if it contains any unledgered user-meaningful
+                    // element. Internal scaffolding (sketches, planes, curves, openings,
+                    // constraints) is expected to cascade and does not block.
+                    List<ElementId> closure;
+                    using (var probe = new Transaction(doc, "SLS: rollback probe (always rolled back)"))
+                    {
+                        if (probe.Start() != TransactionStatus.Started)
+                            return CommandResult.Fail(
+                                "rollback_operation_group: could not start the probe transaction " +
+                                "(document read-only, or another transaction open?). The group stays open.");
+                        SlsWriteSupport.FailureScope.Attach(probe);
+                        try
+                        {
+                            var removed = doc.Delete(alive);
+                            closure = removed == null ? new List<ElementId>() : removed.ToList();
+                        }
+                        catch (Exception ex)
+                        {
+                            if (!probe.HasEnded()) probe.RollBack();
+                            return CommandResult.Fail(
+                                "rollback_operation_group: probing the deletion failed: " + ex.Message +
+                                ". The group stays open.");
+                        }
+                        probe.RollBack();
+                    }
+
+                    var stagedSet = new HashSet<long>(_createdIds);
+                    var blockers = closure
+                        .Where(id => !stagedSet.Contains(RevitCompat.GetId(id)))
+                        .Select(doc.GetElement)          // elements exist again after the probe rollback
+                        .Where(el => el != null && IsUserMeaningful(el))
+                        .Select(el => (object)new
+                        {
+                            id = RevitCompat.GetId(el.Id),
+                            category = el.Category == null ? null : el.Category.Name,
+                            name = el.Name
+                        })
+                        .ToList();
+
+                    if (blockers.Count > 0)
+                        return CommandResult.Fail(
+                            "rollback_operation_group refused: deleting the staged elements would also " +
+                            "delete " + blockers.Count + " element(s) the group did NOT create (work was " +
+                            "hosted on or depends on staged elements): " +
+                            Newtonsoft.Json.JsonConvert.SerializeObject(blockers) + ". " +
+                            "Delete or rehost those explicitly, or commit the group instead. The group stays open.");
+
                     using (var tx = new Transaction(doc, "SLS: rollback_operation_group '" + _name + "'"))
                     {
                         if (tx.Start() != TransactionStatus.Started)
@@ -237,6 +323,25 @@ namespace RvtMcp.Plugin.Handlers
                              (int)StaleAfter.TotalMinutes + " min without writes; its " + count +
                              " staged elements were KEPT (auto-close commits, never deletes).";
             App.DebugLog("SLS operation group auto-closed (stale): " + name);
+        }
+
+        /// <summary>
+        /// Deletion-closure classifier: elements a user (or another tool) could have
+        /// meaningfully created block a rollback; Revit-internal scaffolding that
+        /// legitimately cascades with our elements does not. Deliberately
+        /// conservative — unknown model/annotation classes count as user-meaningful.
+        /// </summary>
+        private static bool IsUserMeaningful(Element element)
+        {
+            // Internal scaffolding that cascades with sketched elements.
+            if (element is Sketch || element is SketchPlane || element is CurveElement ||
+                element is Opening || element.Category == null)
+                return false;
+            return element is FamilyInstance || element is Dimension || element is IndependentTag ||
+                   element is TextNote || element is Wall || element is Floor || element is Ceiling ||
+                   element is RoofBase || element is Autodesk.Revit.DB.Architecture.Room ||
+                   element.Category.CategoryType == CategoryType.Annotation ||
+                   element.Category.CategoryType == CategoryType.Model;
         }
 
         private static void ClearLocked()

@@ -10,7 +10,7 @@
   <a href="https://github.com/bimwright/rvt-mcp/actions/workflows/build.yml"><img src="https://github.com/bimwright/rvt-mcp/actions/workflows/build.yml/badge.svg" alt="build" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="license" /></a>
   <a href="#supported-revit-versions"><img src="https://img.shields.io/badge/Revit-2022--2027-186BFF" alt="Revit 2022-2027" /></a>
-  <a href="#toolsets"><img src="https://img.shields.io/badge/MCP-223%20tools-6C47FF" alt="MCP tools" /></a>
+  <a href="#toolsets"><img src="https://img.shields.io/badge/MCP-238%20tools-6C47FF" alt="MCP tools" /></a>
 </p>
 
 <p align="center">
@@ -96,7 +96,7 @@ AI agents make it possible for BIM users to describe intent instead of writing c
 It is designed around four ideas:
 
 - **Local first.** No cloud bridge is required. Revit, the plugin, MCP server, logs, and ToolBaker storage all live on the user's machine.
-- **Reversible by default.** Mutating workflows can run through `revit_batch_execute`, wrapping multiple commands in one Revit `TransactionGroup` so one undo step rolls the batch back.
+- **Reversible by default.** Every write runs in its own transaction (one undo step each). Multi-command atomicity is available through `revit_batch_execute` (opt-in `batch` toolset, default off — enable with `--toolsets ...,batch`; child commands are authorized against the enabled tool surface), or through the SLS operation-group tools (`revit_begin/commit/rollback_operation_group`) which stage created elements and can delete them all in one rollback.
 - **Progressively exposed.** Toolsets and `--read-only` mode control what the agent can see and do. Weak or narrow agents do not need destructive tools.
 - **Personal over generic.** Adaptive ToolBaker can observe repeated local workflows, propose a personal tool, and make accepted tools available through MCP and the Revit ribbon.
 
@@ -329,11 +329,11 @@ This path is for development and backward compatibility. Client machines should 
 
 ## Toolsets
 
-The full surface is **223 tools across 23 toolsets** (`--toolsets all`) (or **223 tools** when adaptive bake is enabled). By default, the registered surface is **216 tools** (all default-on toolsets, excluding `modify` and `delete`). Adaptive bake, when enabled, adds 3 suggestion-lifecycle tools on top; `--read-only` strips every write-capable toolset.
+The full surface is **238 tools across 24 toolsets** (`--toolsets all`), or **241 tools** when adaptive bake is enabled. By default, the registered surface is **230 tools** (all default-on toolsets, excluding `modify`, `delete` and `batch`). Adaptive bake, when enabled, adds 3 suggestion-lifecycle tools on top; `--read-only` strips every write-capable toolset. Individual tools can additionally be removed from the surface with `--deny-tools <csv>` (hidden from tools/list and refused at call time).
 
 Default-on toolsets: `query`, `create`, `view`, `schedule`, `families`, `mep`, `graphics`, `export`, `toolbaker`, `meta`, `lint`, `sheets`, `materials`, `geometry`, `annotation`, `rooms`, `links`, `parameters`, `organization`, `workflows`, `structural`.
 
-Opt-in toolsets (off by default): `modify`, `delete`. Enable explicitly or via `--toolsets all`.
+Opt-in toolsets (off by default): `modify`, `delete`, `batch`. Enable explicitly or via `--toolsets all`. (`batch` is off by default because it dispatches wire-level command names; when enabled, every child command is authorized against the enabled tool surface and deny list.)
 
 Enable specific sets with `--toolsets query,create,modify,meta`, or `--toolsets all` for everything. Add `--read-only` to strip write-capable toolsets regardless of what was requested.
 
@@ -342,7 +342,8 @@ Enable specific sets with `--toolsets query,create,modify,meta`, or `--toolsets 
 | `query` | get current view, selected elements, available family types, material quantities, model stats, AI element filter | on |
 | `create` | grid, level, room, line-based, point-based, surface-based element, group from elements | on |
 | `view` | create view, sheet layout, place view on sheet, capture image, set crop/scale, activate view, show element | on |
-| `meta` | `revit_show_message`, `revit_switch_target`, `revit_batch_execute`, usage stats, set project info, purge unused families | on |
+| `meta` | `revit_show_message`, `revit_switch_target`, usage stats, set project info, purge unused families | on |
+| `batch` | `revit_batch_execute` — multi-command atomicity in one `TransactionGroup`; children authorized against the enabled surface, capped at 100 | **off** |
 | `lint` | view-naming pattern analysis, correction suggestions, firm-profile detect, model warnings summary | on |
 | `schedule` | list/inspect, fields/formulas/data/elements, create + add/update field, filter+sort | on |
 | `families` | list loaded families, load/unload/replace family, export/list family types, duplicate/rename family type | on |
@@ -365,7 +366,7 @@ Enable specific sets with `--toolsets query,create,modify,meta`, or `--toolsets 
 
 ### All Tools
 
-The table below highlights representative tools; the full surface is 223 (226 with adaptive bake) across 23 toolsets.
+The table below highlights representative tools; the full surface is 238 (241 with adaptive bake) across 24 toolsets.
 
 | Toolset | Tool | Description |
 |---|---|---|
@@ -414,7 +415,7 @@ The table below highlights representative tools; the full surface is 223 (226 wi
 | `toolbaker` | `revit_dismiss_bake_suggestion` | Adaptive bake only: snooze or dismiss a local suggestion. |
 | `meta` | `revit_show_message` | TaskDialog inside Revit for connection tests or notifications. |
 | `meta` | `revit_switch_target` | Switch active Revit connection when multiple versions run. |
-| `meta` | `revit_batch_execute` | Run commands atomically in one `TransactionGroup`. |
+| `batch` (opt-in) | `revit_batch_execute` | Run commands atomically in one `TransactionGroup`; children are authorized against the enabled tool surface. |
 | `meta` | `revit_analyze_usage_patterns` | Local usage stats: tool calls, sessions, errors. |
 | `lint` | `revit_analyze_view_naming_patterns` | Infer dominant view-naming pattern and outliers. |
 | `lint` | `revit_suggest_view_name_corrections` | Propose corrected names for view outliers. |

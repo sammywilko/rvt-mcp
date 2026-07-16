@@ -37,17 +37,31 @@ namespace RvtMcp.Plugin.Handlers
             var commandsArr = request["commands"] as JArray;
             if (commandsArr == null || commandsArr.Count == 0)
                 return CommandResult.Fail("'commands' must be a non-empty array.");
+            // SLS A4 (Codex r2 finding 4): the batch drains synchronously on Revit's
+            // UI thread — cap it here as well as at the server boundary.
+            if (commandsArr.Count > BatchExecutor.MaxCommands)
+                return CommandResult.Fail(
+                    "'commands' contains " + commandsArr.Count + " entries; the maximum is " +
+                    BatchExecutor.MaxCommands + ". Split the batch.");
 
             var continueOnError = request.Value<bool?>("continueOnError") ?? false;
 
             using (var tg = new TransactionGroup(doc, "MCP: batch_execute"))
             {
-                tg.Start();
+                if (tg.Start() != TransactionStatus.Started)
+                    return CommandResult.Fail(
+                        "batch_execute: could not start a transaction group (is another transaction open?).");
 
                 var outcome = BatchExecutor.Run(commandsArr, continueOnError, (cmdName, subParams) =>
                 {
                     var handler = _dispatcher.GetCommand(cmdName);
                     if (handler == null) return BatchExecutor.InvokeResult.Unknown();
+                    // SLS A4 (Codex r2 finding 4): batch children previously bypassed the
+                    // schema validation direct calls get in McpEventHandler — same
+                    // contract on both paths now.
+                    var validation = SchemaValidator.Validate(handler.ParametersSchema, subParams);
+                    if (!validation.IsValid)
+                        return BatchExecutor.InvokeResult.Fail("Validation failed: " + validation.Error);
                     var r = handler.Execute(app, subParams);
                     return r.Success
                         ? BatchExecutor.InvokeResult.Ok(r.Data)
@@ -57,12 +71,16 @@ namespace RvtMcp.Plugin.Handlers
                 bool rolledBack;
                 if (outcome.AnyFailed && !continueOnError)
                 {
-                    tg.RollBack();
-                    rolledBack = true;
+                    rolledBack = tg.RollBack() == TransactionStatus.RolledBack;
                 }
                 else
                 {
-                    tg.Assimilate();
+                    var status = tg.Assimilate();
+                    if (status != TransactionStatus.Committed)
+                        return CommandResult.Fail(
+                            "batch_execute: assimilating the transaction group returned " + status +
+                            "; the batch outcome is undefined. Results so far: " +
+                            Newtonsoft.Json.JsonConvert.SerializeObject(outcome.Results));
                     rolledBack = false;
                 }
 

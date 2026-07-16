@@ -969,6 +969,10 @@
             "description": "",
             "type": "String"
           },
+          "operationGroupId": {
+            "description": "",
+            "type": "String"
+          },
           "points": {
             "description": "",
             "type": "String"
@@ -1321,6 +1325,10 @@
             "type": "String"
           },
           "level": {
+            "description": "",
+            "type": "String"
+          },
+          "operationGroupId": {
             "description": "",
             "type": "String"
           },
@@ -2531,6 +2539,10 @@
             "description": "",
             "type": "String"
           },
+          "operationGroupId": {
+            "description": "",
+            "type": "String"
+          },
           "startX": {
             "description": "",
             "type": "Double"
@@ -2581,6 +2593,10 @@
             "type": "Double"
           },
           "level": {
+            "description": "",
+            "type": "String"
+          },
+          "operationGroupId": {
             "description": "",
             "type": "String"
           },
@@ -4826,6 +4842,10 @@
             "description": "",
             "type": "String"
           },
+          "operationGroupId": {
+            "description": "",
+            "type": "String"
+          },
           "typeId": {
             "description": "",
             "type": "Nullable`1"
@@ -4935,6 +4955,10 @@
             "type": "Int64"
           },
           "level": {
+            "description": "",
+            "type": "String"
+          },
+          "operationGroupId": {
             "description": "",
             "type": "String"
           },

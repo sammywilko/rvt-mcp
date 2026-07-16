@@ -28,6 +28,7 @@ namespace RvtMcp.Plugin.Handlers
     ""typeId"": { ""type"": ""integer"", ""description"": ""Door type (FamilySymbol) element id"" },
     ""family"": { ""type"": ""string"", ""description"": ""Door family name, e.g. 'M_Door-Passage-Single-Flush' (disambiguates typeName)"" },
     ""typeName"": { ""type"": ""string"", ""description"": ""Door type name, e.g. '0915 x 2134mm'"" },
+    ""operationGroupId"": { ""type"": ""string"", ""description"": ""Optional: the open operation group id — must match or the write is refused"" },
     ""dryRun"": { ""type"": ""boolean"", ""description"": ""Place + capture warnings, then roll back (default false)"" }
   }
 }";
@@ -88,7 +89,7 @@ namespace RvtMcp.Plugin.Handlers
 
             var placement = projection.XYZPoint;
 
-            return SlsWriteSupport.RunWrite(doc, opName, dryRun, scope =>
+            return SlsWriteSupport.RunWrite(doc, opName, dryRun, request.Value<string>("operationGroupId"), scope =>
             {
                 if (!symbol.IsActive)
                     symbol.Activate();

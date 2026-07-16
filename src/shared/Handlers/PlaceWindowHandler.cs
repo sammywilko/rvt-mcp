@@ -25,6 +25,7 @@ namespace RvtMcp.Plugin.Handlers
     ""family"": { ""type"": ""string"", ""description"": ""Window family name, e.g. 'M_Fixed' (disambiguates typeName)"" },
     ""typeName"": { ""type"": ""string"", ""description"": ""Window type name, e.g. '1200 x 1500mm'"" },
     ""sillHeightMm"": { ""type"": ""number"", ""description"": ""Sill height above the level (mm). Omitted = the type/template default, which is reported back."" },
+    ""operationGroupId"": { ""type"": ""string"", ""description"": ""Optional: the open operation group id — must match or the write is refused"" },
     ""dryRun"": { ""type"": ""boolean"", ""description"": ""Place + capture warnings, then roll back (default false)"" }
   }
 }";

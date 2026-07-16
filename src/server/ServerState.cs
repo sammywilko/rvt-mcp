@@ -32,14 +32,33 @@ namespace RvtMcp.Server
         }
 
         /// <summary>
+        /// Max child commands per batch — mirrors BatchExecutor.MaxCommands in the
+        /// plugin (not referencable from the server assembly). Keep the two in sync.
+        /// </summary>
+        public const int MaxBatchCommands = 100;
+
+        /// <summary>
         /// Authorize every batch child command as if it were a direct MCP call: its
         /// revit_-prefixed name must be part of the enabled tool surface and must not
-        /// be denied. Returns an error JSON string on the first violation, else null.
+        /// be denied; operation-group lifecycle commands are refused (their ledger
+        /// state lives outside the batch TransactionGroup — Codex r2 finding 3).
+        /// An optional revit_ prefix on a child is normalized IN PLACE to the bare
+        /// wire name so authorization and dispatch agree (Codex r2 finding 4).
+        /// Returns an error JSON string on the first violation, else null.
         /// Presence in the plugin's CommandDispatcher is NOT authorization.
         /// </summary>
         public static string ValidateBatchChildren(JArray commands)
         {
             if (commands == null) return null;
+
+            if (commands.Count > MaxBatchCommands)
+                return JsonConvert.SerializeObject(new
+                {
+                    error = "batch_too_large",
+                    count = commands.Count,
+                    message = $"'commands' contains {commands.Count} entries; the maximum is " +
+                              $"{MaxBatchCommands}. Split the batch."
+                }, Formatting.Indented);
 
             var deny = new HashSet<string>(
                 Config?.DenyToolsOrDefault ?? new List<string>(),
@@ -47,13 +66,29 @@ namespace RvtMcp.Server
 
             foreach (var token in commands)
             {
-                var bare = (token as JObject)?.Value<string>("command");
-                if (string.IsNullOrWhiteSpace(bare))
+                var child = token as JObject;
+                var raw = child?.Value<string>("command");
+                if (string.IsNullOrWhiteSpace(raw))
                     continue; // the plugin-side executor reports the malformed entry
 
-                var mcpName = bare.StartsWith("revit_", StringComparison.OrdinalIgnoreCase)
-                    ? bare
-                    : "revit_" + bare;
+                var bare = raw.StartsWith("revit_", StringComparison.OrdinalIgnoreCase)
+                    ? raw.Substring("revit_".Length)
+                    : raw;
+                var mcpName = "revit_" + bare;
+                if (!string.Equals(raw, bare, StringComparison.Ordinal))
+                    child["command"] = bare; // normalize for plugin dispatch
+
+                if (string.Equals(bare, "begin_operation_group", StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(bare, "commit_operation_group", StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(bare, "rollback_operation_group", StringComparison.OrdinalIgnoreCase))
+                    return JsonConvert.SerializeObject(new
+                    {
+                        error = "operation_group_in_batch",
+                        tool = mcpName,
+                        message = $"'{bare}' cannot run inside batch_execute: operation-group state lives " +
+                                  "outside the batch's TransactionGroup, so a failed batch could not " +
+                                  "restore it. Call it directly."
+                    }, Formatting.Indented);
 
                 if (deny.Contains(mcpName) || deny.Contains(bare))
                     return JsonConvert.SerializeObject(new

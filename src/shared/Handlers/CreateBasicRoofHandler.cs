@@ -31,6 +31,7 @@ namespace RvtMcp.Plugin.Handlers
     ""family"": { ""type"": ""string"", ""description"": ""Roof family name, e.g. 'Basic Roof' (disambiguates typeName)"" },
     ""typeName"": { ""type"": ""string"", ""description"": ""Roof type name, e.g. 'Generic - 300mm'"" },
     ""slopeDegrees"": { ""type"": ""number"", ""description"": ""Uniform slope on every edge, in degrees (0-75). Omit for flat."" },
+    ""operationGroupId"": { ""type"": ""string"", ""description"": ""Optional: the open operation group id — must match or the write is refused"" },
     ""dryRun"": { ""type"": ""boolean"", ""description"": ""Build + capture warnings, then roll back (default false)"" }
   }
 }";
@@ -61,7 +62,7 @@ namespace RvtMcp.Plugin.Handlers
             var roofType = SlsWriteSupport.ResolveTypeStrict<RoofType>(doc, request, "roof type", null, out error);
             if (roofType == null) return CommandResult.Fail(error);
 
-            return SlsWriteSupport.RunWrite(doc, "create_basic_roof", dryRun, scope =>
+            return SlsWriteSupport.RunWrite(doc, "create_basic_roof", dryRun, request.Value<string>("operationGroupId"), scope =>
             {
                 var footprint = new CurveArray();
                 for (var i = 0; i < loop.Count; i++)

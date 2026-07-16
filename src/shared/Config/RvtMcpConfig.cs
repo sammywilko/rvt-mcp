@@ -48,7 +48,7 @@ namespace RvtMcp.Plugin
         /// <summary>
         /// SLS A4: individual MCP tool names to hide from tools/list AND refuse at
         /// call time, regardless of toolset. Finer-grained than <see cref="Toolsets"/> —
-        /// needed because e.g. revit_batch_execute lives in the always-useful "meta"
+        /// e.g. hiding a single legacy create tool while keeping the rest of its
         /// toolset (PRD §12.7: high-risk operations disabled by default).
         /// </summary>
         [JsonProperty("denyTools")]

@@ -29,6 +29,7 @@ namespace RvtMcp.Plugin.Handlers
     ""family"": { ""type"": ""string"", ""description"": ""Wall family name, e.g. 'Basic Wall' (disambiguates typeName)"" },
     ""typeName"": { ""type"": ""string"", ""description"": ""Wall type name, e.g. 'Interior - 114mm Partition'"" },
     ""structural"": { ""type"": ""boolean"", ""description"": ""Structural usage (default false)"" },
+    ""operationGroupId"": { ""type"": ""string"", ""description"": ""Optional: the open operation group id — must match or the write is refused"" },
     ""dryRun"": { ""type"": ""boolean"", ""description"": ""Build + capture warnings, then roll back (default false)"" }
   }
 }";
@@ -68,7 +69,7 @@ namespace RvtMcp.Plugin.Handlers
             var wallType = SlsWriteSupport.ResolveTypeStrict<WallType>(doc, request, "wall type", null, out error);
             if (wallType == null) return CommandResult.Fail(error);
 
-            return SlsWriteSupport.RunWrite(doc, "create_wall", dryRun, scope =>
+            return SlsWriteSupport.RunWrite(doc, "create_wall", dryRun, request.Value<string>("operationGroupId"), scope =>
             {
                 var line = Line.CreateBound(
                     new XYZ(SlsWriteSupport.MmToFt(startX), SlsWriteSupport.MmToFt(startY), 0),

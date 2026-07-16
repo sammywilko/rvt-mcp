@@ -282,6 +282,19 @@ namespace RvtMcp.Plugin.Handlers
         /// </summary>
         public static CommandResult RunWrite(Document doc, string opName, bool dryRun, Func<FailureScope, object> body)
         {
+            return RunWrite(doc, opName, dryRun, null, body);
+        }
+
+        public static CommandResult RunWrite(
+            Document doc, string opName, bool dryRun, string requestedGroupId, Func<FailureScope, object> body)
+        {
+            // Fail closed BEFORE writing: a write must never silently land outside an
+            // open operation group (doc switched, wrong/stale operationGroupId) — the
+            // caller would believe it staged something it didn't (Codex r2 finding 2).
+            var groupError = OperationGroupManager.ValidateForWrite(doc, requestedGroupId);
+            if (groupError != null)
+                return CommandResult.Fail(opName + ": " + groupError);
+
             TransactionGroup dryRunGroup = null;
             FailureScope scope = null;
             try
@@ -325,15 +338,16 @@ namespace RvtMcp.Plugin.Handlers
                 }
 
                 var result = BuildResult(payload, scope, dryRun);
+                var recorded = false;
                 if (!dryRun)
                 {
-                    // Stage this write's created elements in the open operation group
-                    // (no-op when no group is open or the doc differs).
+                    // Stage this write's created elements in the open operation group.
                     var ids = result["element_ids"] as JArray;
                     if (ids != null)
-                        OperationGroupManager.RecordWrite(doc, ids.Select(t => (long)t));
+                        recorded = OperationGroupManager.RecordWrite(doc, ids.Select(t => (long)t));
                 }
                 result["operation_group_active"] = OperationGroupManager.IsActive;
+                result["operation_group_recorded"] = recorded;
                 return CommandResult.Ok(result);
             }
             finally

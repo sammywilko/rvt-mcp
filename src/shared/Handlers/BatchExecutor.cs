@@ -12,6 +12,13 @@ namespace RvtMcp.Plugin.Handlers
     /// </summary>
     public static class BatchExecutor
     {
+        /// <summary>
+        /// Hard cap on commands per batch (SLS A4, Codex r2 finding 4): the batch
+        /// drains synchronously on Revit's UI thread, so an unbounded list is a local
+        /// denial of service. The server enforces the same cap at its boundary.
+        /// </summary>
+        public const int MaxCommands = 100;
+
         public class Outcome
         {
             public List<object> Results { get; set; } = new List<object>();
@@ -74,10 +81,28 @@ namespace RvtMcp.Plugin.Handlers
                 // wire-level command names directly to the plugin — without this, a batch
                 // could smuggle send_code_to_revit past a server that has the toolbaker
                 // toolset disabled (PRD §6.3/§9.3: no arbitrary code execution by default).
-                if (string.Equals(cmdName, "send_code_to_revit", StringComparison.Ordinal) ||
-                    string.Equals(cmdName, "apply_bake_suggestion", StringComparison.Ordinal))
+                // Both bare and revit_-prefixed spellings are normalized before checking.
+                var bareName = cmdName.StartsWith("revit_", StringComparison.OrdinalIgnoreCase)
+                    ? cmdName.Substring("revit_".Length)
+                    : cmdName;
+                if (string.Equals(bareName, "send_code_to_revit", StringComparison.Ordinal) ||
+                    string.Equals(bareName, "apply_bake_suggestion", StringComparison.Ordinal))
                 {
-                    outcome.Results.Add(new { index = i, ok = false, error = EvalCommandNotSupportedMessage(cmdName) });
+                    outcome.Results.Add(new { index = i, ok = false, error = EvalCommandNotSupportedMessage(bareName) });
+                    outcome.AnyFailed = true;
+                    if (!continueOnError) return outcome;
+                    continue;
+                }
+
+                // SLS A4 (Codex r2 finding 3): operation-group lifecycle commands mutate
+                // ledger state OUTSIDE the batch's TransactionGroup — a later batch
+                // failure would roll the model back but not the ledger, splitting the two
+                // states. They must run as direct calls only.
+                if (string.Equals(bareName, "begin_operation_group", StringComparison.Ordinal) ||
+                    string.Equals(bareName, "commit_operation_group", StringComparison.Ordinal) ||
+                    string.Equals(bareName, "rollback_operation_group", StringComparison.Ordinal))
+                {
+                    outcome.Results.Add(new { index = i, ok = false, error = OperationGroupCommandNotSupportedMessage(bareName) });
                     outcome.AnyFailed = true;
                     if (!continueOnError) return outcome;
                     continue;
@@ -150,6 +175,10 @@ namespace RvtMcp.Plugin.Handlers
 
         public static string EvalCommandNotSupportedMessage(string name) =>
             $"'{name}' cannot run inside batch_execute; call it directly (if it is enabled on this server).";
+
+        public static string OperationGroupCommandNotSupportedMessage(string name) =>
+            $"'{name}' cannot run inside batch_execute: operation-group state lives outside the batch's " +
+            "TransactionGroup, so a later batch failure could not restore it. Call it directly.";
 
         private static bool TryGetPartialFailureCount(object data, out int failedCount)
         {

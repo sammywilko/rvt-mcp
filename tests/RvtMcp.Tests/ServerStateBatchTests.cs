@@ -87,5 +87,49 @@ namespace RvtMcp.Tests
             var arr = new JArray { new JObject { ["params"] = new JObject() } };
             Assert.Null(ServerState.ValidateBatchChildren(arr));
         }
+
+        [Theory]
+        [InlineData("begin_operation_group")]
+        [InlineData("commit_operation_group")]
+        [InlineData("rollback_operation_group")]
+        [InlineData("revit_rollback_operation_group")]
+        public void OperationGroupLifecycle_IsRefusedInBatch(string command)
+        {
+            ServerState.Config = new RvtMcpConfig();
+            ServerState.EnabledToolNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+                { "revit_begin_operation_group", "revit_commit_operation_group", "revit_rollback_operation_group" };
+
+            var error = ServerState.ValidateBatchChildren(Batch(command));
+
+            Assert.NotNull(error);
+            Assert.Contains("operation_group_in_batch", error);
+        }
+
+        [Fact]
+        public void PrefixedChild_IsNormalizedToBareWireName()
+        {
+            ServerState.Config = new RvtMcpConfig();
+            ServerState.EnabledToolNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+                { "revit_create_level" };
+
+            var arr = Batch("revit_create_level");
+            Assert.Null(ServerState.ValidateBatchChildren(arr));
+            Assert.Equal("create_level", ((JObject)arr[0]).Value<string>("command"));
+        }
+
+        [Fact]
+        public void OversizedBatch_IsRefused()
+        {
+            ServerState.Config = new RvtMcpConfig();
+            ServerState.EnabledToolNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+                { "revit_create_level" };
+
+            var names = new string[ServerState.MaxBatchCommands + 1];
+            for (var i = 0; i < names.Length; i++) names[i] = "create_level";
+            var error = ServerState.ValidateBatchChildren(Batch(names));
+
+            Assert.NotNull(error);
+            Assert.Contains("batch_too_large", error);
+        }
     }
 }
