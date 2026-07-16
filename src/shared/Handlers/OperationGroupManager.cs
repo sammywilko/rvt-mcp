@@ -63,6 +63,20 @@ namespace RvtMcp.Plugin.Handlers
         }
 
         /// <summary>
+        /// Stable same-document check. Revit hands out different managed wrappers
+        /// for the same open document across ExternalEvent callbacks, so
+        /// ReferenceEquals false-positives "different document" (caught live in the
+        /// A4 verify run). Document.Equals compares the underlying native document.
+        /// </summary>
+        private static bool SameDocument(Document a, Document b)
+        {
+            if (ReferenceEquals(a, b)) return true;
+            if (a == null || b == null) return false;
+            try { return a.IsValidObject && b.IsValidObject && a.Equals(b); }
+            catch { return false; }
+        }
+
+        /// <summary>
         /// Fail-closed pre-check for every SLS write (Codex round 2, finding 2): a
         /// write must never silently commit OUTSIDE an open group the caller thinks
         /// it is inside. Returns an error string (the write must not run) or null.
@@ -78,7 +92,7 @@ namespace RvtMcp.Plugin.Handlers
                         : "operationGroupId was passed but no operation group is open " +
                           "(it may have auto-closed). Call begin_operation_group first, or omit operationGroupId.";
 
-                if (!ReferenceEquals(doc, _doc))
+                if (!SameDocument(doc, _doc))
                     return "An operation group ('" + _name + "') is open on a DIFFERENT document — this " +
                            "write would silently land outside it. Commit or roll back the group, or switch " +
                            "back to its document, then retry.";
@@ -113,7 +127,7 @@ namespace RvtMcp.Plugin.Handlers
             lock (Gate)
             {
                 ExpireIfStaleLocked();
-                if (_groupId == null || !ReferenceEquals(doc, _doc) || createdElementIds == null)
+                if (_groupId == null || !SameDocument(doc, _doc) || createdElementIds == null)
                     return false;
                 _createdIds.AddRange(createdElementIds);
                 _lastTouchedUtc = DateTime.UtcNow;
