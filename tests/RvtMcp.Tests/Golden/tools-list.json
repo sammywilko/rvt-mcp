@@ -503,7 +503,7 @@
     },
     {
       "name": "revit_batch_execute",
-      "description_hash": "sha256:138fdd070a88768b8d0c7c97a187f6644388e0188bf9136084babf9c59420d84",
+      "description_hash": "sha256:b955956c7e93d3f67067d9e05384e11f32a813921ce05879313595cfd6b81693",
       "inputSchema": {
         "properties": {
           "commands": {
@@ -552,7 +552,7 @@
     },
     {
       "name": "revit_begin_operation_group",
-      "description_hash": "sha256:3f824e89148a85c1a6eb9bc39c9f69a6e0b27a1a64a99bc54fb2737b42d8b16b",
+      "description_hash": "sha256:836a1c6a9d101cefb21988352357a17ff03dbd593cf632e9d66a23150465fc43",
       "inputSchema": {
         "properties": {
           "name": {
@@ -726,10 +726,17 @@
     },
     {
       "name": "revit_commit_operation_group",
-      "description_hash": "sha256:c826ee29abb275ae6d5cde2c07527d0a1a6e3d02efcdcbeee2bc325899e81615",
+      "description_hash": "sha256:41c797375cf2ac229e917bd41777fd08f6f7698cf04e2fc958fff72df14e2544",
       "inputSchema": {
-        "properties": {},
-        "required": [],
+        "properties": {
+          "groupId": {
+            "description": "",
+            "type": "String"
+          }
+        },
+        "required": [
+          "groupId"
+        ],
         "type": "object"
       }
     },
@@ -5203,10 +5210,17 @@
     },
     {
       "name": "revit_rollback_operation_group",
-      "description_hash": "sha256:817556821459baccdc72281c0db6829095d33ed2689cc3ef9f3b0b3a7c2a4c8c",
+      "description_hash": "sha256:2c38c4550cc11e29fc36ebeb1d02012cb0a67177aad1127e1344a1756eba4b88",
       "inputSchema": {
-        "properties": {},
-        "required": [],
+        "properties": {
+          "groupId": {
+            "description": "",
+            "type": "String"
+          }
+        },
+        "required": [
+          "groupId"
+        ],
         "type": "object"
       }
     },

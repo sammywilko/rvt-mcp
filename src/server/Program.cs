@@ -318,8 +318,32 @@ Tools (prefix revit_<verb>_<noun>, lengths in mm):
             if (enabled.Contains("meta"))       mcp = mcp.WithTools<MetaTools>();
             if (enabled.Contains("lint"))       mcp = mcp.WithTools<LintTools>();
             if (enabled.Contains("structural")) mcp = mcp.WithTools<StructuralTools>();
+            if (enabled.Contains("batch"))      mcp = mcp.WithTools<BatchTools>();
+            ServerState.EnabledToolNames = CollectToolNames(ResolveRegisteredToolTypes(enabled, config));
             mcp = ApplyDenyTools(mcp, config);
             return mcp;
+        }
+
+        /// <summary>
+        /// Collect the MCP tool names ([McpServerTool(Name = ...)]) exposed by the
+        /// given toolset classes — the resolved tool surface used to authorize
+        /// batch_execute child commands (SLS A4).
+        /// </summary>
+        private static HashSet<string> CollectToolNames(Type[] toolTypes)
+        {
+            var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var type in toolTypes)
+            {
+                foreach (var method in type.GetMethods(
+                    System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static))
+                {
+                    var attr = (McpServerToolAttribute)Attribute.GetCustomAttribute(
+                        method, typeof(McpServerToolAttribute));
+                    if (attr != null && !string.IsNullOrWhiteSpace(attr.Name))
+                        names.Add(attr.Name);
+                }
+            }
+            return names;
         }
 
         /// <summary>
@@ -387,6 +411,7 @@ Tools (prefix revit_<verb>_<noun>, lengths in mm):
             if (enabled.Contains("meta"))       types.Add(typeof(MetaTools));
             if (enabled.Contains("lint"))       types.Add(typeof(LintTools));
             if (enabled.Contains("structural")) types.Add(typeof(StructuralTools));
+            if (enabled.Contains("batch"))      types.Add(typeof(BatchTools));
             return types.ToArray();
         }
     }
@@ -1242,8 +1267,10 @@ Tools (prefix revit_<verb>_<noun>, lengths in mm):
 
         // ---- SLS A4 operation groups (PRD §12.7 utility group). Kept in the 'create'
         // ---- toolset so --read-only strips them along with the other write tools.
+        // ---- Ledger + compensating-delete design: a TransactionGroup cannot legally
+        // ---- stay open across ExternalEvent callbacks (Codex review finding 1).
 
-        [McpServerTool(Name = "revit_begin_operation_group", Destructive = false), System.ComponentModel.Description("Open a named operation group (Revit TransactionGroup): subsequent writes are staged so commit_operation_group lands them as ONE undo entry and rollback_operation_group discards them all. One group at a time; the group auto-rolls-back after 10 min without writes, or if the active document changes or closes. Optional: name (becomes the undo entry label).")]
+        [McpServerTool(Name = "revit_begin_operation_group", Destructive = false), System.ComponentModel.Description("Open a named operation group: elements created by subsequent SLS writes (create_wall/wall_loop/floor/place_door/place_window/create_basic_roof) are staged in a ledger. Returns group_id — required by commit/rollback. commit keeps the elements; rollback deletes them all (manual edits untouched). One group at a time; after 10 min without writes it auto-closes KEEPING its elements. Optional: name.")]
         public static async Task<string> BeginOperationGroup(string name = "")
         {
             try
@@ -1254,23 +1281,23 @@ Tools (prefix revit_<verb>_<noun>, lengths in mm):
             catch (Exception ex) { return $"Error: {ex.Message}"; }
         }
 
-        [McpServerTool(Name = "revit_commit_operation_group", Destructive = false), System.ComponentModel.Description("Commit the open operation group: all writes staged since begin_operation_group become a single Revit undo entry named after the group.")]
-        public static async Task<string> CommitOperationGroup()
+        [McpServerTool(Name = "revit_commit_operation_group", Destructive = false), System.ComponentModel.Description("Commit the open operation group: all elements created through SLS writes since begin_operation_group are kept and the group closes. Params: groupId (from begin_operation_group).")]
+        public static async Task<string> CommitOperationGroup(string groupId)
         {
             try
             {
-                var result = await ToolGateway.SendToRevit("commit_operation_group", new { });
+                var result = await ToolGateway.SendToRevit("commit_operation_group", new { groupId });
                 return JsonConvert.SerializeObject(result, Formatting.Indented);
             }
             catch (Exception ex) { return $"Error: {ex.Message}"; }
         }
 
-        [McpServerTool(Name = "revit_rollback_operation_group", Destructive = false), System.ComponentModel.Description("Roll back the open operation group: every write staged since begin_operation_group is discarded and the model returns to its pre-group state.")]
-        public static async Task<string> RollbackOperationGroup()
+        [McpServerTool(Name = "revit_rollback_operation_group", Destructive = false), System.ComponentModel.Description("Roll back the open operation group: every element created through SLS writes since begin_operation_group is deleted in one transaction (the stage-rollback mechanism; manual edits are untouched). Params: groupId (from begin_operation_group).")]
+        public static async Task<string> RollbackOperationGroup(string groupId)
         {
             try
             {
-                var result = await ToolGateway.SendToRevit("rollback_operation_group", new { });
+                var result = await ToolGateway.SendToRevit("rollback_operation_group", new { groupId });
                 return JsonConvert.SerializeObject(result, Formatting.Indented);
             }
             catch (Exception ex) { return $"Error: {ex.Message}"; }
@@ -2342,6 +2369,40 @@ Tools (prefix revit_<verb>_<noun>, lengths in mm):
         }
     }
 
+    // SLS A4 (Codex review finding 3): batch moved out of "meta" into its own
+    // default-OFF, write-capable toolset. Batch dispatches wire-level command names
+    // straight to the plugin, so it must not ride along with target discovery, and
+    // every child command is authorized server-side against the same resolved tool
+    // surface + deny list a direct MCP call would face.
+    [McpServerToolType, Toolset("batch")]
+    public class BatchTools
+    {
+        [McpServerTool(Name = "revit_batch_execute"), System.ComponentModel.Description(
+            "Run multiple MCP commands atomically inside one Revit TransactionGroup (single undo on success). " +
+            "Input: commands — JSON array of {command, params}, e.g. " +
+            "'[{\"command\":\"create_level\",\"params\":{\"elevation\":3000}}, " +
+            "{\"command\":\"create_grid\",\"params\":{\"startX\":0,\"startY\":0,\"endX\":5000,\"endY\":0}}]'. " +
+            "Child commands must belong to this server's enabled tool surface and not be denied. " +
+            "On any failure the whole group rolls back unless continueOnError=true. " +
+            "Returns: {results: [{index, ok, data|error}], rolledBack}.")]
+        public static async Task<string> BatchExecute(string commands, bool continueOnError = false)
+        {
+            var blocked = ServerState.BlockIfReadOnly("batch_execute");
+            if (blocked != null) return blocked;
+
+            try
+            {
+                var parsed = JArray.Parse(commands);
+                var unauthorized = ServerState.ValidateBatchChildren(parsed);
+                if (unauthorized != null) return unauthorized;
+
+                var result = await ToolGateway.SendToRevit("batch_execute", new { commands = parsed, continueOnError });
+                return JsonConvert.SerializeObject(result, Formatting.Indented);
+            }
+            catch (Exception ex) { return $"Error: {ex.Message}"; }
+        }
+    }
+
     [McpServerToolType, Toolset("meta")]
     public class MetaTools
     {
@@ -2506,24 +2567,6 @@ Tools (prefix revit_<verb>_<noun>, lengths in mm):
                         note = "Target set, but verify failed. The next tool call may still succeed."
                     });
                 }
-            }
-            catch (Exception ex) { return $"Error: {ex.Message}"; }
-        }
-
-        [McpServerTool(Name = "revit_batch_execute"), System.ComponentModel.Description(
-            "Run multiple MCP commands atomically inside one Revit TransactionGroup (single undo on success). " +
-            "Input: commands — JSON array of {command, params}, e.g. " +
-            "'[{\"command\":\"create_level\",\"params\":{\"elevation\":3000}}, " +
-            "{\"command\":\"create_grid\",\"params\":{\"startX\":0,\"startY\":0,\"endX\":5000,\"endY\":0}}]'. " +
-            "On any failure the whole group rolls back unless continueOnError=true. " +
-            "Returns: {results: [{index, ok, data|error}], rolledBack}.")]
-        public static async Task<string> BatchExecute(string commands, bool continueOnError = false)
-        {
-            try
-            {
-                var parsed = JArray.Parse(commands);
-                var result = await ToolGateway.SendToRevit("batch_execute", new { commands = parsed, continueOnError });
-                return JsonConvert.SerializeObject(result, Formatting.Indented);
             }
             catch (Exception ex) { return $"Error: {ex.Message}"; }
         }

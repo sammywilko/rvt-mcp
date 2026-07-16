@@ -10,9 +10,10 @@ namespace RvtMcp.Plugin.Handlers
     {
         public string Name => "begin_operation_group";
         public string Description =>
-            "Open a named operation group (TransactionGroup). Subsequent writes are staged: " +
-            "commit_operation_group lands them as ONE undo entry; rollback_operation_group discards " +
-            "them. One group at a time; auto-rolls-back after 10 min idle, or if the document changes/closes.";
+            "Open a named operation group: elements created by subsequent SLS writes are staged in a " +
+            "ledger. commit_operation_group keeps them; rollback_operation_group deletes them all " +
+            "(manual edits untouched). Returns a group_id required by commit/rollback. One group at a " +
+            "time; after 10 min without writes it auto-closes KEEPING its elements.";
         public string ParametersSchema => @"{
   ""type"": ""object"",
   ""properties"": {

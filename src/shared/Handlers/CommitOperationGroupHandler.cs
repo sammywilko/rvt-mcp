@@ -1,20 +1,28 @@
 using Autodesk.Revit.UI;
+using Newtonsoft.Json.Linq;
 
 namespace RvtMcp.Plugin.Handlers
 {
-    // SLS A4 operation groups: commit (assimilate) the open group — every staged
-    // write becomes a single named undo entry.
+    // SLS A4 operation groups: commit the open group — its staged elements are kept
+    // and the ledger closes. Requires the group_id ownership token from begin.
     public class CommitOperationGroupHandler : IRevitCommand
     {
         public string Name => "commit_operation_group";
         public string Description =>
-            "Commit the open operation group: all writes staged since begin_operation_group become one " +
-            "Revit undo entry named after the group.";
-        public string ParametersSchema => @"{ ""type"": ""object"", ""properties"": {} }";
+            "Commit the open operation group: all elements created through SLS writes since " +
+            "begin_operation_group are kept and the group closes. Requires the group_id returned by begin.";
+        public string ParametersSchema => @"{
+  ""type"": ""object"",
+  ""required"": [""groupId""],
+  ""properties"": {
+    ""groupId"": { ""type"": ""string"", ""description"": ""The group_id returned by begin_operation_group"" }
+  }
+}";
 
         public CommandResult Execute(UIApplication app, string paramsJson)
         {
-            return OperationGroupManager.Commit();
+            var request = JObject.Parse(paramsJson);
+            return OperationGroupManager.Commit(request.Value<string>("groupId"));
         }
     }
 }

@@ -16,6 +16,9 @@ namespace RvtMcp.Plugin.Handlers
     internal static class SlsWriteSupport
     {
         public const double MmPerFoot = 304.8;
+        /// <summary>Hard cap on loop/footprint points — unbounded input would run on
+        /// Revit's UI thread (Codex review finding 4).</summary>
+        public const int MaxLoopPoints = 512;
         private const double SqFtToSqM = 0.09290304;
 
         public static double MmToFt(double mm) { return mm / MmPerFoot; }
@@ -152,6 +155,9 @@ namespace RvtMcp.Plugin.Handlers
             loopFt = null;
             if (points == null || points.Count < 3)
                 return "points must be an array of at least 3 {x, y} objects (mm).";
+            if (points.Count > MaxLoopPoints)
+                return "points contains " + points.Count + " entries; the maximum is " + MaxLoopPoints +
+                       ". Simplify or split the footprint before retrying.";
 
             var mm = new List<double[]>();
             for (var i = 0; i < points.Count; i++)
@@ -318,8 +324,17 @@ namespace RvtMcp.Plugin.Handlers
                     dryRunGroup = null;
                 }
 
-                OperationGroupManager.TouchFromWrite(doc);
-                return Success(payload, scope, dryRun);
+                var result = BuildResult(payload, scope, dryRun);
+                if (!dryRun)
+                {
+                    // Stage this write's created elements in the open operation group
+                    // (no-op when no group is open or the doc differs).
+                    var ids = result["element_ids"] as JArray;
+                    if (ids != null)
+                        OperationGroupManager.RecordWrite(doc, ids.Select(t => (long)t));
+                }
+                result["operation_group_active"] = OperationGroupManager.IsActive;
+                return CommandResult.Ok(result);
             }
             finally
             {
@@ -336,7 +351,7 @@ namespace RvtMcp.Plugin.Handlers
             }
         }
 
-        public static CommandResult Success(object payload, FailureScope scope, bool dryRun)
+        private static JObject BuildResult(object payload, FailureScope scope, bool dryRun)
         {
             var result = payload == null ? new JObject() : JObject.FromObject(payload);
             result["status"] = scope != null && scope.Warnings.Count > 0 ? "warning" : "success";
@@ -345,8 +360,7 @@ namespace RvtMcp.Plugin.Handlers
             if (dryRun)
                 result["dry_run_note"] = "All changes were rolled back; element_ids were real during the " +
                                          "dry run but no longer exist.";
-            result["operation_group_active"] = OperationGroupManager.IsActive;
-            return CommandResult.Ok(result);
+            return result;
         }
 
         public static CommandResult Failure(string message, FailureScope scope)

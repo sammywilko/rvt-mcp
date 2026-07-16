@@ -22,6 +22,7 @@ namespace RvtMcp.Plugin.Handlers
     ""points"": {
       ""type"": ""array"",
       ""minItems"": 3,
+      ""maxItems"": 512,
       ""description"": ""Roof footprint corner points in order, each {x, y} in mm; the loop closes automatically"",
       ""items"": { ""type"": ""object"", ""properties"": { ""x"": { ""type"": ""number"" }, ""y"": { ""type"": ""number"" } } }
     },

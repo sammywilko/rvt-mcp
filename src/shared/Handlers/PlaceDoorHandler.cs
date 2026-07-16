@@ -97,15 +97,32 @@ namespace RvtMcp.Plugin.Handlers
                     placement, symbol, host, level, StructuralType.NonStructural);
                 doc.Regenerate();
 
+                // A requested sill height must land exactly or the call fails — silently
+                // keeping the type default while reporting success is the invisible-default
+                // class this slice exists to remove (Codex review finding 5). Throwing here
+                // rolls the placement back atomically via RunWrite.
                 double? actualSillMm = null;
                 var sillParam = instance.get_Parameter(BuiltInParameter.INSTANCE_SILL_HEIGHT_PARAM);
-                if (sillHeightMm.HasValue && sillParam != null && !sillParam.IsReadOnly)
+                if (sillHeightMm.HasValue)
                 {
-                    sillParam.Set(SlsWriteSupport.MmToFt(sillHeightMm.Value));
+                    if (sillParam == null)
+                        throw new InvalidOperationException(
+                            "sillHeightMm was requested but this family has no sill-height parameter.");
+                    if (sillParam.IsReadOnly)
+                        throw new InvalidOperationException(
+                            "sillHeightMm was requested but this family's sill-height parameter is read-only.");
+                    if (!sillParam.Set(SlsWriteSupport.MmToFt(sillHeightMm.Value)))
+                        throw new InvalidOperationException(
+                            "Revit refused to set the requested sill height.");
                     doc.Regenerate();
                 }
                 if (sillParam != null)
                     actualSillMm = Math.Round(SlsWriteSupport.FtToMm(sillParam.AsDouble()), 1);
+                if (sillHeightMm.HasValue &&
+                    (!actualSillMm.HasValue || Math.Abs(actualSillMm.Value - sillHeightMm.Value) > 0.5))
+                    throw new InvalidOperationException(
+                        "Requested sill height " + sillHeightMm.Value + " mm, but Revit reports " +
+                        (actualSillMm.HasValue ? actualSillMm.Value + " mm" : "no value") + " after setting it.");
 
                 return new
                 {
