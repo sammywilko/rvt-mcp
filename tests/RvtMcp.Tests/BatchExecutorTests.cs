@@ -228,6 +228,31 @@ namespace RvtMcp.Tests
             Assert.Equal("run_baked_tool cannot be invoked through batch_execute; call run_baked_tool directly.", result.Value<string>("error"));
         }
 
+        // --- SLS A4: eval commands blocked inside batch ---------------------
+
+        [Theory]
+        [InlineData("send_code_to_revit")]
+        [InlineData("apply_bake_suggestion")]
+        public void Run_EvalCommands_RejectedBeforeInvoke(string evalCommand)
+        {
+            var invoked = false;
+            var cmds = Cmds((evalCommand, new { code = "return 1;" }));
+
+            var outcome = BatchExecutor.Run(
+                cmds,
+                continueOnError: false,
+                (_, __) =>
+                {
+                    invoked = true;
+                    return BatchExecutor.InvokeResult.Ok(null);
+                });
+
+            Assert.True(outcome.AnyFailed);
+            Assert.False(invoked);
+            var result = JObject.FromObject(outcome.Results[0]);
+            Assert.Equal(BatchExecutor.EvalCommandNotSupportedMessage(evalCommand), result.Value<string>("error"));
+        }
+
         [Fact]
         public void Run_HandlerThrows_CapturedAsFailure()
         {

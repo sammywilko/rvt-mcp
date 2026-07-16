@@ -70,6 +70,19 @@ namespace RvtMcp.Plugin.Handlers
                     continue;
                 }
 
+                // SLS A4: eval commands are blocked here because batch_execute dispatches
+                // wire-level command names directly to the plugin — without this, a batch
+                // could smuggle send_code_to_revit past a server that has the toolbaker
+                // toolset disabled (PRD §6.3/§9.3: no arbitrary code execution by default).
+                if (string.Equals(cmdName, "send_code_to_revit", StringComparison.Ordinal) ||
+                    string.Equals(cmdName, "apply_bake_suggestion", StringComparison.Ordinal))
+                {
+                    outcome.Results.Add(new { index = i, ok = false, error = EvalCommandNotSupportedMessage(cmdName) });
+                    outcome.AnyFailed = true;
+                    if (!continueOnError) return outcome;
+                    continue;
+                }
+
                 if (isBakedCommand != null && isBakedCommand(cmdName))
                 {
                     outcome.Results.Add(new { index = i, ok = false, error = BakedCommandNotSupportedMessage(cmdName) });
@@ -134,6 +147,9 @@ namespace RvtMcp.Plugin.Handlers
 
         public static string RunBakedToolNotSupportedMessage() =>
             "run_baked_tool cannot be invoked through batch_execute; call run_baked_tool directly.";
+
+        public static string EvalCommandNotSupportedMessage(string name) =>
+            $"'{name}' cannot run inside batch_execute; call it directly (if it is enabled on this server).";
 
         private static bool TryGetPartialFailureCount(object data, out int failedCount)
         {

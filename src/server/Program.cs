@@ -193,6 +193,9 @@ namespace RvtMcp.Server
                 "                          Known toolsets: " + string.Join(", ", ToolsetFilter.KnownToolsets),
                 "                          Use 'all' to expose every toolset.",
                 "  --read-only             Shortcut that strips every configured write-capable toolset.",
+                "  --deny-tools <csv>      Comma list of individual tool names to hide from tools/list and",
+                "                          refuse at call time (e.g. revit_batch_execute). Finer-grained",
+                "                          than --toolsets.",
                 "",
                 "ToolBaker:",
                 "  --enable-toolbaker      Allow ToolBaker tools (default ON).",
@@ -315,7 +318,45 @@ Tools (prefix revit_<verb>_<noun>, lengths in mm):
             if (enabled.Contains("meta"))       mcp = mcp.WithTools<MetaTools>();
             if (enabled.Contains("lint"))       mcp = mcp.WithTools<LintTools>();
             if (enabled.Contains("structural")) mcp = mcp.WithTools<StructuralTools>();
+            mcp = ApplyDenyTools(mcp, config);
             return mcp;
+        }
+
+        /// <summary>
+        /// SLS A4 tool-granular deny (PRD §12.7 "high-risk operations disabled by
+        /// default"). Denied tools are stripped from tools/list AND refused at call
+        /// time — toolsets are too coarse for e.g. revit_batch_execute, which shares
+        /// the "meta" toolset with target discovery.
+        /// </summary>
+        private static IMcpServerBuilder ApplyDenyTools(IMcpServerBuilder mcp, RvtMcpConfig config)
+        {
+            var denyList = config?.DenyToolsOrDefault;
+            if (denyList == null || denyList.Count == 0)
+                return mcp;
+
+            var deny = new HashSet<string>(denyList, StringComparer.OrdinalIgnoreCase);
+            Console.Error.WriteLine("[RvtMcp] deny-tools active: " + string.Join(",", deny.OrderBy(n => n)));
+
+            return mcp.WithRequestFilters(filters =>
+            {
+                filters.AddListToolsFilter(next => async (request, cancellationToken) =>
+                {
+                    var result = await next(request, cancellationToken);
+                    if (result?.Tools != null)
+                        result.Tools = result.Tools
+                            .Where(t => t?.Name == null || !deny.Contains(t.Name))
+                            .ToList();
+                    return result;
+                });
+                filters.AddCallToolFilter(next => (request, cancellationToken) =>
+                {
+                    var name = request?.Params?.Name;
+                    if (name != null && deny.Contains(name))
+                        throw new ModelContextProtocol.McpException(
+                            "Tool '" + name + "' is disabled on this server (--deny-tools).");
+                    return next(request, cancellationToken);
+                });
+            });
         }
 
         private static Type[] ResolveRegisteredToolTypes(HashSet<string> enabled, RvtMcpConfig config)
@@ -1122,6 +1163,114 @@ Tools (prefix revit_<verb>_<noun>, lengths in mm):
             try
             {
                 var result = await ToolGateway.SendToRevit("create_group_from_elements", new { elementIds, name });
+                return JsonConvert.SerializeObject(result, Formatting.Indented);
+            }
+            catch (Exception ex) { return $"Error: {ex.Message}"; }
+        }
+
+        // ---- SLS A4 controlled writes: safe-creation group (PRD §12.7). Strict type/level
+        // ---- resolution (no silent defaults), non-modal failure capture, dry-run support.
+
+        [McpServerTool(Name = "revit_create_wall", Destructive = false), System.ComponentModel.Description("Create a straight architectural wall. Params: startX/Y, endX/Y (mm), heightMm, level (name, strict — fails if unknown), wall type via typeId OR typeName (+family to disambiguate) — never silently defaulted. Optional structural. dryRun=true builds it, captures real Revit warnings, then rolls back. Returns element_ids + typed warnings; never pops a Revit dialog.")]
+        public static async Task<string> CreateWall(double startX, double startY, double endX, double endY, double heightMm, string level, long? typeId = null, string family = "", string typeName = "", bool structural = false, bool dryRun = false)
+        {
+            try
+            {
+                var result = await ToolGateway.SendToRevit("create_wall", new { startX, startY, endX, endY, heightMm, level, typeId, family, typeName, structural, dryRun });
+                return JsonConvert.SerializeObject(result, Formatting.Indented);
+            }
+            catch (Exception ex) { return $"Error: {ex.Message}"; }
+        }
+
+        [McpServerTool(Name = "revit_create_wall_loop", Destructive = false), System.ComponentModel.Description("Create a closed loop of walls atomically (one transaction — all segments or none). Params: points (JSON array of {x,y} in mm, min 3, auto-closes), heightMm, level (strict), wall type via typeId OR typeName (+family). Optional structural, dryRun. Returns element_ids in segment order + perimeter_mm.")]
+        public static async Task<string> CreateWallLoop(string points, double heightMm, string level, long? typeId = null, string family = "", string typeName = "", bool structural = false, bool dryRun = false)
+        {
+            try
+            {
+                var parsedPoints = JArray.Parse(points);
+                var result = await ToolGateway.SendToRevit("create_wall_loop", new { points = parsedPoints, heightMm, level, typeId, family, typeName, structural, dryRun });
+                return JsonConvert.SerializeObject(result, Formatting.Indented);
+            }
+            catch (Exception ex) { return $"Error: {ex.Message}"; }
+        }
+
+        [McpServerTool(Name = "revit_create_floor", Destructive = false), System.ComponentModel.Description("Create a floor from boundary points. Params: points (JSON array of {x,y} in mm, min 3), level (strict), floor type via typeId OR typeName (+family) — REQUIRED, never defaulted (unlike create_surface_based_element). Refuses foundation-slab types unless allowFoundationSlab=true. Optional dryRun. Returns element_ids + computed area_m2 + category.")]
+        public static async Task<string> CreateFloor(string points, string level, long? typeId = null, string family = "", string typeName = "", bool allowFoundationSlab = false, bool dryRun = false)
+        {
+            try
+            {
+                var parsedPoints = JArray.Parse(points);
+                var result = await ToolGateway.SendToRevit("create_floor", new { points = parsedPoints, level, typeId, family, typeName, allowFoundationSlab, dryRun });
+                return JsonConvert.SerializeObject(result, Formatting.Indented);
+            }
+            catch (Exception ex) { return $"Error: {ex.Message}"; }
+        }
+
+        [McpServerTool(Name = "revit_place_door", Destructive = false), System.ComponentModel.Description("Place a door hosted in a wall (create_point_based_element cannot host). Params: hostWallId, x/y (mm — projected onto the wall axis, max 500mm off), level (strict), door type via typeId OR typeName (+family — door type names are often ambiguous across families; ambiguity fails listing candidates). Optional dryRun. Returns element_ids + placed position.")]
+        public static async Task<string> PlaceDoor(long hostWallId, double x, double y, string level, long? typeId = null, string family = "", string typeName = "", bool dryRun = false)
+        {
+            try
+            {
+                var result = await ToolGateway.SendToRevit("place_door", new { hostWallId, x, y, level, typeId, family, typeName, dryRun });
+                return JsonConvert.SerializeObject(result, Formatting.Indented);
+            }
+            catch (Exception ex) { return $"Error: {ex.Message}"; }
+        }
+
+        [McpServerTool(Name = "revit_place_window", Destructive = false), System.ComponentModel.Description("Place a window hosted in a wall. Params: hostWallId, x/y (mm — projected onto the wall axis, max 500mm off), level (strict), window type via typeId OR typeName (+family), optional sillHeightMm (omitted = type/template default — the response always reports the sill height in force). Optional dryRun. Returns element_ids + placed position + sill_height_mm.")]
+        public static async Task<string> PlaceWindow(long hostWallId, double x, double y, string level, long? typeId = null, string family = "", string typeName = "", double? sillHeightMm = null, bool dryRun = false)
+        {
+            try
+            {
+                var result = await ToolGateway.SendToRevit("place_window", new { hostWallId, x, y, level, typeId, family, typeName, sillHeightMm, dryRun });
+                return JsonConvert.SerializeObject(result, Formatting.Indented);
+            }
+            catch (Exception ex) { return $"Error: {ex.Message}"; }
+        }
+
+        [McpServerTool(Name = "revit_create_basic_roof", Destructive = false), System.ComponentModel.Description("Create a footprint roof from boundary points. Params: points (JSON array of {x,y} in mm, min 3), level (strict), roof type via typeId OR typeName (+family), optional slopeDegrees (uniform slope on all edges = hip roof; omit for flat). Optional dryRun. Returns element_ids + edge_count.")]
+        public static async Task<string> CreateBasicRoof(string points, string level, long? typeId = null, string family = "", string typeName = "", double? slopeDegrees = null, bool dryRun = false)
+        {
+            try
+            {
+                var parsedPoints = JArray.Parse(points);
+                var result = await ToolGateway.SendToRevit("create_basic_roof", new { points = parsedPoints, level, typeId, family, typeName, slopeDegrees, dryRun });
+                return JsonConvert.SerializeObject(result, Formatting.Indented);
+            }
+            catch (Exception ex) { return $"Error: {ex.Message}"; }
+        }
+
+        // ---- SLS A4 operation groups (PRD §12.7 utility group). Kept in the 'create'
+        // ---- toolset so --read-only strips them along with the other write tools.
+
+        [McpServerTool(Name = "revit_begin_operation_group", Destructive = false), System.ComponentModel.Description("Open a named operation group (Revit TransactionGroup): subsequent writes are staged so commit_operation_group lands them as ONE undo entry and rollback_operation_group discards them all. One group at a time; the group auto-rolls-back after 10 min without writes, or if the active document changes or closes. Optional: name (becomes the undo entry label).")]
+        public static async Task<string> BeginOperationGroup(string name = "")
+        {
+            try
+            {
+                var result = await ToolGateway.SendToRevit("begin_operation_group", new { name });
+                return JsonConvert.SerializeObject(result, Formatting.Indented);
+            }
+            catch (Exception ex) { return $"Error: {ex.Message}"; }
+        }
+
+        [McpServerTool(Name = "revit_commit_operation_group", Destructive = false), System.ComponentModel.Description("Commit the open operation group: all writes staged since begin_operation_group become a single Revit undo entry named after the group.")]
+        public static async Task<string> CommitOperationGroup()
+        {
+            try
+            {
+                var result = await ToolGateway.SendToRevit("commit_operation_group", new { });
+                return JsonConvert.SerializeObject(result, Formatting.Indented);
+            }
+            catch (Exception ex) { return $"Error: {ex.Message}"; }
+        }
+
+        [McpServerTool(Name = "revit_rollback_operation_group", Destructive = false), System.ComponentModel.Description("Roll back the open operation group: every write staged since begin_operation_group is discarded and the model returns to its pre-group state.")]
+        public static async Task<string> RollbackOperationGroup()
+        {
+            try
+            {
+                var result = await ToolGateway.SendToRevit("rollback_operation_group", new { });
                 return JsonConvert.SerializeObject(result, Formatting.Indented);
             }
             catch (Exception ex) { return $"Error: {ex.Message}"; }

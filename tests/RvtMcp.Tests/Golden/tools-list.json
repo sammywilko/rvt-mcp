@@ -1,6 +1,6 @@
 {
   "generated_by": "ToolsListSnapshotTests",
-  "tool_count": 229,
+  "tool_count": 238,
   "tools": [
     {
       "name": "revit_acquire_coordinates_from_link",
@@ -551,6 +551,20 @@
       }
     },
     {
+      "name": "revit_begin_operation_group",
+      "description_hash": "sha256:3f824e89148a85c1a6eb9bc39c9f69a6e0b27a1a64a99bc54fb2737b42d8b16b",
+      "inputSchema": {
+        "properties": {
+          "name": {
+            "description": "",
+            "type": "String"
+          }
+        },
+        "required": [],
+        "type": "object"
+      }
+    },
+    {
       "name": "revit_bind_shared_parameter",
       "description_hash": "sha256:73977a178f1f6d55424ce2ca641583a4b6e68f4c2defb7e3fe2f7880d972b4e7",
       "inputSchema": {
@@ -707,6 +721,15 @@
           "category",
           "parameterName"
         ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "revit_commit_operation_group",
+      "description_hash": "sha256:c826ee29abb275ae6d5cde2c07527d0a1a6e3d02efcdcbeee2bc325899e81615",
+      "inputSchema": {
+        "properties": {},
+        "required": [],
         "type": "object"
       }
     },
@@ -889,6 +912,47 @@
         "required": [
           "x",
           "y"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "revit_create_basic_roof",
+      "description_hash": "sha256:844a929c8cfbe4ea610f44902e09255d8833abc75b3c3196d96fe46f4550f127",
+      "inputSchema": {
+        "properties": {
+          "dryRun": {
+            "description": "",
+            "type": "Boolean"
+          },
+          "family": {
+            "description": "",
+            "type": "String"
+          },
+          "level": {
+            "description": "",
+            "type": "String"
+          },
+          "points": {
+            "description": "",
+            "type": "String"
+          },
+          "slopeDegrees": {
+            "description": "",
+            "type": "Nullable`1"
+          },
+          "typeId": {
+            "description": "",
+            "type": "Nullable`1"
+          },
+          "typeName": {
+            "description": "",
+            "type": "String"
+          }
+        },
+        "required": [
+          "points",
+          "level"
         ],
         "type": "object"
       }
@@ -1199,6 +1263,47 @@
         },
         "required": [
           "points"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "revit_create_floor",
+      "description_hash": "sha256:2623a34b3e87483f7dfaca673ecb520597e25bd82feeb965032f061c451ca156",
+      "inputSchema": {
+        "properties": {
+          "allowFoundationSlab": {
+            "description": "",
+            "type": "Boolean"
+          },
+          "dryRun": {
+            "description": "",
+            "type": "Boolean"
+          },
+          "family": {
+            "description": "",
+            "type": "String"
+          },
+          "level": {
+            "description": "",
+            "type": "String"
+          },
+          "points": {
+            "description": "",
+            "type": "String"
+          },
+          "typeId": {
+            "description": "",
+            "type": "Nullable`1"
+          },
+          "typeName": {
+            "description": "",
+            "type": "String"
+          }
+        },
+        "required": [
+          "points",
+          "level"
         ],
         "type": "object"
       }
@@ -2357,6 +2462,113 @@
         },
         "required": [
           "templateName"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "revit_create_wall",
+      "description_hash": "sha256:e1f206ead66bc50ff4af5969bbe0863f92cb5a8d3e44c882ea27697fcc75cf74",
+      "inputSchema": {
+        "properties": {
+          "dryRun": {
+            "description": "",
+            "type": "Boolean"
+          },
+          "endX": {
+            "description": "",
+            "type": "Double"
+          },
+          "endY": {
+            "description": "",
+            "type": "Double"
+          },
+          "family": {
+            "description": "",
+            "type": "String"
+          },
+          "heightMm": {
+            "description": "",
+            "type": "Double"
+          },
+          "level": {
+            "description": "",
+            "type": "String"
+          },
+          "startX": {
+            "description": "",
+            "type": "Double"
+          },
+          "startY": {
+            "description": "",
+            "type": "Double"
+          },
+          "structural": {
+            "description": "",
+            "type": "Boolean"
+          },
+          "typeId": {
+            "description": "",
+            "type": "Nullable`1"
+          },
+          "typeName": {
+            "description": "",
+            "type": "String"
+          }
+        },
+        "required": [
+          "startX",
+          "startY",
+          "endX",
+          "endY",
+          "heightMm",
+          "level"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "revit_create_wall_loop",
+      "description_hash": "sha256:21a0e5e5a3ab676369744cd92acf3204ee5da09abf188ee372d946c2d5b78007",
+      "inputSchema": {
+        "properties": {
+          "dryRun": {
+            "description": "",
+            "type": "Boolean"
+          },
+          "family": {
+            "description": "",
+            "type": "String"
+          },
+          "heightMm": {
+            "description": "",
+            "type": "Double"
+          },
+          "level": {
+            "description": "",
+            "type": "String"
+          },
+          "points": {
+            "description": "",
+            "type": "String"
+          },
+          "structural": {
+            "description": "",
+            "type": "Boolean"
+          },
+          "typeId": {
+            "description": "",
+            "type": "Nullable`1"
+          },
+          "typeName": {
+            "description": "",
+            "type": "String"
+          }
+        },
+        "required": [
+          "points",
+          "heightMm",
+          "level"
         ],
         "type": "object"
       }
@@ -4528,6 +4740,53 @@
       }
     },
     {
+      "name": "revit_place_door",
+      "description_hash": "sha256:d75a87ae74ad5fbcf8c0df232f19c3a5b2ba41a0f4dc9d983c8bca280d598462",
+      "inputSchema": {
+        "properties": {
+          "dryRun": {
+            "description": "",
+            "type": "Boolean"
+          },
+          "family": {
+            "description": "",
+            "type": "String"
+          },
+          "hostWallId": {
+            "description": "",
+            "type": "Int64"
+          },
+          "level": {
+            "description": "",
+            "type": "String"
+          },
+          "typeId": {
+            "description": "",
+            "type": "Nullable`1"
+          },
+          "typeName": {
+            "description": "",
+            "type": "String"
+          },
+          "x": {
+            "description": "",
+            "type": "Double"
+          },
+          "y": {
+            "description": "",
+            "type": "Double"
+          }
+        },
+        "required": [
+          "hostWallId",
+          "x",
+          "y",
+          "level"
+        ],
+        "type": "object"
+      }
+    },
+    {
       "name": "revit_place_schedule_on_sheet",
       "description_hash": "sha256:d4059864b1e5adc8c756ca3c2f506173699d024d30718fd7b3f300b8af4f504d",
       "inputSchema": {
@@ -4588,6 +4847,57 @@
         },
         "required": [
           "viewId"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "revit_place_window",
+      "description_hash": "sha256:ce092ebab849e1e92de41a249535f7a87e1b5b9ef182ba7498727bf323f3f539",
+      "inputSchema": {
+        "properties": {
+          "dryRun": {
+            "description": "",
+            "type": "Boolean"
+          },
+          "family": {
+            "description": "",
+            "type": "String"
+          },
+          "hostWallId": {
+            "description": "",
+            "type": "Int64"
+          },
+          "level": {
+            "description": "",
+            "type": "String"
+          },
+          "sillHeightMm": {
+            "description": "",
+            "type": "Nullable`1"
+          },
+          "typeId": {
+            "description": "",
+            "type": "Nullable`1"
+          },
+          "typeName": {
+            "description": "",
+            "type": "String"
+          },
+          "x": {
+            "description": "",
+            "type": "Double"
+          },
+          "y": {
+            "description": "",
+            "type": "Double"
+          }
+        },
+        "required": [
+          "hostWallId",
+          "x",
+          "y",
+          "level"
         ],
         "type": "object"
       }
@@ -4888,6 +5198,15 @@
           "fromTypeId",
           "toTypeId"
         ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "revit_rollback_operation_group",
+      "description_hash": "sha256:817556821459baccdc72281c0db6829095d33ed2689cc3ef9f3b0b3a7c2a4c8c",
+      "inputSchema": {
+        "properties": {},
+        "required": [],
         "type": "object"
       }
     },
