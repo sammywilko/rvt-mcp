@@ -26,7 +26,9 @@ namespace RvtMcp.Plugin.Handlers
             bool isMetric =
                 lengthUnit == UnitTypeId.Millimeters ||
                 lengthUnit == UnitTypeId.Centimeters ||
+                lengthUnit == UnitTypeId.Decimeters ||
                 lengthUnit == UnitTypeId.Meters ||
+                lengthUnit == UnitTypeId.MetersCentimeters ||
                 lengthUnit == UnitTypeId.Kilometers;
 
             return CommandResult.Ok(new

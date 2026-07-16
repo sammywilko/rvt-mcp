@@ -6,10 +6,23 @@ using Autodesk.Revit.UI;
 namespace RvtMcp.Plugin.Handlers
 {
     // SLS A3 read connector: overall model extents (mm) for camera framing and sanity checks.
-    // Unions the model-coordinate bounding boxes of all non-type model elements.
+    // Unions the model-coordinate bounding boxes of physical building elements only.
     public class GetModelBoundsHandler : IRevitCommand
     {
         private const double FeetToMm = 304.8;
+
+        // Model-typed categories that carry huge/spurious extents and are not building geometry.
+        // (Datums are usually CategoryType.Annotation and already excluded, but blocklisted too.)
+        private static readonly System.Collections.Generic.HashSet<long> ExcludedCategories =
+            new System.Collections.Generic.HashSet<long>
+            {
+                (long)(int)BuiltInCategory.OST_ProjectBasePoint,
+                (long)(int)BuiltInCategory.OST_SharedBasePoint,
+                (long)(int)BuiltInCategory.OST_VolumeOfInterest, // scope boxes
+                (long)(int)BuiltInCategory.OST_Levels,
+                (long)(int)BuiltInCategory.OST_Grids,
+                (long)(int)BuiltInCategory.OST_CLines,           // reference planes
+            };
 
         public string Name => "get_model_bounds";
         public string Description =>
@@ -33,7 +46,14 @@ namespace RvtMcp.Plugin.Handlers
 
             foreach (var e in elements)
             {
-                // null bbox = no model geometry (annotations, datums with no extent, etc.)
+                // Only physical model geometry defines "model bounds". Datums (levels, grids,
+                // reference planes) and the base/survey points carry huge or spurious extents
+                // that would balloon the box, so restrict to Model categories and blocklist the
+                // model-typed non-geometry ones.
+                var cat = e.Category;
+                if (cat == null || cat.CategoryType != CategoryType.Model) continue;
+                if (ExcludedCategories.Contains(RevitCompat.GetId(cat.Id))) continue;
+                // null bbox = no model geometry
                 var bb = e.get_BoundingBox(null);
                 if (bb == null) continue;
                 counted++;

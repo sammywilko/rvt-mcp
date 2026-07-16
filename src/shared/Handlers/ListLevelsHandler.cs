@@ -24,16 +24,20 @@ namespace RvtMcp.Plugin.Handlers
             if (doc == null)
                 return CommandResult.Fail("No document is open.");
 
+            // ProjectElevation is always project-internal; Elevation can be survey-relative
+            // (depends on the level type's Elevation Base). Order + host coordinates use the
+            // project value; the display value is returned alongside for reference.
             var levels = new FilteredElementCollector(doc)
                 .OfClass(typeof(Level))
                 .Cast<Level>()
-                .OrderBy(l => l.Elevation)
+                .OrderBy(l => l.ProjectElevation)
                 .Select(l => (object)new
                 {
                     id = RevitCompat.GetId(l.Id),
                     name = l.Name,
-                    elevation_mm = Math.Round(l.Elevation * FeetToMm, 3),
-                    elevation_ft = Math.Round(l.Elevation, 4),
+                    elevation_mm = Math.Round(l.ProjectElevation * FeetToMm, 3),
+                    elevation_ft = Math.Round(l.ProjectElevation, 4),
+                    display_elevation_mm = Math.Round(l.Elevation * FeetToMm, 3),
                     is_building_storey = IsBuildingStorey(l)
                 })
                 .ToList();

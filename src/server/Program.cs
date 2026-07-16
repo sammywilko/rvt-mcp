@@ -774,7 +774,7 @@ Tools (prefix revit_<verb>_<noun>, lengths in mm):
             catch (Exception ex) { return $"Error: {ex.Message}"; }
         }
 
-        [McpServerTool(Name = "revit_list_views", ReadOnly = true, Idempotent = true), System.ComponentModel.Description("List views. Returns id, name, view_type, scale, is_template, and associated level. Excludes view templates unless include_templates is true.")]
+        [McpServerTool(Name = "revit_list_views", ReadOnly = true, Idempotent = true), System.ComponentModel.Description("List views. Returns id, name, view_type, scale, is_template, and associated level. Excludes view templates unless includeTemplates is true.")]
         public static async Task<string> ListViews(bool includeTemplates = false)
         {
             try
