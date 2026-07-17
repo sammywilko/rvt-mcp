@@ -283,6 +283,9 @@ namespace RvtMcp.Plugin
             Register(new Handlers.PlaceDoorHandler());
             Register(new Handlers.PlaceWindowHandler());
             Register(new Handlers.CreateBasicRoofHandler());
+            // SLS A5/W2b: guarded room creation (upstream create_room modal-wedges on
+            // duplicate numbers — A5.0 spike headline finding).
+            Register(new Handlers.CreateRoomSlsHandler());
             Register(new Handlers.BeginOperationGroupHandler());
             Register(new Handlers.CommitOperationGroupHandler());
             Register(new Handlers.RollbackOperationGroupHandler());

@@ -329,7 +329,7 @@ This path is for development and backward compatibility. Client machines should 
 
 ## Toolsets
 
-The full surface is **238 tools across 24 toolsets** (`--toolsets all`), or **241 tools** when adaptive bake is enabled. By default, the registered surface is **230 tools** (all default-on toolsets, excluding `modify`, `delete` and `batch`). Adaptive bake, when enabled, adds 3 suggestion-lifecycle tools on top; `--read-only` strips every write-capable toolset. Individual tools can additionally be removed from the surface with `--deny-tools <csv>` (hidden from tools/list and refused at call time).
+The full surface is **239 tools across 24 toolsets** (`--toolsets all`), or **242 tools** when adaptive bake is enabled. By default, the registered surface is **231 tools** (all default-on toolsets, excluding `modify`, `delete` and `batch`). Adaptive bake, when enabled, adds 3 suggestion-lifecycle tools on top; `--read-only` strips every write-capable toolset. Individual tools can additionally be removed from the surface with `--deny-tools <csv>` (hidden from tools/list and refused at call time).
 
 Default-on toolsets: `query`, `create`, `view`, `schedule`, `families`, `mep`, `graphics`, `export`, `toolbaker`, `meta`, `lint`, `sheets`, `materials`, `geometry`, `annotation`, `rooms`, `links`, `parameters`, `organization`, `workflows`, `structural`.
 

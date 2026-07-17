@@ -1,6 +1,6 @@
 {
   "generated_by": "ToolsListSnapshotTests",
-  "tool_count": 241,
+  "tool_count": 242,
   "tools": [
     {
       "name": "revit_accept_bake_suggestion",
@@ -581,7 +581,7 @@
     },
     {
       "name": "revit_begin_operation_group",
-      "description_hash": "sha256:836a1c6a9d101cefb21988352357a17ff03dbd593cf632e9d66a23150465fc43",
+      "description_hash": "sha256:0b7f22afa9c7980c0046474da3853b2030117807d584842c9ae02cef7a96ed8a",
       "inputSchema": {
         "properties": {
           "name": {
@@ -2020,6 +2020,52 @@
         },
         "required": [
           "points"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "revit_create_room_sls",
+      "description_hash": "sha256:0f81f8d22aabae7ea966ce4a422f8d48f4ac4e349e37a887293fd3446c23c78c",
+      "inputSchema": {
+        "properties": {
+          "dryRun": {
+            "description": "",
+            "type": "Boolean"
+          },
+          "level": {
+            "description": "",
+            "type": "String"
+          },
+          "name": {
+            "description": "",
+            "type": "String"
+          },
+          "number": {
+            "description": "",
+            "type": "String"
+          },
+          "operationGroupId": {
+            "description": "",
+            "type": "String"
+          },
+          "requireEnclosed": {
+            "description": "",
+            "type": "Boolean"
+          },
+          "x": {
+            "description": "",
+            "type": "Double"
+          },
+          "y": {
+            "description": "",
+            "type": "Double"
+          }
+        },
+        "required": [
+          "x",
+          "y",
+          "level"
         ],
         "type": "object"
       }

@@ -232,6 +232,17 @@ namespace RvtMcp.Plugin.Handlers
         {
             public readonly List<object> Warnings = new List<object>();
             public readonly List<string> Errors = new List<string>();
+            // A List matched with the API's overloaded == — FailureDefinitionId does
+            // not document Equals/GetHashCode overrides, so HashSet.Contains could
+            // silently miss on reference identity (Codex round-2 finding 2).
+            private readonly List<FailureDefinitionId> _fatalWarningIds;
+
+            private FailureScope(IEnumerable<FailureDefinitionId> fatalWarningIds)
+            {
+                _fatalWarningIds = fatalWarningIds == null
+                    ? new List<FailureDefinitionId>()
+                    : new List<FailureDefinitionId>(fatalWarningIds);
+            }
 
             public FailureProcessingResult PreprocessFailures(FailuresAccessor accessor)
             {
@@ -252,7 +263,23 @@ namespace RvtMcp.Plugin.Handlers
                     if (string.IsNullOrWhiteSpace(text))
                         text = "(unnamed Revit failure)";
 
-                    if (failure.GetSeverity() == FailureSeverity.Warning)
+                    // A handler can declare specific warning definitions fatal: a
+                    // suppressed-and-committed duplicate/redundancy warning is the
+                    // invisible-default class wearing a different hat (Codex W2b
+                    // review findings 3-4) — the pre-check is diagnostics, the
+                    // rollback here is the enforcement.
+                    var isFatalWarning = false;
+                    if (failure.GetSeverity() == FailureSeverity.Warning && _fatalWarningIds.Count > 0)
+                    {
+                        try
+                        {
+                            var actualId = failure.GetFailureDefinitionId();
+                            isFatalWarning = _fatalWarningIds.Any(id => id == actualId);
+                        }
+                        catch { isFatalWarning = false; }
+                    }
+
+                    if (failure.GetSeverity() == FailureSeverity.Warning && !isFatalWarning)
                     {
                         Warnings.Add(new { message = text, element_ids = ids });
                         accessor.DeleteWarning(failure);
@@ -270,7 +297,12 @@ namespace RvtMcp.Plugin.Handlers
 
             public static FailureScope Attach(Transaction tx)
             {
-                var scope = new FailureScope();
+                return Attach(tx, null);
+            }
+
+            public static FailureScope Attach(Transaction tx, IEnumerable<FailureDefinitionId> fatalWarningIds)
+            {
+                var scope = new FailureScope(fatalWarningIds);
                 var options = tx.GetFailureHandlingOptions();
                 options.SetFailuresPreprocessor(scope);
                 options.SetForcedModalHandling(false);
@@ -296,6 +328,13 @@ namespace RvtMcp.Plugin.Handlers
 
         public static CommandResult RunWrite(
             Document doc, string opName, bool dryRun, string requestedGroupId, Func<FailureScope, object> body)
+        {
+            return RunWrite(doc, opName, dryRun, requestedGroupId, null, body);
+        }
+
+        public static CommandResult RunWrite(
+            Document doc, string opName, bool dryRun, string requestedGroupId,
+            IEnumerable<FailureDefinitionId> fatalWarningIds, Func<FailureScope, object> body)
         {
             // Fail closed BEFORE writing: a write must never silently land outside an
             // open operation group (doc switched, wrong/stale operationGroupId) — the
@@ -339,7 +378,7 @@ namespace RvtMcp.Plugin.Handlers
                     if (tx.Start() != TransactionStatus.Started)
                         return CommandResult.Fail(opName + ": could not start a transaction " +
                                                   "(document read-only, or another transaction open?).");
-                    scope = FailureScope.Attach(tx);
+                    scope = FailureScope.Attach(tx, fatalWarningIds);
                     try
                     {
                         payload = body(scope);

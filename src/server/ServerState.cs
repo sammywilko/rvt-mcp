@@ -48,7 +48,7 @@ namespace RvtMcp.Server
             "create_level", "create_grid", "create_room", "create_room_separator",
             "auto_create_rooms_from_walls", "create_group_from_elements",
             "create_wall", "create_wall_loop", "create_floor", "place_door", "place_window",
-            "create_basic_roof",
+            "create_basic_roof", "create_room_sls",
             "create_line_based_element", "create_point_based_element", "create_surface_based_element",
             "set_element_parameter_values", "set_type_parameter_values", "change_element_type"
         };
