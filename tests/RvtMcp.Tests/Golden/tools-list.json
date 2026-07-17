@@ -1,6 +1,6 @@
 {
   "generated_by": "ToolsListSnapshotTests",
-  "tool_count": 238,
+  "tool_count": 239,
   "tools": [
     {
       "name": "revit_acquire_coordinates_from_link",
@@ -1991,6 +1991,52 @@
         },
         "required": [
           "points"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "revit_create_room_sls",
+      "description_hash": "sha256:7179cde3a0418f777519a417ab3dd121545dc109a95e950ade4ce262fadf9194",
+      "inputSchema": {
+        "properties": {
+          "dryRun": {
+            "description": "",
+            "type": "Boolean"
+          },
+          "level": {
+            "description": "",
+            "type": "String"
+          },
+          "name": {
+            "description": "",
+            "type": "String"
+          },
+          "number": {
+            "description": "",
+            "type": "String"
+          },
+          "operationGroupId": {
+            "description": "",
+            "type": "String"
+          },
+          "requireEnclosed": {
+            "description": "",
+            "type": "Boolean"
+          },
+          "x": {
+            "description": "",
+            "type": "Double"
+          },
+          "y": {
+            "description": "",
+            "type": "Double"
+          }
+        },
+        "required": [
+          "x",
+          "y",
+          "level"
         ],
         "type": "object"
       }

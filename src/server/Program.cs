@@ -1243,6 +1243,17 @@ Tools (prefix revit_<verb>_<noun>, lengths in mm):
             catch (Exception ex) { return $"Error: {ex.Message}"; }
         }
 
+        [McpServerTool(Name = "revit_create_room_sls", Destructive = false), System.ComponentModel.Description("Create and place a room at a seed point with non-modal failure capture — use this instead of revit_create_room, whose duplicate-number warning blocks Revit in a modal dialog. Params: x/y (mm seed point, must be inside the intended boundary), level (strict), optional name, optional number (refused up front if already in use; omit to auto-assign), optional requireEnclosed (fail + roll back unless the room encloses). Optional dryRun. Returns element_ids + enclosure_state + area_m2 (null when not enclosed).")]
+        public static async Task<string> CreateRoomSls(double x, double y, string level, string name = "", string number = "", bool requireEnclosed = false, string operationGroupId = "", bool dryRun = false)
+        {
+            try
+            {
+                var result = await ToolGateway.SendToRevit("create_room_sls", new { x, y, level, name, number, requireEnclosed, operationGroupId, dryRun });
+                return JsonConvert.SerializeObject(result, Formatting.Indented);
+            }
+            catch (Exception ex) { return $"Error: {ex.Message}"; }
+        }
+
         [McpServerTool(Name = "revit_place_window", Destructive = false), System.ComponentModel.Description("Place a window hosted in a wall. Params: hostWallId, x/y (mm — projected onto the wall axis, max 500mm off), level (strict), window type via typeId OR typeName (+family), optional sillHeightMm (omitted = type/template default — the response always reports the sill height in force). Optional dryRun. Returns element_ids + placed position + sill_height_mm.")]
         public static async Task<string> PlaceWindow(long hostWallId, double x, double y, string level, long? typeId = null, string family = "", string typeName = "", double? sillHeightMm = null, string operationGroupId = "", bool dryRun = false)
         {
