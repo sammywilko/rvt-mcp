@@ -552,7 +552,7 @@
     },
     {
       "name": "revit_begin_operation_group",
-      "description_hash": "sha256:836a1c6a9d101cefb21988352357a17ff03dbd593cf632e9d66a23150465fc43",
+      "description_hash": "sha256:0b7f22afa9c7980c0046474da3853b2030117807d584842c9ae02cef7a96ed8a",
       "inputSchema": {
         "properties": {
           "name": {
@@ -1997,7 +1997,7 @@
     },
     {
       "name": "revit_create_room_sls",
-      "description_hash": "sha256:7179cde3a0418f777519a417ab3dd121545dc109a95e950ade4ce262fadf9194",
+      "description_hash": "sha256:040a15b982f2c13fc871f641fe21f5c4ad76134c1133016f5765aa7f97a4060e",
       "inputSchema": {
         "properties": {
           "dryRun": {

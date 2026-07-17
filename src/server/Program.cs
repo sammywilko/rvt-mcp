@@ -1243,7 +1243,7 @@ Tools (prefix revit_<verb>_<noun>, lengths in mm):
             catch (Exception ex) { return $"Error: {ex.Message}"; }
         }
 
-        [McpServerTool(Name = "revit_create_room_sls", Destructive = false), System.ComponentModel.Description("Create and place a room at a seed point with non-modal failure capture — use this instead of revit_create_room, whose duplicate-number warning blocks Revit in a modal dialog. Params: x/y (mm seed point, must be inside the intended boundary), level (strict), optional name, optional number (refused up front if already in use; omit to auto-assign), optional requireEnclosed (fail + roll back unless the room encloses). Optional dryRun. Returns element_ids + enclosure_state + area_m2 (null when not enclosed).")]
+        [McpServerTool(Name = "revit_create_room_sls", Destructive = false), System.ComponentModel.Description("Create and place a room at a seed point with non-modal failure capture — use this instead of revit_create_room, whose duplicate-number warning blocks Revit in a modal dialog. Params: x/y (mm seed point, must be inside the intended boundary), level (strict), optional name, optional number (refused if already used in the creation phase — the document's last phase, where NewRoom places rooms; omit to auto-assign), optional requireEnclosed (fail + roll back unless the room encloses). Duplicate-number and occupied-region warnings are fatal (rollback), never suppressed. Optional dryRun. Returns element_ids + enclosure_state + area_m2 (null when not enclosed) + phase.")]
         public static async Task<string> CreateRoomSls(double x, double y, string level, string name = "", string number = "", bool requireEnclosed = false, string operationGroupId = "", bool dryRun = false)
         {
             try
@@ -1282,7 +1282,7 @@ Tools (prefix revit_<verb>_<noun>, lengths in mm):
         // ---- Ledger + compensating-delete design: a TransactionGroup cannot legally
         // ---- stay open across ExternalEvent callbacks (Codex review finding 1).
 
-        [McpServerTool(Name = "revit_begin_operation_group", Destructive = false), System.ComponentModel.Description("Open a named operation group: elements created by subsequent SLS writes (create_wall/wall_loop/floor/place_door/place_window/create_basic_roof) are staged in a ledger. Returns group_id — required by commit/rollback. commit keeps the elements; rollback deletes them all (manual edits untouched). One group at a time; after 10 min without writes it auto-closes KEEPING its elements. Optional: name.")]
+        [McpServerTool(Name = "revit_begin_operation_group", Destructive = false), System.ComponentModel.Description("Open a named operation group: elements created by subsequent SLS writes (create_wall/wall_loop/floor/place_door/place_window/create_basic_roof/create_room_sls) are staged in a ledger. Returns group_id — required by commit/rollback. commit keeps the elements; rollback deletes them all (manual edits untouched). One group at a time; after 10 min without writes it auto-closes KEEPING its elements. Optional: name.")]
         public static async Task<string> BeginOperationGroup(string name = "")
         {
             try
