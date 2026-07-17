@@ -17,7 +17,7 @@ namespace RvtMcp.Server
             "query", "create", "modify", "delete", "view",
             "export", "annotation", "mep", "schedule", "families", "graphics", "toolbaker", "meta", "lint",
             "sheets", "materials", "geometry", "rooms", "links", "parameters", "organization", "workflows",
-            "structural"
+            "structural", "batch"
         };
 
         public static readonly string[] DefaultOn =
@@ -27,11 +27,18 @@ namespace RvtMcp.Server
             "structural"
         };
 
+        // SLS A4: "batch" (revit_batch_execute) moved out of "meta" into its own
+        // default-OFF, write-capable toolset — batch dispatches wire-level command
+        // names straight to the plugin, so leaving it default-on let it reach write
+        // tools that --toolsets/--read-only/--deny-tools had removed from the
+        // surface (Codex review finding 3). Re-enable with --toolsets ...,batch;
+        // child commands are additionally validated server-side against the
+        // resolved tool surface + deny list.
         public static readonly string[] WriteCapable =
         {
             "create", "modify", "delete", "schedule", "families", "mep", "graphics", "export", "toolbaker",
             "sheets", "materials", "annotation", "rooms", "links", "parameters", "organization", "workflows",
-            "structural"
+            "structural", "batch"
         };
 
         public static HashSet<string> Resolve(RvtMcpConfig config)

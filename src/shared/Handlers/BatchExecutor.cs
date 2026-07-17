@@ -12,6 +12,31 @@ namespace RvtMcp.Plugin.Handlers
     /// </summary>
     public static class BatchExecutor
     {
+        /// <summary>
+        /// Hard cap on commands per batch (SLS A4, Codex r2 finding 4): the batch
+        /// drains synchronously on Revit's UI thread, so an unbounded list is a local
+        /// denial of service. The server enforces the same cap at its boundary.
+        /// </summary>
+        public const int MaxCommands = 100;
+
+        /// <summary>
+        /// Commands audited to keep ALL side effects inside the current document's
+        /// Revit transactions — the only ones whose effects a batch TransactionGroup
+        /// rollback can actually undo (Codex r3 finding 4). Fail-closed: anything not
+        /// listed (exports, file I/O, UI, selection, target switching, …) is refused
+        /// as a batch child. Mirrored in ServerState.BatchSafeChildren (server
+        /// assembly cannot reference this type) — keep the two in sync.
+        /// </summary>
+        public static readonly HashSet<string> BatchSafeCommands = new HashSet<string>(StringComparer.Ordinal)
+        {
+            "create_level", "create_grid", "create_room", "create_room_separator",
+            "auto_create_rooms_from_walls", "create_group_from_elements",
+            "create_wall", "create_wall_loop", "create_floor", "place_door", "place_window",
+            "create_basic_roof",
+            "create_line_based_element", "create_point_based_element", "create_surface_based_element",
+            "set_element_parameter_values", "set_type_parameter_values", "change_element_type"
+        };
+
         public class Outcome
         {
             public List<object> Results { get; set; } = new List<object>();
@@ -33,7 +58,8 @@ namespace RvtMcp.Plugin.Handlers
             JArray commandsArr,
             bool continueOnError,
             Func<string, string, InvokeResult> invoke,
-            Func<string, bool> isBakedCommand = null)
+            Func<string, bool> isBakedCommand = null,
+            bool enforceBatchSafeList = false)
         {
             if (commandsArr == null) throw new ArgumentNullException(nameof(commandsArr));
             if (invoke == null) throw new ArgumentNullException(nameof(invoke));
@@ -70,9 +96,51 @@ namespace RvtMcp.Plugin.Handlers
                     continue;
                 }
 
+                // SLS A4: eval commands are blocked here because batch_execute dispatches
+                // wire-level command names directly to the plugin — without this, a batch
+                // could smuggle send_code_to_revit past a server that has the toolbaker
+                // toolset disabled (PRD §6.3/§9.3: no arbitrary code execution by default).
+                // Both bare and revit_-prefixed spellings are normalized before checking.
+                var bareName = cmdName.StartsWith("revit_", StringComparison.OrdinalIgnoreCase)
+                    ? cmdName.Substring("revit_".Length)
+                    : cmdName;
+                if (string.Equals(bareName, "send_code_to_revit", StringComparison.Ordinal) ||
+                    string.Equals(bareName, "apply_bake_suggestion", StringComparison.Ordinal))
+                {
+                    outcome.Results.Add(new { index = i, ok = false, error = EvalCommandNotSupportedMessage(bareName) });
+                    outcome.AnyFailed = true;
+                    if (!continueOnError) return outcome;
+                    continue;
+                }
+
+                // SLS A4 (Codex r2 finding 3): operation-group lifecycle commands mutate
+                // ledger state OUTSIDE the batch's TransactionGroup — a later batch
+                // failure would roll the model back but not the ledger, splitting the two
+                // states. They must run as direct calls only.
+                if (string.Equals(bareName, "begin_operation_group", StringComparison.Ordinal) ||
+                    string.Equals(bareName, "commit_operation_group", StringComparison.Ordinal) ||
+                    string.Equals(bareName, "rollback_operation_group", StringComparison.Ordinal))
+                {
+                    outcome.Results.Add(new { index = i, ok = false, error = OperationGroupCommandNotSupportedMessage(bareName) });
+                    outcome.AnyFailed = true;
+                    if (!continueOnError) return outcome;
+                    continue;
+                }
+
                 if (isBakedCommand != null && isBakedCommand(cmdName))
                 {
                     outcome.Results.Add(new { index = i, ok = false, error = BakedCommandNotSupportedMessage(cmdName) });
+                    outcome.AnyFailed = true;
+                    if (!continueOnError) return outcome;
+                    continue;
+                }
+
+                // SLS A4 (Codex r3 finding 4): a batch's rollback can only undo effects
+                // inside Revit transactions — commands with external side effects
+                // (exports, file I/O, UI, …) would make "rolledBack: true" a lie.
+                if (enforceBatchSafeList && !BatchSafeCommands.Contains(bareName))
+                {
+                    outcome.Results.Add(new { index = i, ok = false, error = BatchUnsafeCommandMessage(bareName) });
                     outcome.AnyFailed = true;
                     if (!continueOnError) return outcome;
                     continue;
@@ -134,6 +202,17 @@ namespace RvtMcp.Plugin.Handlers
 
         public static string RunBakedToolNotSupportedMessage() =>
             "run_baked_tool cannot be invoked through batch_execute; call run_baked_tool directly.";
+
+        public static string EvalCommandNotSupportedMessage(string name) =>
+            $"'{name}' cannot run inside batch_execute; call it directly (if it is enabled on this server).";
+
+        public static string BatchUnsafeCommandMessage(string name) =>
+            $"'{name}' is not audited as batch-safe: its side effects could survive a batch rollback, " +
+            "making the atomicity promise false. Call it directly.";
+
+        public static string OperationGroupCommandNotSupportedMessage(string name) =>
+            $"'{name}' cannot run inside batch_execute: operation-group state lives outside the batch's " +
+            "TransactionGroup, so a later batch failure could not restore it. Call it directly.";
 
         private static bool TryGetPartialFailureCount(object data, out int failedCount)
         {

@@ -71,6 +71,35 @@ namespace RvtMcp.Tests
             Assert.Equal(new[] { "query", "view" }, config.Toolsets);
         }
 
+        // --- SLS A4 --deny-tools -------------------------------------------
+
+        [Fact]
+        public void ApplyCliArgs_DenyToolsParsedAsCsv()
+        {
+            var config = new RvtMcpConfig();
+            RvtMcpConfig.ApplyCliArgs(config, new[] { "--deny-tools", "revit_batch_execute,revit_create_line_based_element" });
+            Assert.Equal(new[] { "revit_batch_execute", "revit_create_line_based_element" }, config.DenyTools);
+        }
+
+        [Fact]
+        public void ApplyEnvVars_DenyToolsParsedAsCsv()
+        {
+            var config = new RvtMcpConfig();
+            RvtMcpConfig.ApplyEnvVars(config, EnvLookup(new Dictionary<string, string>
+            {
+                [RvtMcpConfig.EnvDenyTools] = "revit_batch_execute"
+            }), null);
+            Assert.Equal(new[] { "revit_batch_execute" }, config.DenyTools);
+        }
+
+        [Fact]
+        public void DenyToolsOrDefault_DefaultsToEmpty()
+        {
+            var config = new RvtMcpConfig();
+            Assert.Null(config.DenyTools);
+            Assert.Empty(config.DenyToolsOrDefault);
+        }
+
         [Fact]
         public void ApplyCliArgs_BooleanFlagsSetTrue()
         {

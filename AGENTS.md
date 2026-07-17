@@ -247,7 +247,7 @@ gemini mcp add rvt-mcp "%LOCALAPPDATA%\RvtMcp\rvt\server\<version>\rvt-mcp.exe"
 
 ## Step 4 — Verify
 
-1. **List tools.** Ask the host to call `tools/list` against the wired server. Expect at minimum: `get_current_view_info`, `analyze_model_statistics`, `batch_execute`, plus whatever toolsets the user enabled.
+1. **List tools.** Ask the host to call `tools/list` against the wired server. Expect at minimum: `get_current_view_info` and `analyze_model_statistics`, plus whatever toolsets the user enabled. (`batch_execute` appears only when the opt-in `batch` toolset is enabled.)
 
 2. **Handshake call.** With Revit 2022–2027 running and a model open, call `get_current_view_info` with no args. A valid response looks like:
 
@@ -309,6 +309,6 @@ For anything not in this table, open an issue at <https://github.com/bimwright/r
 
 ## Honest scope
 
-rvt-mcp handles `get_current_view_info`, `analyze_model_statistics`, `batch_execute`, and 220+ other tools across Revit 2022–2027. It does not handle installing Revit, licensing, cloud sync, or any Autodesk account operations. If the user asks for those, point them at <https://www.autodesk.com/support/revit>.
+rvt-mcp handles `get_current_view_info`, `analyze_model_statistics`, and 230+ other tools across Revit 2022–2027. It does not handle installing Revit, licensing, cloud sync, or any Autodesk account operations. If the user asks for those, point them at <https://www.autodesk.com/support/revit>.
 
 For extending the tool surface at runtime, see ToolBaker in the main [README.md](README.md).

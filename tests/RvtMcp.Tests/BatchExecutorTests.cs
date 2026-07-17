@@ -228,6 +228,104 @@ namespace RvtMcp.Tests
             Assert.Equal("run_baked_tool cannot be invoked through batch_execute; call run_baked_tool directly.", result.Value<string>("error"));
         }
 
+        // --- SLS A4: eval commands blocked inside batch ---------------------
+
+        [Theory]
+        [InlineData("send_code_to_revit", "send_code_to_revit")]
+        [InlineData("apply_bake_suggestion", "apply_bake_suggestion")]
+        [InlineData("revit_send_code_to_revit", "send_code_to_revit")] // prefixed spelling normalized
+        public void Run_EvalCommands_RejectedBeforeInvoke(string evalCommand, string bareName)
+        {
+            var invoked = false;
+            var cmds = Cmds((evalCommand, new { code = "return 1;" }));
+
+            var outcome = BatchExecutor.Run(
+                cmds,
+                continueOnError: false,
+                (_, __) =>
+                {
+                    invoked = true;
+                    return BatchExecutor.InvokeResult.Ok(null);
+                });
+
+            Assert.True(outcome.AnyFailed);
+            Assert.False(invoked);
+            var result = JObject.FromObject(outcome.Results[0]);
+            Assert.Equal(BatchExecutor.EvalCommandNotSupportedMessage(bareName), result.Value<string>("error"));
+        }
+
+        // --- SLS A4 r2: operation-group lifecycle blocked inside batch ------
+        // Their ledger state lives outside the batch's TransactionGroup, so a
+        // failed batch could not restore it (atomicity split).
+
+        [Theory]
+        [InlineData("begin_operation_group", "begin_operation_group")]
+        [InlineData("commit_operation_group", "commit_operation_group")]
+        [InlineData("rollback_operation_group", "rollback_operation_group")]
+        [InlineData("revit_rollback_operation_group", "rollback_operation_group")] // prefixed spelling
+        public void Run_OperationGroupCommands_RejectedBeforeInvoke(string command, string bareName)
+        {
+            var invoked = false;
+            var cmds = Cmds((command, new { groupId = "abc" }));
+
+            var outcome = BatchExecutor.Run(
+                cmds,
+                continueOnError: false,
+                (_, __) =>
+                {
+                    invoked = true;
+                    return BatchExecutor.InvokeResult.Ok(null);
+                });
+
+            Assert.True(outcome.AnyFailed);
+            Assert.False(invoked);
+            var result = JObject.FromObject(outcome.Results[0]);
+            Assert.Equal(BatchExecutor.OperationGroupCommandNotSupportedMessage(bareName), result.Value<string>("error"));
+        }
+
+        // --- SLS A4 r3: fail-closed batch-safe allowlist ---------------------
+        // A batch rollback can only undo effects inside Revit transactions; commands
+        // with external side effects (exports, file I/O, UI, …) are refused.
+
+        [Theory]
+        [InlineData("export_pdf")]
+        [InlineData("activate_view")]
+        [InlineData("revit_export_image")]
+        public void Run_BatchUnsafeCommands_RejectedWhenListEnforced(string command)
+        {
+            var invoked = false;
+            var cmds = Cmds((command, new { }));
+
+            var outcome = BatchExecutor.Run(
+                cmds,
+                continueOnError: false,
+                (_, __) => { invoked = true; return BatchExecutor.InvokeResult.Ok(null); },
+                isBakedCommand: null,
+                enforceBatchSafeList: true);
+
+            Assert.True(outcome.AnyFailed);
+            Assert.False(invoked);
+            var result = JObject.FromObject(outcome.Results[0]);
+            Assert.Contains("not audited as batch-safe", result.Value<string>("error"));
+        }
+
+        [Fact]
+        public void Run_BatchSafeCommand_PassesWhenListEnforced()
+        {
+            var invoked = false;
+            var cmds = Cmds(("create_wall", new { startX = 0 }));
+
+            var outcome = BatchExecutor.Run(
+                cmds,
+                continueOnError: false,
+                (_, __) => { invoked = true; return BatchExecutor.InvokeResult.Ok(null); },
+                isBakedCommand: null,
+                enforceBatchSafeList: true);
+
+            Assert.False(outcome.AnyFailed);
+            Assert.True(invoked);
+        }
+
         [Fact]
         public void Run_HandlerThrows_CapturedAsFailure()
         {

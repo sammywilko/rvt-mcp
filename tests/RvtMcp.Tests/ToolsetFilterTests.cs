@@ -194,9 +194,19 @@ namespace RvtMcp.Tests
         // --- Invariants ---------------------------------------------------
 
         [Fact]
-        public void KnownToolsets_Contains23Entries()
+        public void KnownToolsets_Contains24Entries()
         {
-            Assert.Equal(23, ToolsetFilter.KnownToolsets.Length);
+            Assert.Equal(24, ToolsetFilter.KnownToolsets.Length);
+        }
+
+        [Fact]
+        public void Batch_IsKnownAndWriteCapableButNotDefaultOn()
+        {
+            // SLS A4 (Codex review finding 3): batch dispatches wire-level command
+            // names straight to the plugin, so it must be opt-in and read-only-stripped.
+            Assert.Contains("batch", ToolsetFilter.KnownToolsets);
+            Assert.Contains("batch", ToolsetFilter.WriteCapable);
+            Assert.DoesNotContain("batch", ToolsetFilter.DefaultOn);
         }
 
         [Fact]

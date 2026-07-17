@@ -276,6 +276,17 @@ namespace RvtMcp.Plugin
             Register(new Handlers.GetModelBoundsHandler());
             Register(new Handlers.GetProjectInfoHandler());
 
+            // SLS A4 controlled writes (PRD §12.7 safe-creation group + operation groups)
+            Register(new Handlers.CreateWallHandler());
+            Register(new Handlers.CreateWallLoopHandler());
+            Register(new Handlers.CreateFloorHandler());
+            Register(new Handlers.PlaceDoorHandler());
+            Register(new Handlers.PlaceWindowHandler());
+            Register(new Handlers.CreateBasicRoofHandler());
+            Register(new Handlers.BeginOperationGroupHandler());
+            Register(new Handlers.CommitOperationGroupHandler());
+            Register(new Handlers.RollbackOperationGroupHandler());
+
             // A6 batch execution — needs dispatcher ref to look up sub-commands
             Register(new Handlers.BatchExecuteHandler(this));
             // ToolBaker runtime access.

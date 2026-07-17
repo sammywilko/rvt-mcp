@@ -21,6 +21,7 @@ namespace RvtMcp.Plugin
     {
         public const string EnvTarget                    = "BIMWRIGHT_TARGET";
         public const string EnvToolsets                  = "BIMWRIGHT_TOOLSETS";
+        public const string EnvDenyTools                 = "BIMWRIGHT_DENY_TOOLS";
         public const string EnvReadOnly                  = "BIMWRIGHT_READ_ONLY";
         public const string EnvAllowLanBind              = "BIMWRIGHT_ALLOW_LAN_BIND";
         public const string EnvEnableToolbaker           = "BIMWRIGHT_ENABLE_TOOLBAKER";
@@ -43,6 +44,15 @@ namespace RvtMcp.Plugin
 
         [JsonProperty("toolsets")]
         public List<string> Toolsets { get; set; }
+
+        /// <summary>
+        /// SLS A4: individual MCP tool names to hide from tools/list AND refuse at
+        /// call time, regardless of toolset. Finer-grained than <see cref="Toolsets"/> —
+        /// e.g. hiding a single legacy create tool while keeping the rest of its
+        /// toolset (PRD §12.7: high-risk operations disabled by default).
+        /// </summary>
+        [JsonProperty("denyTools")]
+        public List<string> DenyTools { get; set; }
 
         [JsonProperty("readOnly")]
         public bool? ReadOnly { get; set; }
@@ -76,6 +86,7 @@ namespace RvtMcp.Plugin
         public bool? PersistSendCodeBodiesRequiresExplicitEnable { get; set; }
 
         public bool ReadOnlyOrDefault              => ReadOnly           ?? DefaultReadOnly;
+        public List<string> DenyToolsOrDefault     => DenyTools          ?? new List<string>();
         public bool AllowLanBindOrDefault          => AllowLanBind       ?? DefaultAllowLanBind;
         public bool EnableToolbakerOrDefault       => EnableToolbaker    ?? DefaultEnableToolbaker;
         public bool EnableAdaptiveBakeOrDefault    => EnableAdaptiveBake ?? DefaultEnableAdaptiveBake;
@@ -165,6 +176,9 @@ namespace RvtMcp.Plugin
             var toolsets = lookup(EnvToolsets);
             if (!string.IsNullOrWhiteSpace(toolsets)) config.Toolsets = ParseCsv(toolsets);
 
+            var denyTools = lookup(EnvDenyTools);
+            if (!string.IsNullOrWhiteSpace(denyTools)) config.DenyTools = ParseCsv(denyTools);
+
             var readOnly = ParseBool(lookup(EnvReadOnly));
             if (readOnly.HasValue) config.ReadOnly = readOnly;
 
@@ -238,6 +252,9 @@ namespace RvtMcp.Plugin
                         break;
                     case "--toolsets":
                         if (i + 1 < args.Length) config.Toolsets = ParseCsv(args[++i]);
+                        break;
+                    case "--deny-tools":
+                        if (i + 1 < args.Length) config.DenyTools = ParseCsv(args[++i]);
                         break;
                     case "--read-only":
                         config.ReadOnly = true;
