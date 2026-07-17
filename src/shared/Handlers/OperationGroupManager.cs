@@ -92,6 +92,26 @@ namespace RvtMcp.Plugin.Handlers
                         : "operationGroupId was passed but no operation group is open " +
                           "(it may have auto-closed). Call begin_operation_group first, or omit operationGroupId.";
 
+                // The group's own document was closed (Codex round 4): its ledger can
+                // no longer be rolled back there, and "switch back to its document"
+                // would be advice with no referent. Auto-close exactly like the stale
+                // path — keep the elements, free the group — instead of misreporting
+                // the state as a document mismatch and blocking writes until timeout.
+                if (_doc == null || !_doc.IsValidObject)
+                {
+                    var closedName = _name;
+                    var closedCount = _createdIds.Count;
+                    ClearLocked();
+                    _autoCloseNote = "group '" + closedName + "' auto-closed because its document was " +
+                                     "closed; its " + closedCount + " staged elements were KEPT " +
+                                     "(auto-close commits, never deletes).";
+                    App.DebugLog("SLS operation group auto-closed (document closed): " + closedName);
+                    return string.IsNullOrWhiteSpace(requestedGroupId)
+                        ? null
+                        : "operationGroupId was passed but that group's document was closed, so the " +
+                          "group auto-closed (staged elements kept). Call begin_operation_group again.";
+                }
+
                 if (!SameDocument(doc, _doc))
                     return "An operation group ('" + _name + "') is open on a DIFFERENT document — this " +
                            "write would silently land outside it. Commit or roll back the group, or switch " +
