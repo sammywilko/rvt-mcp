@@ -232,13 +232,16 @@ namespace RvtMcp.Plugin.Handlers
         {
             public readonly List<object> Warnings = new List<object>();
             public readonly List<string> Errors = new List<string>();
-            private readonly HashSet<FailureDefinitionId> _fatalWarningIds;
+            // A List matched with the API's overloaded == — FailureDefinitionId does
+            // not document Equals/GetHashCode overrides, so HashSet.Contains could
+            // silently miss on reference identity (Codex round-2 finding 2).
+            private readonly List<FailureDefinitionId> _fatalWarningIds;
 
             private FailureScope(IEnumerable<FailureDefinitionId> fatalWarningIds)
             {
                 _fatalWarningIds = fatalWarningIds == null
-                    ? new HashSet<FailureDefinitionId>()
-                    : new HashSet<FailureDefinitionId>(fatalWarningIds);
+                    ? new List<FailureDefinitionId>()
+                    : new List<FailureDefinitionId>(fatalWarningIds);
             }
 
             public FailureProcessingResult PreprocessFailures(FailuresAccessor accessor)
@@ -268,7 +271,11 @@ namespace RvtMcp.Plugin.Handlers
                     var isFatalWarning = false;
                     if (failure.GetSeverity() == FailureSeverity.Warning && _fatalWarningIds.Count > 0)
                     {
-                        try { isFatalWarning = _fatalWarningIds.Contains(failure.GetFailureDefinitionId()); }
+                        try
+                        {
+                            var actualId = failure.GetFailureDefinitionId();
+                            isFatalWarning = _fatalWarningIds.Any(id => id == actualId);
+                        }
                         catch { isFatalWarning = false; }
                     }
 

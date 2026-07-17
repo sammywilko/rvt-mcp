@@ -71,14 +71,23 @@ namespace RvtMcp.Plugin.Handlers
             var requireEnclosed = request.Value<bool?>("requireEnclosed") ?? false;
             var dryRun = request.Value<bool?>("dryRun") ?? false;
 
-            // NewRoom(Level, UV) places the room in the document's LAST phase (Revit
-            // API contract). Room numbers are unique per phase, not per document, so
-            // the pre-check must be scoped to that phase or it refuses valid input
-            // (an Existing-phase "101" does not block a New Construction "101").
+            // NewRoom(Level, UV) inherits the ACTIVE VIEW's phase in a UI session;
+            // only truly headless operation defaults to the document's last phase
+            // (Codex round-2 finding 1 — the last-phase-always reading belongs to
+            // NewRooms2). Room numbers are unique per phase, not per document, so
+            // the pre-check must be scoped to the phase the room will actually land
+            // in — and the created-phase assertion below remains the fail-closed
+            // net if this derivation is ever wrong.
             var phases = doc.Phases;
             if (phases == null || phases.Size == 0)
                 return CommandResult.Fail("The document has no phases; a room cannot be created.");
-            var creationPhase = phases.get_Item(phases.Size - 1);
+            Phase creationPhase = null;
+            var activeView = app.ActiveUIDocument.ActiveView;
+            var viewPhaseParam = activeView != null ? activeView.get_Parameter(BuiltInParameter.VIEW_PHASE) : null;
+            if (viewPhaseParam != null && viewPhaseParam.HasValue)
+                creationPhase = doc.GetElement(viewPhaseParam.AsElementId()) as Phase;
+            if (creationPhase == null)
+                creationPhase = phases.get_Item(phases.Size - 1);
 
             // Pre-check: a requested number colliding with a room in the creation
             // phase (placed, unplaced or unenclosed — they all hold their number) is
