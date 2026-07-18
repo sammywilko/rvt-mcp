@@ -1243,12 +1243,12 @@ Tools (prefix revit_<verb>_<noun>, lengths in mm):
             catch (Exception ex) { return $"Error: {ex.Message}"; }
         }
 
-        [McpServerTool(Name = "revit_create_room_sls", Destructive = false), System.ComponentModel.Description("Create and place a room at a seed point with non-modal failure capture — use this instead of revit_create_room, whose duplicate-number warning blocks Revit in a modal dialog. Params: x/y (mm seed point, must be inside the intended boundary), level (strict), optional name, optional number (refused if already used in the creation phase — the active view's phase, falling back to the document's last phase; omit to auto-assign), optional requireEnclosed (fail + roll back unless the room encloses). Duplicate-number and occupied-region warnings are fatal (rollback), never suppressed. Optional dryRun. Returns element_ids + enclosure_state + area_m2 (null when not enclosed) + phase.")]
-        public static async Task<string> CreateRoomSls(double x, double y, string level, string name = "", string number = "", bool requireEnclosed = false, string operationGroupId = "", bool dryRun = false)
+        [McpServerTool(Name = "revit_create_room_sls", Destructive = false), System.ComponentModel.Description("Create and place a room at a seed point with non-modal failure capture — use this instead of revit_create_room, whose duplicate-number warning blocks Revit in a modal dialog. Params: x/y (mm seed point, must be inside the intended boundary), level (strict), optional name, optional number (refused if already used in the phase the room actually lands in; omit to auto-assign), optional expectedPhase (ASSERTED, not selected — creation always follows the active view's phase; refused up front on conflict with the active view, rolled back if the room still lands elsewhere; default = the active view's phase, falling back to the document's last phase), optional requireEnclosed (fail + roll back unless the room encloses). Duplicate-number and occupied-region warnings are fatal (rollback), never suppressed. Optional dryRun. Returns element_ids + enclosure_state + area_m2 (null when not enclosed) + phase (the phase the room actually landed in).")]
+        public static async Task<string> CreateRoomSls(double x, double y, string level, string name = "", string number = "", string expectedPhase = "", bool requireEnclosed = false, string operationGroupId = "", bool dryRun = false)
         {
             try
             {
-                var result = await ToolGateway.SendToRevit("create_room_sls", new { x, y, level, name, number, requireEnclosed, operationGroupId, dryRun });
+                var result = await ToolGateway.SendToRevit("create_room_sls", new { x, y, level, name, number, expectedPhase, requireEnclosed, operationGroupId, dryRun });
                 return JsonConvert.SerializeObject(result, Formatting.Indented);
             }
             catch (Exception ex) { return $"Error: {ex.Message}"; }

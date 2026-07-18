@@ -15,8 +15,10 @@ namespace RvtMcp.Plugin.Handlers
     // A5.0 join spike (docs/recon/2026-07-17-a5-spike-join-gaps.md, headline).
     //
     // Defence in depth (Codex adversarial review, 2026-07-18):
-    //  - pre-check refuses number collisions with the collision identified,
-    //    scoped to the phase NewRoom will actually use (numbers are per-phase);
+    //  - the duplicate-number check runs inside the write, scoped to the phase
+    //    the room ACTUALLY landed in (numbers are per-phase, and predicting the
+    //    landing phase from a headless context proved unreliable in W7), before
+    //    the number is set — refused with the collision identified;
     //  - the write runs under FailureScope with duplicate-number and
     //    room-in-same-region warnings declared FATAL, so anything the
     //    pre-check misses rolls back instead of committing suppressed;
@@ -42,11 +44,29 @@ namespace RvtMcp.Plugin.Handlers
     ""level"": { ""type"": ""string"", ""description"": ""Level name (strict — no fallback)"" },
     ""name"": { ""type"": ""string"", ""description"": ""Optional room name"" },
     ""number"": { ""type"": ""string"", ""description"": ""Optional room number — refused if any room in the creation phase already holds it"" },
+    ""expectedPhase"": { ""type"": ""string"", ""description"": ""Optional phase name ASSERTED, not selected — creation always follows the active view's phase. Refused up front if it conflicts with the active view, rolled back if the created room still lands elsewhere. Default: the active view's phase, falling back to the document's last phase"" },
     ""requireEnclosed"": { ""type"": ""boolean"", ""description"": ""Fail (and roll back) unless the room encloses with a positive area (default false)"" },
     ""operationGroupId"": { ""type"": ""string"", ""description"": ""Optional: the open operation group id — must match or the write is refused"" },
     ""dryRun"": { ""type"": ""boolean"", ""description"": ""Create + capture warnings, then roll back (default false)"" }
   }
 }";
+
+        // The ONE phase-resolution rule, applied to the new room and to every
+        // collision candidate alike: the room's own Phase parameter
+        // (ROOM_PHASE_ID) when populated, else the generic CreatedPhaseId.
+        // Mixing the two domains across sides of a comparison is how a legal
+        // cross-phase duplicate gets refused or a real one vetted (Codex review
+        // 20260718-020206 finding 2).
+        private static Phase ResolveRoomPhase(Document doc, SpatialElement room)
+        {
+            var phaseParam = room.get_Parameter(BuiltInParameter.ROOM_PHASE_ID);
+            if (phaseParam != null && phaseParam.HasValue)
+            {
+                var fromParam = doc.GetElement(phaseParam.AsElementId()) as Phase;
+                if (fromParam != null) return fromParam;
+            }
+            return doc.GetElement(room.CreatedPhaseId) as Phase;
+        }
 
         public CommandResult Execute(UIApplication app, string paramsJson)
         {
@@ -71,46 +91,59 @@ namespace RvtMcp.Plugin.Handlers
             var requireEnclosed = request.Value<bool?>("requireEnclosed") ?? false;
             var dryRun = request.Value<bool?>("dryRun") ?? false;
 
-            // NewRoom(Level, UV) inherits the ACTIVE VIEW's phase in a UI session;
-            // only truly headless operation defaults to the document's last phase
-            // (Codex round-2 finding 1 — the last-phase-always reading belongs to
-            // NewRooms2). Room numbers are unique per phase, not per document, so
-            // the pre-check must be scoped to the phase the room will actually land
-            // in — and the created-phase assertion below remains the fail-closed
-            // net if this derivation is ever wrong.
+            // Room numbers are unique PER PHASE, not per document (the same number
+            // in a different phase is legal — Autodesk "About Phase-Specific
+            // Rooms"). There is no reliable way to predict which phase
+            // NewRoom(Level, UV) will use from a headless ExternalEvent context,
+            // so the duplicate-number check runs INSIDE the write, scoped to the
+            // phase the room ACTUALLY landed in — never a prediction (Codex
+            // review 20260718-014018: a predicted-phase pre-check both wrongly
+            // refused free numbers and wrongly vetted taken ones).
+            //
+            // The EXPECTED phase below is a separate concern: caller INTENT. It
+            // only decides whether the landed room is acceptable — it never
+            // scopes the uniqueness check, so a wrong default cannot corrupt the
+            // duplicate guarantee; it can only refuse (Codex review
+            // 20260718-020206 finding 1: an unintended landing phase must not
+            // return success).
             var phases = doc.Phases;
             if (phases == null || phases.Size == 0)
                 return CommandResult.Fail("The document has no phases; a room cannot be created.");
-            Phase creationPhase = null;
+            var requestedPhaseName = request.Value<string>("expectedPhase");
+            requestedPhaseName = string.IsNullOrWhiteSpace(requestedPhaseName) ? null : requestedPhaseName.Trim();
+            // Creation is ALWAYS active-view-driven (NewRoom(Level, UV) has no
+            // phase selector) — expectedPhase asserts intent, it cannot steer.
+            // So an explicit expectedPhase that conflicts with the active view is
+            // refused BEFORE any write; the post-create check remains the
+            // authoritative net for whatever Revit actually did (Codex review
+            // 20260718-021237 finding 1: no selector-shaped argument that
+            // silently ignores the request).
+            Phase viewPhase = null;
             var activeView = app.ActiveUIDocument.ActiveView;
             var viewPhaseParam = activeView != null ? activeView.get_Parameter(BuiltInParameter.VIEW_PHASE) : null;
             if (viewPhaseParam != null && viewPhaseParam.HasValue)
-                creationPhase = doc.GetElement(viewPhaseParam.AsElementId()) as Phase;
-            if (creationPhase == null)
-                creationPhase = phases.get_Item(phases.Size - 1);
-
-            // Pre-check: a requested number colliding with a room in the creation
-            // phase (placed, unplaced or unenclosed — they all hold their number) is
-            // refused with the collision identified, instead of surfacing as a
-            // commit-time warning. This is the exact collision that went modal
-            // through the upstream tool. Stored numbers are trimmed like the request
-            // so a padded stored value cannot dodge the check.
-            if (requestedNumber != null)
+                viewPhase = doc.GetElement(viewPhaseParam.AsElementId()) as Phase;
+            Phase expectedPhase = null;
+            if (requestedPhaseName != null)
             {
-                var collision = new FilteredElementCollector(doc)
-                    .OfCategory(BuiltInCategory.OST_Rooms)
-                    .WhereElementIsNotElementType()
-                    .Cast<SpatialElement>()
-                    .Where(r => RevitCompat.GetId(r.CreatedPhaseId) == RevitCompat.GetId(creationPhase.Id))
-                    .FirstOrDefault(r => string.Equals((r.Number ?? string.Empty).Trim(), requestedNumber, StringComparison.Ordinal));
-                if (collision != null)
+                foreach (Phase p in phases)
+                    if (string.Equals(p.Name, requestedPhaseName, StringComparison.Ordinal)) { expectedPhase = p; break; }
+                if (expectedPhase == null)
                 {
-                    var collisionLevel = collision.Level != null ? collision.Level.Name : "(no level)";
+                    var known = new List<string>();
+                    foreach (Phase p in phases) known.Add("'" + p.Name + "'");
                     return CommandResult.Fail(
-                        "Room number '" + requestedNumber + "' is already used in phase '" + creationPhase.Name +
-                        "' by room id " + RevitCompat.GetId(collision.Id) + " ('" + collision.Name + "', level " +
-                        collisionLevel + "). Pass a unique number, or omit number to let Revit assign the next free one.");
+                        "Unknown expectedPhase '" + requestedPhaseName + "'. Known phases: " + string.Join(", ", known) + ".");
                 }
+                if (viewPhase != null && RevitCompat.GetId(viewPhase.Id) != RevitCompat.GetId(expectedPhase.Id))
+                    return CommandResult.Fail(
+                        "expectedPhase '" + expectedPhase.Name + "' conflicts with the active view's phase '" +
+                        viewPhase.Name + "' — room creation follows the active view. Activate a view in the " +
+                        "intended phase (revit_set_view_phase / revit_activate_view), then retry.");
+            }
+            else
+            {
+                expectedPhase = viewPhase != null ? viewPhase : phases.get_Item(phases.Size - 1);
             }
 
             // Belt to the pre-check's braces: if a duplicate number or an
@@ -129,14 +162,69 @@ namespace RvtMcp.Plugin.Handlers
                 var room = doc.Create.NewRoom(level, point);
                 if (room == null)
                     throw new InvalidOperationException("Revit returned no room for the seed point.");
+                doc.Regenerate();
 
-                // The pre-check was scoped to the phase NewRoom is documented to use;
-                // if Revit ever places the room elsewhere the uniqueness guarantee is
-                // void — fail closed rather than report a wrongly-vetted room.
-                if (RevitCompat.GetId(room.CreatedPhaseId) != RevitCompat.GetId(creationPhase.Id))
+                // Resolve the phase the room ACTUALLY landed in, evidence-first
+                // (ResolveRoomPhase: ROOM_PHASE_ID, else CreatedPhaseId — one rule
+                // for the new room AND every collision candidate, never mixed
+                // domains). Asserting CreatedPhaseId straight after NewRoom refused
+                // every create in the first live run (W7, 2026-07-18); a refusal
+                // here carries both raw values so a live failure is
+                // self-diagnosing, not another guess at the lifecycle.
+                var actualPhase = ResolveRoomPhase(doc, room);
+                if (actualPhase == null)
+                {
+                    var roomPhaseParam = room.get_Parameter(BuiltInParameter.ROOM_PHASE_ID);
                     throw new InvalidOperationException(
-                        "The room was created in a different phase than the uniqueness pre-check covered " +
-                        "(expected '" + creationPhase.Name + "'). Refusing rather than risk a duplicate number.");
+                        "The room's phase is unresolved after regeneration (ROOM_PHASE_ID " +
+                        (roomPhaseParam != null && roomPhaseParam.HasValue ? RevitCompat.GetId(roomPhaseParam.AsElementId()).ToString() : "(unset)") +
+                        ", CreatedPhaseId " + RevitCompat.GetId(room.CreatedPhaseId) +
+                        "). Refusing rather than risk a duplicate number.");
+                }
+
+                // Caller-intent enforcement: the landed phase must be the expected
+                // one (explicit `phase` arg, else the active view's phase). A
+                // room's phase is read-only once created — a wrong-phase room is
+                // not a reportable footnote, it is a rollback.
+                if (RevitCompat.GetId(actualPhase.Id) != RevitCompat.GetId(expectedPhase.Id))
+                    throw new InvalidOperationException(
+                        "The room landed in phase '" + actualPhase.Name + "' but '" + expectedPhase.Name +
+                        "' was required (" + (requestedPhaseName != null ? "explicit expectedPhase argument" : "the active view's phase") +
+                        "). Rolled back — activate a view in the intended phase and retry.");
+
+                // Duplicate-number check, scoped to the actual phase and run BEFORE
+                // the number is set — refuse with the collision identified instead
+                // of surfacing as a commit-time warning (the collision that went
+                // modal through the upstream tool). Stored numbers are trimmed like
+                // the request so a padded stored value cannot dodge the check. A
+                // same-number candidate whose phase cannot be resolved fails the
+                // call (fail closed), never silently skips.
+                if (requestedNumber != null)
+                {
+                    var sameNumber = new FilteredElementCollector(doc)
+                        .OfCategory(BuiltInCategory.OST_Rooms)
+                        .WhereElementIsNotElementType()
+                        .Cast<SpatialElement>()
+                        .Where(r => RevitCompat.GetId(r.Id) != RevitCompat.GetId(room.Id))
+                        .Where(r => string.Equals((r.Number ?? string.Empty).Trim(), requestedNumber, StringComparison.Ordinal))
+                        .ToList();
+                    foreach (var candidate in sameNumber)
+                    {
+                        var candidatePhase = ResolveRoomPhase(doc, candidate);
+                        if (candidatePhase == null)
+                            throw new InvalidOperationException(
+                                "Room id " + RevitCompat.GetId(candidate.Id) + " also holds number '" + requestedNumber +
+                                "' but its phase cannot be resolved — refusing rather than risk a duplicate number.");
+                        if (RevitCompat.GetId(candidatePhase.Id) == RevitCompat.GetId(actualPhase.Id))
+                        {
+                            var collisionLevel = candidate.Level != null ? candidate.Level.Name : "(no level)";
+                            throw new InvalidOperationException(
+                                "Room number '" + requestedNumber + "' is already used in phase '" + actualPhase.Name +
+                                "' by room id " + RevitCompat.GetId(candidate.Id) + " ('" + candidate.Name + "', level " +
+                                collisionLevel + "). Pass a unique number, or omit number to let Revit assign the next free one.");
+                        }
+                    }
+                }
 
                 // Room.Name is the COMPOSED "name number" string; ROOM_NAME is the
                 // actual name. Set and read through the parameters so read-back
@@ -190,7 +278,7 @@ namespace RvtMcp.Plugin.Handlers
                         name = actualName,
                         number = actualNumber,
                         level = level.Name,
-                        phase = creationPhase.Name,
+                        phase = actualPhase.Name,
                         enclosure_state = enclosed ? "enclosed" : "not_enclosed",
                         // The C1/W8 read-back consumes this — null, never 0, when unenclosed.
                         area_m2 = enclosed ? (double?)Math.Round(SlsWriteSupport.SqFtToM2(areaSqFt), 3) : null,
