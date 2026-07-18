@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -71,6 +72,29 @@ namespace RvtMcp.Plugin
 
             var properties = schema["properties"] as JObject;
             if (properties == null) return SchemaValidationResult.Ok();
+
+            // Opt-in strictness: a schema declaring "additionalProperties": false
+            // refuses unknown fields instead of silently ignoring them. A safety
+            // assertion that can be misspelled away is not an assertion —
+            // create_room_sls's expectedPhase was the live case (Codex review
+            // 20260718-024822 finding 1). Handlers opt in individually; schemas
+            // without the declaration keep the historical tolerant behavior.
+            if (schema["additionalProperties"] != null &&
+                schema["additionalProperties"].Type == JTokenType.Boolean &&
+                !schema.Value<bool>("additionalProperties"))
+            {
+                foreach (var supplied in parameters.Properties())
+                {
+                    if (properties[supplied.Name] == null)
+                    {
+                        var known = string.Join(", ", properties.Properties().Select(p => "'" + p.Name + "'"));
+                        return SchemaValidationResult.Fail(
+                            $"Parameter validation failed: unknown field '{supplied.Name}' (this command accepts no additional fields)",
+                            $"Known fields: [{known}] — check for a misspelling; unknown fields are refused, not ignored",
+                            DefaultHint);
+                    }
+                }
+            }
 
             foreach (var prop in properties.Properties())
             {

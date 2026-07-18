@@ -1997,12 +1997,16 @@
     },
     {
       "name": "revit_create_room_sls",
-      "description_hash": "sha256:0f81f8d22aabae7ea966ce4a422f8d48f4ac4e349e37a887293fd3446c23c78c",
+      "description_hash": "sha256:de77a68172336d89421508323332a781e0e3df34393d84c30b74ff57a41efbc7",
       "inputSchema": {
         "properties": {
           "dryRun": {
             "description": "",
             "type": "Boolean"
+          },
+          "expectedPhase": {
+            "description": "",
+            "type": "String"
           },
           "level": {
             "description": "",

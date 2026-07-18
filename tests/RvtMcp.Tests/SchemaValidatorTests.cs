@@ -120,5 +120,42 @@ namespace RvtMcp.Tests
             var result = SchemaValidator.Validate("{not-valid-json", @"{""x"":1}");
             Assert.True(result.IsValid);
         }
+
+        private const string StrictSchema = @"{
+  ""type"": ""object"",
+  ""required"": [""x""],
+  ""additionalProperties"": false,
+  ""properties"": {
+    ""x"": { ""type"": ""number"" },
+    ""expectedPhase"": { ""type"": ""string"" }
+  }
+}";
+
+        [Fact]
+        public void Validate_StrictSchema_RefusesUnknownField()
+        {
+            // A misspelled safety assertion must be refused, not silently
+            // dropped (create_room_sls expected_phase vs expectedPhase).
+            var result = SchemaValidator.Validate(StrictSchema, @"{""x"":1,""expected_phase"":""Existing""}");
+            Assert.False(result.IsValid);
+            Assert.Contains("expected_phase", result.Error);
+            Assert.Contains("expectedPhase", result.Suggestion);
+        }
+
+        [Fact]
+        public void Validate_StrictSchema_AcceptsDeclaredFields()
+        {
+            var result = SchemaValidator.Validate(StrictSchema, @"{""x"":1,""expectedPhase"":""Existing""}");
+            Assert.True(result.IsValid);
+        }
+
+        [Fact]
+        public void Validate_TolerantSchema_StillIgnoresUnknownFields()
+        {
+            // No additionalProperties declaration -> historical behavior holds
+            // for every other handler.
+            var result = SchemaValidator.Validate(LevelSchema, @"{""elevation"":3000,""stray"":1}");
+            Assert.True(result.IsValid);
+        }
     }
 }
