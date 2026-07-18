@@ -38,6 +38,7 @@ namespace RvtMcp.Plugin.Handlers
         public string ParametersSchema => @"{
   ""type"": ""object"",
   ""required"": [""x"", ""y"", ""level""],
+  ""additionalProperties"": false,
   ""properties"": {
     ""x"": { ""type"": ""number"", ""description"": ""Seed point X (mm) — must be inside the intended room boundary"" },
     ""y"": { ""type"": ""number"", ""description"": ""Seed point Y (mm)"" },
