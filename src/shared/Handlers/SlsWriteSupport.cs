@@ -101,7 +101,7 @@ namespace RvtMcp.Plugin.Handlers
                 if (byId == null || (category.HasValue && !InCategory(byId, category.Value)))
                 {
                     error = "typeId " + typeId.Value + " does not resolve to a " + what + ". " +
-                            "Use revit_get_available_family_types to list valid types.";
+                            "Use " + DiscoveryToolFor<T>() + " to list valid types.";
                     return null;
                 }
                 return byId;
@@ -135,7 +135,7 @@ namespace RvtMcp.Plugin.Handlers
             {
                 error = "No " + what + " named '" + wantedType + "'" +
                         (wantedFamily == null ? "" : " in family '" + wantedFamily + "'") +
-                        " is loaded. Use revit_get_available_family_types to list valid types.";
+                        " is loaded. Use " + DiscoveryToolFor<T>() + " to list valid types.";
                 return null;
             }
 
@@ -145,6 +145,16 @@ namespace RvtMcp.Plugin.Handlers
             error = "'" + wantedType + "' is ambiguous — " + candidates.Count + " " + what + "s match: " +
                     listing + ". Pass family to disambiguate, or use typeId.";
             return null;
+        }
+
+        // W5 live finding: a refusal that names the wrong discovery tool is a dead end.
+        // Walls/floors/roofs/ceilings are HostObjAttributes (system types) and are
+        // invisible to get_available_family_types, which collects FamilySymbol only.
+        private static string DiscoveryToolFor<T>() where T : ElementType
+        {
+            return typeof(HostObjAttributes).IsAssignableFrom(typeof(T))
+                ? "revit_get_system_types"
+                : "revit_get_available_family_types";
         }
 
         private static bool InCategory(Element element, BuiltInCategory category)

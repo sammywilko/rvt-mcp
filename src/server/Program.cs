@@ -652,12 +652,23 @@ Tools (prefix revit_<verb>_<noun>, lengths in mm):
             catch (Exception ex) { return $"Error: {ex.Message}"; }
         }
 
-        [McpServerTool(Name = "revit_get_available_family_types", ReadOnly = true, Idempotent = true), System.ComponentModel.Description("List loadable family types. Returns {familyName, typeName, typeId} grouped by category. Optional: filter by category (e.g. 'Walls', 'Doors', 'Pipes' — NOT 'OST_Walls'). Feed typeId into create_point_based_element.")]
+        [McpServerTool(Name = "revit_get_available_family_types", ReadOnly = true, Idempotent = true), System.ComponentModel.Description("List LOADABLE family types (doors, windows, furniture, fixtures). Returns {familyName, typeName, typeId} grouped by category. Optional: filter by category (e.g. 'Doors', 'Windows', 'Pipes' — NOT 'OST_Doors'). Feed typeId into create_point_based_element. DOES NOT list walls, floors, roofs or ceilings — those are SYSTEM types: use revit_get_system_types for them (this tool returns zero results for them, which does NOT mean the document has none).")]
         public static async Task<string> GetAvailableFamilyTypes(string category = "")
         {
             try
             {
                 var result = await ToolGateway.SendToRevit("get_available_family_types", new { category });
+                return JsonConvert.SerializeObject(result, Formatting.Indented);
+            }
+            catch (Exception ex) { return $"Error: {ex.Message}"; }
+        }
+
+        [McpServerTool(Name = "revit_get_system_types", ReadOnly = true, Idempotent = true), System.ComponentModel.Description("List SYSTEM (host) types — walls, floors, roofs, ceilings — grouped by category. These are NOT loadable families and do NOT appear in get_available_family_types; use THIS tool to find a valid wall/floor/roof/ceiling type name for the strict create tools. Optional: filter by canonical category key 'walls'/'floors'/'roofs'/'ceilings' (language-independent, NOT a localized display name); an unknown key is refused. Per type: {typeId, typeName, familyName, thickness_mm, nominal_thickness_mm, thickness_basis, thickness_is_variable}. thickness_mm is the match-safe thickness and is null when the type has none (e.g. curtain walls) or when its thickness VARIES (vertically compound / tapered) — in that case read nominal_thickness_mm and do not match on it blindly.")]
+        public static async Task<string> GetSystemTypes(string category = "")
+        {
+            try
+            {
+                var result = await ToolGateway.SendToRevit("get_system_types", new { category });
                 return JsonConvert.SerializeObject(result, Formatting.Indented);
             }
             catch (Exception ex) { return $"Error: {ex.Message}"; }

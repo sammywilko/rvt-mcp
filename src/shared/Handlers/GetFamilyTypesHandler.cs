@@ -7,7 +7,10 @@ namespace RvtMcp.Plugin.Handlers
     public class GetFamilyTypesHandler : IRevitCommand
     {
         public string Name => "get_available_family_types";
-        public string Description => "Get available family types in current project";
+        public string Description =>
+            "Get available LOADABLE family types in the current project (doors, windows, " +
+            "furniture, fixtures). Walls, floors, roofs and ceilings are SYSTEM types and " +
+            "are NOT returned here — use get_system_types for those.";
         public string ParametersSchema => @"{""type"":""object"",""properties"":{""category"":{""type"":""string"",""description"":""Built-in category name (e.g. Walls, Doors, Pipes)""}}}";
 
         public CommandResult Execute(UIApplication app, string paramsJson)

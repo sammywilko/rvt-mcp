@@ -1,6 +1,6 @@
 {
   "generated_by": "ToolsListSnapshotTests",
-  "tool_count": 242,
+  "tool_count": 243,
   "tools": [
     {
       "name": "revit_accept_bake_suggestion",
@@ -3417,7 +3417,7 @@
     },
     {
       "name": "revit_get_available_family_types",
-      "description_hash": "sha256:7d0ab84af905a6af87653134cd861d5b23624b8ef266099231a13dc2ccdd2769",
+      "description_hash": "sha256:f6a152d89c05b054c3fd06e71d16df4a7417a20583136b3d4e97c20ab09ada7f",
       "inputSchema": {
         "properties": {
           "category": {
@@ -3990,6 +3990,20 @@
             "type": "Nullable`1"
           },
           "systemName": {
+            "description": "",
+            "type": "String"
+          }
+        },
+        "required": [],
+        "type": "object"
+      }
+    },
+    {
+      "name": "revit_get_system_types",
+      "description_hash": "sha256:1add479b5723b2cbada6b2c6b0b0bf7b9f01ccdba29cefe8b1f2924d41811774",
+      "inputSchema": {
+        "properties": {
+          "category": {
             "description": "",
             "type": "String"
           }

@@ -65,7 +65,8 @@ namespace RvtMcp.Plugin.Handlers
             if (floorType.IsFoundationSlab && !allowFoundationSlab)
                 return CommandResult.Fail(
                     "'" + floorType.FamilyName + ": " + floorType.Name + "' is a foundation slab, not a floor. " +
-                    "Pick a Floors-category type (revit_get_available_family_types category='Floors'), or pass " +
+                    "Pick a Floors-category type (revit_get_system_types category='floors' — floor types are " +
+                    "SYSTEM types and never appear in revit_get_available_family_types), or pass " +
                     "allowFoundationSlab=true if a foundation slab is genuinely intended.");
 
             return SlsWriteSupport.RunWrite(doc, "create_floor", dryRun, request.Value<string>("operationGroupId"), scope =>
