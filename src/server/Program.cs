@@ -1208,12 +1208,12 @@ Tools (prefix revit_<verb>_<noun>, lengths in mm):
         // ---- SLS A4 controlled writes: safe-creation group (PRD §12.7). Strict type/level
         // ---- resolution (no silent defaults), non-modal failure capture, dry-run support.
 
-        [McpServerTool(Name = "revit_create_wall", Destructive = false), System.ComponentModel.Description("Create a straight architectural wall. Params: startX/Y, endX/Y (mm), heightMm, level (name, strict — fails if unknown), wall type via typeId OR typeName (+family to disambiguate) — never silently defaulted. Optional structural. dryRun=true builds it, captures real Revit warnings, then rolls back. Returns element_ids + typed warnings; never pops a Revit dialog.")]
-        public static async Task<string> CreateWall(double startX, double startY, double endX, double endY, double heightMm, string level, long? typeId = null, string family = "", string typeName = "", bool structural = false, string operationGroupId = "", bool dryRun = false)
+        [McpServerTool(Name = "revit_create_wall", Destructive = false), System.ComponentModel.Description("Create a straight architectural wall. Params: startX/Y, endX/Y (mm), heightMm, level (name, strict — fails if unknown), wall type via typeId OR typeName (+family to disambiguate) — never silently defaulted. Optional structural. disallowJoins=true prevents Revit auto-joining BOTH ends: auto-join trims/extends ends to clean up corners, which silently moves the coordinates you supplied \u2014 set it when the geometry is surveyed/derived and must be reproduced exactly. dryRun=true builds it, captures real Revit warnings, then rolls back. Returns element_ids + typed warnings; never pops a Revit dialog.")]
+        public static async Task<string> CreateWall(double startX, double startY, double endX, double endY, double heightMm, string level, long? typeId = null, string family = "", string typeName = "", bool structural = false, bool disallowJoins = false, string operationGroupId = "", bool dryRun = false)
         {
             try
             {
-                var result = await ToolGateway.SendToRevit("create_wall", new { startX, startY, endX, endY, heightMm, level, typeId, family, typeName, structural, operationGroupId, dryRun });
+                var result = await ToolGateway.SendToRevit("create_wall", new { startX, startY, endX, endY, heightMm, level, typeId, family, typeName, structural, disallowJoins, operationGroupId, dryRun });
                 return JsonConvert.SerializeObject(result, Formatting.Indented);
             }
             catch (Exception ex) { return $"Error: {ex.Message}"; }

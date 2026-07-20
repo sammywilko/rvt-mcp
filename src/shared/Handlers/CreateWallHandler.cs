@@ -29,6 +29,7 @@ namespace RvtMcp.Plugin.Handlers
     ""family"": { ""type"": ""string"", ""description"": ""Wall family name, e.g. 'Basic Wall' (disambiguates typeName)"" },
     ""typeName"": { ""type"": ""string"", ""description"": ""Wall type name, e.g. 'Interior - 114mm Partition'"" },
     ""structural"": { ""type"": ""boolean"", ""description"": ""Structural usage (default false)"" },
+    ""disallowJoins"": { ""type"": ""boolean"", ""description"": ""Disallow automatic join at BOTH ends (default false). Revit's auto-join trims/extends wall ends to clean up corners, which silently moves endpoints you supplied — use this when the coordinates are surveyed/derived and must be reproduced exactly."" },
     ""operationGroupId"": { ""type"": ""string"", ""description"": ""Optional: the open operation group id — must match or the write is refused"" },
     ""dryRun"": { ""type"": ""boolean"", ""description"": ""Build + capture warnings, then roll back (default false)"" }
   }
@@ -47,6 +48,7 @@ namespace RvtMcp.Plugin.Handlers
             var endY = request.Value<double>("endY");
             var heightMm = request.Value<double>("heightMm");
             var structural = request.Value<bool?>("structural") ?? false;
+            var disallowJoins = request.Value<bool?>("disallowJoins") ?? false;
             var dryRun = request.Value<bool?>("dryRun") ?? false;
 
             if (!SlsWriteSupport.IsFinite(startX) || !SlsWriteSupport.IsFinite(startY) ||
@@ -77,6 +79,15 @@ namespace RvtMcp.Plugin.Handlers
 
                 var wall = Wall.Create(doc, line, wallType.Id, level.Id,
                     SlsWriteSupport.MmToFt(heightMm), 0.0, false, structural);
+
+                // Disallow BEFORE the regen that would otherwise perform the join: once
+                // Revit has joined and moved the ends, unjoining afterwards does not put
+                // the supplied coordinates back.
+                if (disallowJoins)
+                {
+                    WallUtils.DisallowWallJoinAtEnd(wall, 0);
+                    WallUtils.DisallowWallJoinAtEnd(wall, 1);
+                }
                 doc.Regenerate();
 
                 return new
@@ -90,7 +101,8 @@ namespace RvtMcp.Plugin.Handlers
                         length_mm = Math.Round(lengthMm, 1),
                         height_mm = heightMm,
                         level = level.Name,
-                        structural
+                        structural,
+                        joins_disallowed = disallowJoins
                     }
                 };
             });
