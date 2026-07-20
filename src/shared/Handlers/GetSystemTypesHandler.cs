@@ -133,7 +133,11 @@ namespace RvtMcp.Plugin.Handlers
                 thickness_mm = thickness.IsVariable ? null : thickness.NominalMm,
                 nominal_thickness_mm = thickness.NominalMm,
                 thickness_basis = thickness.Basis,
-                thickness_is_variable = thickness.IsVariable
+                thickness_is_variable = thickness.IsVariable,
+                // The evidence behind thickness_is_variable, so a null thickness_mm is
+                // self-diagnosing rather than an unexplained refusal.
+                vertically_compound = thickness.VerticallyCompound,
+                variable_layer_index = thickness.VariableLayerIndex
             };
         }
 
@@ -146,6 +150,8 @@ namespace RvtMcp.Plugin.Handlers
             public double? nominal_thickness_mm { get; set; }
             public string thickness_basis { get; set; }
             public bool thickness_is_variable { get; set; }
+            public bool? vertically_compound { get; set; }
+            public int? variable_layer_index { get; set; }
         }
 
         private struct Thickness
@@ -153,6 +159,8 @@ namespace RvtMcp.Plugin.Handlers
             public double? NominalMm;
             public string Basis;
             public bool IsVariable;
+            public bool? VerticallyCompound;
+            public int? VariableLayerIndex;
         }
 
         // CompoundStructure.GetWidth() is NOMINAL: for a vertically compound structure it
@@ -171,6 +179,8 @@ namespace RvtMcp.Plugin.Handlers
                 structure = type.GetCompoundStructure();
                 if (structure != null)
                 {
+                    result.VerticallyCompound = structure.IsVerticallyCompound;
+                    result.VariableLayerIndex = structure.VariableLayerIndex;
                     result.IsVariable = structure.IsVerticallyCompound || structure.VariableLayerIndex >= 0;
                     result.NominalMm = ToMm(structure.GetWidth());
                     result.Basis = "compound-structure-nominal";
