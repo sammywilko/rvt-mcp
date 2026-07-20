@@ -138,7 +138,8 @@ namespace RvtMcp.Plugin.Handlers
                 // self-diagnosing rather than an unexplained refusal.
                 vertically_compound = thickness.VerticallyCompound,
                 variable_layer_index = thickness.VariableLayerIndex,
-                region_count = thickness.RegionCount
+                region_count = thickness.RegionCount,
+                layer_count = thickness.LayerCount
             };
         }
 
@@ -154,6 +155,7 @@ namespace RvtMcp.Plugin.Handlers
             public bool? vertically_compound { get; set; }
             public int? variable_layer_index { get; set; }
             public int? region_count { get; set; }
+            public int? layer_count { get; set; }
         }
 
         private struct Thickness
@@ -164,6 +166,7 @@ namespace RvtMcp.Plugin.Handlers
             public bool? VerticallyCompound;
             public int? VariableLayerIndex;
             public int? RegionCount;
+            public int? LayerCount;
         }
 
         // CompoundStructure.GetWidth() is NOMINAL: for a vertically compound structure it
@@ -185,6 +188,7 @@ namespace RvtMcp.Plugin.Handlers
                     result.VerticallyCompound = structure.IsVerticallyCompound;
                     result.VariableLayerIndex = structure.VariableLayerIndex;
                     result.RegionCount = structure.GetRegionIds().Count;
+                    result.LayerCount = structure.LayerCount;
                     result.IsVariable = IsThicknessVariable(structure);
                     result.NominalMm = ToMm(structure.GetWidth());
                     result.Basis = "compound-structure-nominal";
@@ -225,8 +229,12 @@ namespace RvtMcp.Plugin.Handlers
         // therefore identifies a wall-kind (vertical) section, NOT variable thickness.
         // Reading it as variability flagged all 44 wall types and would have nulled every
         // thickness the type mapper needs.
-        //   vertical (walls):   thickness varies when the section has more than one
-        //                       region, i.e. genuinely different widths up the wall.
+        //   vertical (walls):   a region is carved per LAYER, so a uniform 3-layer
+        //                       partition already reports 3 regions — region count alone
+        //                       says nothing (that misread flagged every layered wall
+        //                       type, including the 114mm partition the executor builds
+        //                       with). Genuine vertical variation subdivides the section
+        //                       FURTHER, so the signal is regions in EXCESS of layers.
         //   horizontal (floors/roofs/ceilings): thickness varies when a layer is marked
         //                       variable (tapered slab). VariableLayerIndex is not
         //                       meaningful for vertical sections — some stock wall types
@@ -234,7 +242,7 @@ namespace RvtMcp.Plugin.Handlers
         private static bool IsThicknessVariable(CompoundStructure structure)
         {
             if (structure.IsVerticallyCompound)
-                return structure.GetRegionIds().Count > 1;
+                return structure.GetRegionIds().Count > structure.LayerCount;
             return structure.VariableLayerIndex >= 0;
         }
 
