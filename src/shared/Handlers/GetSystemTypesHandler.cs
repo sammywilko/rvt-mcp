@@ -137,7 +137,8 @@ namespace RvtMcp.Plugin.Handlers
                 // The evidence behind thickness_is_variable, so a null thickness_mm is
                 // self-diagnosing rather than an unexplained refusal.
                 vertically_compound = thickness.VerticallyCompound,
-                variable_layer_index = thickness.VariableLayerIndex
+                variable_layer_index = thickness.VariableLayerIndex,
+                region_count = thickness.RegionCount
             };
         }
 
@@ -152,6 +153,7 @@ namespace RvtMcp.Plugin.Handlers
             public bool thickness_is_variable { get; set; }
             public bool? vertically_compound { get; set; }
             public int? variable_layer_index { get; set; }
+            public int? region_count { get; set; }
         }
 
         private struct Thickness
@@ -161,6 +163,7 @@ namespace RvtMcp.Plugin.Handlers
             public bool IsVariable;
             public bool? VerticallyCompound;
             public int? VariableLayerIndex;
+            public int? RegionCount;
         }
 
         // CompoundStructure.GetWidth() is NOMINAL: for a vertically compound structure it
@@ -181,7 +184,8 @@ namespace RvtMcp.Plugin.Handlers
                 {
                     result.VerticallyCompound = structure.IsVerticallyCompound;
                     result.VariableLayerIndex = structure.VariableLayerIndex;
-                    result.IsVariable = structure.IsVerticallyCompound || structure.VariableLayerIndex >= 0;
+                    result.RegionCount = structure.GetRegionIds().Count;
+                    result.IsVariable = IsThicknessVariable(structure);
                     result.NominalMm = ToMm(structure.GetWidth());
                     result.Basis = "compound-structure-nominal";
                 }
@@ -212,6 +216,26 @@ namespace RvtMcp.Plugin.Handlers
                 result.Basis = "none";
 
             return result;
+        }
+
+        // Which signal means "this type's thickness is not one number" depends on the
+        // KIND of structure, established live against Revit 2027 (2026-07-20) rather than
+        // assumed: EVERY wall type reports IsVerticallyCompound=true — including a plain
+        // single-layer 'Concrete 200mm' — while every floor type reports false. The flag
+        // therefore identifies a wall-kind (vertical) section, NOT variable thickness.
+        // Reading it as variability flagged all 44 wall types and would have nulled every
+        // thickness the type mapper needs.
+        //   vertical (walls):   thickness varies when the section has more than one
+        //                       region, i.e. genuinely different widths up the wall.
+        //   horizontal (floors/roofs/ceilings): thickness varies when a layer is marked
+        //                       variable (tapered slab). VariableLayerIndex is not
+        //                       meaningful for vertical sections — some stock wall types
+        //                       report index 0 with a single uniform region.
+        private static bool IsThicknessVariable(CompoundStructure structure)
+        {
+            if (structure.IsVerticallyCompound)
+                return structure.GetRegionIds().Count > 1;
+            return structure.VariableLayerIndex >= 0;
         }
 
         private static double? ToMm(double feet)
