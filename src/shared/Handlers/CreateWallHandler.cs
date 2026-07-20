@@ -35,6 +35,17 @@ namespace RvtMcp.Plugin.Handlers
   }
 }";
 
+        // Sub-millimetre: the pipeline's coordinates come from a scaled drawing, so a
+        // tolerance looser than this would let a real join displacement pass as noise.
+        private const double EndpointToleranceMm = 0.5;
+
+        private static double Distance(double x1, double y1, double x2, double y2)
+        {
+            var dx = x1 - x2;
+            var dy = y1 - y2;
+            return Math.Sqrt((dx * dx) + (dy * dy));
+        }
+
         public CommandResult Execute(UIApplication app, string paramsJson)
         {
             var doc = app.ActiveUIDocument?.Document;
@@ -90,6 +101,44 @@ namespace RvtMcp.Plugin.Handlers
                 }
                 doc.Regenerate();
 
+                // Endpoint fidelity is the POINT of disallowJoins, so it is measured, not
+                // asserted: DisallowWallJoinAtEnd promises no join, it does not promise to
+                // restore a location curve something else already moved. Report the wall's
+                // actual endpoints either way, and when exact reproduction was REQUESTED,
+                // refuse (rolling back) if Revit moved them — a silently relocated wall
+                // reported as success is precisely the failure this tool exists to prevent.
+                double? deviationMm = null;
+                var located = wall.Location as LocationCurve;
+                double[] actual = null;
+                if (located != null && located.Curve != null)
+                {
+                    var a = located.Curve.GetEndPoint(0);
+                    var b = located.Curve.GetEndPoint(1);
+                    actual = new[]
+                    {
+                        SlsWriteSupport.FtToMm(a.X), SlsWriteSupport.FtToMm(a.Y),
+                        SlsWriteSupport.FtToMm(b.X), SlsWriteSupport.FtToMm(b.Y)
+                    };
+                    // Revit may return the curve in either direction; compare both pairings.
+                    var forward = Math.Max(
+                        Distance(actual[0], actual[1], startX, startY),
+                        Distance(actual[2], actual[3], endX, endY));
+                    var reversed = Math.Max(
+                        Distance(actual[0], actual[1], endX, endY),
+                        Distance(actual[2], actual[3], startX, startY));
+                    deviationMm = Math.Round(Math.Min(forward, reversed), 4);
+                }
+
+                if (disallowJoins && deviationMm.HasValue && deviationMm.Value > EndpointToleranceMm)
+                {
+                    throw new InvalidOperationException(
+                        "Wall endpoints moved " + deviationMm.Value + " mm after creation despite " +
+                        "disallowJoins=true (tolerance " + EndpointToleranceMm + " mm). Requested (" +
+                        startX + "," + startY + ")-(" + endX + "," + endY + "), actual (" +
+                        actual[0] + "," + actual[1] + ")-(" + actual[2] + "," + actual[3] + "). " +
+                        "The wall was rolled back rather than reported as an exact build.");
+                }
+
                 return new
                 {
                     element_ids = new[] { RevitCompat.GetId(wall.Id) },
@@ -102,7 +151,11 @@ namespace RvtMcp.Plugin.Handlers
                         height_mm = heightMm,
                         level = level.Name,
                         structural,
-                        joins_disallowed = disallowJoins
+                        joins_disallowed = disallowJoins,
+                        // Evidence, always present: what Revit actually built.
+                        actual_start_mm = actual == null ? null : new { x = Math.Round(actual[0], 3), y = Math.Round(actual[1], 3) },
+                        actual_end_mm = actual == null ? null : new { x = Math.Round(actual[2], 3), y = Math.Round(actual[3], 3) },
+                        endpoint_deviation_mm = deviationMm
                     }
                 };
             });

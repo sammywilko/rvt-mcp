@@ -2562,9 +2562,13 @@
     },
     {
       "name": "revit_create_wall",
-      "description_hash": "sha256:e1f206ead66bc50ff4af5969bbe0863f92cb5a8d3e44c882ea27697fcc75cf74",
+      "description_hash": "sha256:1d81231c1ad70d0b4f9bb3e29ccb27f157fdd724e85c5d2b5b777503dee8d3e9",
       "inputSchema": {
         "properties": {
+          "disallowJoins": {
+            "description": "",
+            "type": "Boolean"
+          },
           "dryRun": {
             "description": "",
             "type": "Boolean"
